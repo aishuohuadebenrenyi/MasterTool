@@ -1,0 +1,188 @@
+import { STORAGE_KEYS, API_BASE_URL } from '../utils/constants'
+import * as storage from '../utils/storage'
+
+const BASE_URL : string = API_BASE_URL
+let lastToastMessage : string = ''
+let lastToastTime : number = 0
+
+function getAuthToken() : string {
+  try {
+    return storage.get(STORAGE_KEYS['TOKEN'] as string) || ''
+  } catch {
+    return ''
+  }
+}
+
+type RequestOptions = {
+  url : string
+  method ?: string
+  data ?: UTSJSONObject
+  headers ?: UTSJSONObject
+  showLoading ?: boolean
+  loadingText ?: string
+  showError ?: boolean
+  requestTag ?: string
+}
+
+function getRuntimeInfo() : UTSJSONObject {
+  try {
+    const sysInfo = uni.getSystemInfoSync()
+    return {
+      platform: (sysInfo as UTSJSONObject)['uniPlatform'] || '',
+      host: (sysInfo as UTSJSONObject)['hostName'] || ''
+    } as UTSJSONObject
+  } catch {
+    return {} as UTSJSONObject
+  }
+}
+
+function isMpWeixinRuntime() : boolean {
+  const runtimeInfo = getRuntimeInfo()
+  return (runtimeInfo['platform'] as string) === 'mp-weixin'
+}
+
+function isLoopbackBaseUrl() : boolean {
+  return BASE_URL.indexOf('localhost') !== -1 || BASE_URL.indexOf('127.0.0.1') !== -1
+}
+
+function debugLog(tag : string, payload : UTSJSONObject) {
+  try {
+    console.log('[request]', tag, JSON.stringify(payload))
+  } catch {
+    console.log('[request]', tag)
+  }
+}
+
+function showToastOnce(message : string) {
+  const now = Date.now()
+  if (lastToastMessage === message && now - lastToastTime < 2000) {
+    return
+  }
+  lastToastMessage = message
+  lastToastTime = now
+  uni.showToast({ title: message, icon: 'none' })
+}
+
+function getConnectionErrorMessage(errMsg : string) : string {
+  if (!BASE_URL) {
+    return '未配置接口地址'
+  }
+  if (isMpWeixinRuntime() && isLoopbackBaseUrl()) {
+    return '微信端请改用局域网IP调试后端'
+  }
+  if (errMsg.indexOf('timeout') !== -1) {
+    return '请求超时，请检查后端状态'
+  }
+  return '后端不可达，请检查服务与地址'
+}
+
+function buildHeaders(customHeaders : UTSJSONObject = {} as UTSJSONObject) : UTSJSONObject {
+  const headers : UTSJSONObject = {
+    'Content-Type': 'application/json',
+    ...customHeaders
+  }
+  const token = getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
+export function request(options : RequestOptions) : Promise<UTSJSONObject> {
+  const {
+    url,
+    method = 'GET',
+    data = {} as UTSJSONObject,
+    headers: customHeaders = {} as UTSJSONObject,
+    showLoading = false,
+    loadingText = '加载中...',
+    showError = true,
+    requestTag = ''
+  } = options
+
+  if (showLoading) {
+    uni.showLoading({ title: loadingText, mask: true })
+  }
+
+  const fullUrl = `${BASE_URL}${url}`
+  debugLog('start', {
+    tag: requestTag || url,
+    method,
+    url: fullUrl,
+    baseUrl: BASE_URL
+  } as UTSJSONObject)
+
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: fullUrl,
+      method: method as RequestMethod,
+      data,
+      header: buildHeaders(customHeaders),
+      success(res) {
+        if (showLoading) uni.hideLoading()
+        debugLog('success', {
+          tag: requestTag || url,
+          statusCode: res.statusCode,
+          url: fullUrl
+        } as UTSJSONObject)
+
+        if (res.statusCode === 200) {
+          const responseData = res.data as UTSJSONObject
+          if (responseData['code'] === 0) {
+            resolve(responseData['data'] as UTSJSONObject)
+          } else {
+            const errMsg = (responseData['message'] as string) || '请求失败'
+            const error = new Error(errMsg)
+            if (showError) {
+              showToastOnce(errMsg)
+            }
+            reject(error)
+          }
+        } else if (res.statusCode === 401) {
+          storage.remove(STORAGE_KEYS['TOKEN'] as string)
+          if (showError) {
+            showToastOnce('请先登录')
+          }
+          reject(new Error('未授权，请重新登录'))
+        } else {
+          const errorMessage = `请求错误: ${res.statusCode}`
+          if (showError) {
+            showToastOnce(errorMessage)
+          }
+          reject(new Error(errorMessage))
+        }
+      },
+      fail(err) {
+        if (showLoading) uni.hideLoading()
+        const errMsg = err.errMsg || '网络连接失败'
+        const message = getConnectionErrorMessage(errMsg)
+        debugLog('fail', {
+          tag: requestTag || url,
+          url: fullUrl,
+          errMsg,
+          message
+        } as UTSJSONObject)
+        if (showError) {
+          showToastOnce(message)
+        }
+        reject(new Error(message))
+      }
+    })
+  })
+}
+
+export function get(url : string, params : UTSJSONObject = {} as UTSJSONObject, options : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return request({ url, method: 'GET', data: params, ...options })
+}
+
+export function post(url : string, data : UTSJSONObject = {} as UTSJSONObject, options : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return request({ url, method: 'POST', data, ...options })
+}
+
+export function put(url : string, data : UTSJSONObject = {} as UTSJSONObject, options : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return request({ url, method: 'PUT', data, ...options })
+}
+
+export function del(url : string, data : UTSJSONObject = {} as UTSJSONObject, options : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return request({ url, method: 'DELETE', data, ...options })
+}

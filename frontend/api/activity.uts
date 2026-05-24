@@ -1,0 +1,25 @@
+import { get, post, put, del } from './request'
+
+export function getActivityList(params : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return get('/activity/list', params)
+}
+
+export function getActivityDetail(activityId : string) : Promise<UTSJSONObject> {
+  return get(`/activity/detail/${activityId}`)
+}
+
+export function createActivity(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/activity/create', data)
+}
+
+export function updateActivity(activityId : string, data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return put(`/activity/update/${activityId}`, data)
+}
+
+export function deleteActivity(activityId : string) : Promise<UTSJSONObject> {
+  return del(`/activity/delete/${activityId}`)
+}
+
+export function toggleFavorite(activityId : string) : Promise<UTSJSONObject> {
+  return post(`/activity/favorite/${activityId}`)
+}

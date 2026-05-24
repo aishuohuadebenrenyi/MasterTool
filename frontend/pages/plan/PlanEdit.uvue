@@ -1,0 +1,740 @@
+<script setup>
+import { ref, computed } from 'vue'
+import { usePlanStore } from '../../stores/plan'
+import { PLAN_STATUS } from '../../utils/constants'
+import NavBar from '../../components/NavBar.uvue'
+
+const planStore = usePlanStore()
+
+const planId = ref('')
+const planName = ref('')
+const planType = ref('')
+const planPeople = ref('')
+const planClient = ref('')
+const planStatus = ref('')
+const phases = ref<Array<UTSJSONObject>>([])
+const addPhaseVisible = ref(false)
+const newPhaseName = ref('')
+const newPhaseDuration = ref('10')
+const saving = ref(false)
+
+const typeOptions = ['企业培训', '团建活动', '即兴演出', '即兴训练', '自定义']
+
+const phaseTypeList = [
+  { name: '计时练习', icon: '⏱' },
+  { name: '随机抽取', icon: '🎲' },
+  { name: '场景模拟', icon: '🎭' },
+  { name: '反思分享', icon: '📝' },
+  { name: '自定义环节', icon: '✏️' }
+] as Array<UTSJSONObject>
+
+const badgeColors = ['#4A7CF7', '#34C759', '#FF9500', '#AF52DE', '#FF3B30', '#5AC8FA', '#FFCC00', '#8E8E93']
+
+const isDraft = computed(() => {
+  return !planStatus.value || planStatus.value === PLAN_STATUS['DRAFT'] as string
+})
+
+const isConfirmed = computed(() => {
+  return planStatus.value === PLAN_STATUS['CONFIRMED'] as string
+})
+
+const isReadonly = computed(() => {
+  return planStatus.value === PLAN_STATUS['DELIVERED'] as string || planStatus.value === PLAN_STATUS['REVIEWED'] as string
+})
+
+const totalDuration = computed(() => {
+  let total = 0
+  for (let i = 0; i < phases.value.length; i++) {
+    total += (phases.value[i]['duration'] as number) || 0
+  }
+  return total
+})
+
+onLoad((options) => {
+  if (options != null && options['id'] != null) {
+    planId.value = options['id'] as string
+    loadPlan(options['id'] as string)
+  }
+})
+
+async function loadPlan(id : string) {
+  try {
+    const data = await planStore.fetchPlanDetail(id)
+    if (data != null) {
+      planName.value = (data['name'] as string) || ''
+      planType.value = (data['type'] as string) || ''
+      planPeople.value = data['people'] != null ? String(data['people']) : ''
+      planClient.value = (data['client'] as string) || ''
+      planStatus.value = (data['status'] as string) || ''
+      phases.value = (data['phases'] as Array<UTSJSONObject>) || []
+    }
+  } catch (e) {}
+}
+
+function decrementPeople() {
+  const current = parseInt(planPeople.value) || 0
+  if (current > 0) {
+    planPeople.value = String(current - 1)
+  }
+}
+
+function incrementPeople() {
+  const current = parseInt(planPeople.value) || 0
+  planPeople.value = String(current + 1)
+}
+
+function goBack() {
+  uni.navigateBack()
+}
+
+async function goPreview() {
+  if (!planId.value) {
+    await doSave(PLAN_STATUS['DRAFT'] as string)
+  }
+  if (planId.value) {
+    uni.navigateTo({ url: `/pages/plan/PlanPreview?id=${planId.value}` })
+  }
+}
+
+function showAddPhase() {
+  newPhaseName.value = ''
+  newPhaseDuration.value = '10'
+  addPhaseVisible.value = true
+}
+
+function hideAddPhase() {
+  addPhaseVisible.value = false
+}
+
+function selectPhaseType(item : UTSJSONObject) {
+  newPhaseName.value = item['name'] as string
+}
+
+function confirmAddPhase() {
+  if (!newPhaseName.value) return
+  phases.value.push({
+    name: newPhaseName.value,
+    duration: parseInt(newPhaseDuration.value) || 10,
+    type: newPhaseName.value
+  } as UTSJSONObject)
+  addPhaseVisible.value = false
+}
+
+function removePhase(index : number) {
+  phases.value.splice(index, 1)
+}
+
+function moveUp(index : number) {
+  if (index <= 0) return
+  const item = phases.value[index]
+  phases.value.splice(index, 1)
+  phases.value.splice(index - 1, 0, item)
+}
+
+function moveDown(index : number) {
+  if (index >= phases.value.length - 1) return
+  const item = phases.value[index]
+  phases.value.splice(index, 1)
+  phases.value.splice(index + 1, 0, item)
+}
+
+function getBadgeColor(index : number) : string {
+  return badgeColors[index % badgeColors.length]
+}
+
+function buildPlanData(status : string) : UTSJSONObject {
+  return {
+    name: planName.value,
+    type: planType.value,
+    people: parseInt(planPeople.value) || 0,
+    client: planClient.value,
+    phases: phases.value,
+    duration: totalDuration.value,
+    status: status
+  } as UTSJSONObject
+}
+
+async function doSave(status : string) {
+  const data = buildPlanData(status)
+  if (planId.value) {
+    await planStore.updatePlan(planId.value, data)
+  } else {
+    const result = await planStore.createPlan(data)
+    planId.value = (result['id'] as string) || ''
+  }
+}
+
+async function saveDraft() {
+  if (saving.value) return
+  saving.value = true
+  try {
+    await doSave(PLAN_STATUS['DRAFT'] as string)
+    uni.showToast({ title: '已保存草稿', icon: 'success' })
+    setTimeout(() => { uni.navigateBack() }, 500)
+  } catch (e) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
+}
+
+async function confirmPlanAction() {
+  if (saving.value) return
+  if (!planName.value) {
+    uni.showToast({ title: '请输入方案名称', icon: 'none' })
+    return
+  }
+  saving.value = true
+  try {
+    await doSave(PLAN_STATUS['CONFIRMED'] as string)
+    if (planId.value) {
+      await planStore.confirmPlan(planId.value)
+    }
+    planStatus.value = PLAN_STATUS['CONFIRMED'] as string
+    uni.showToast({ title: '方案已确认', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '确认失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
+}
+
+function startTraining() {
+  if (planId.value) {
+    uni.navigateTo({ url: `/pages/live/index?planId=${planId.value}` })
+  }
+}
+</script>
+
+<template>
+  <view class="page">
+    <NavBar title="方案编辑" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack">
+      <template #right>
+        <text class="nav-action" @click="goPreview">预览</text>
+      </template>
+    </NavBar>
+
+    <view class="content">
+      <view class="card">
+        <view class="form-item">
+          <text class="form-label">方案名称</text>
+          <input class="form-input" v-model="planName" placeholder="请输入方案名称" :disabled="isReadonly" />
+        </view>
+        <view class="form-row">
+          <view class="form-item form-item-half">
+            <text class="form-label">参与人数</text>
+            <view class="number-input">
+              <view class="number-btn" @click="!isReadonly && decrementPeople()">
+                <text class="number-btn-text">−</text>
+              </view>
+              <input class="number-field" type="number" v-model="planPeople" :disabled="isReadonly" />
+              <view class="number-btn" @click="!isReadonly && incrementPeople()">
+                <text class="number-btn-text">+</text>
+              </view>
+            </view>
+          </view>
+          <view class="form-item form-item-half">
+            <text class="form-label">客户名称</text>
+            <input class="form-input" v-model="planClient" placeholder="请输入客户名称" :disabled="isReadonly" />
+          </view>
+        </view>
+        <view class="form-item">
+          <text class="form-label">方案类型</text>
+          <view class="tag-row" v-if="planType">
+            <view class="tag-item tag-active">
+              <text class="tag-text tag-text-active">{{ planType }}</text>
+            </view>
+          </view>
+          <view class="tag-row" v-else>
+            <text class="tag-empty">未设置</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="section-header">
+          <text class="section-title">环节设置</text>
+          <text class="section-action" @click="showAddPhase" v-if="!isReadonly">+ 添加环节</text>
+        </view>
+        <view class="phase-list" v-if="phases.length > 0">
+          <view class="phase-item" v-for="(phase, index) in phases" :key="index">
+            <view class="phase-badge" :style="{ backgroundColor: getBadgeColor(index) }">
+              <text class="phase-badge-text">{{ index + 1 }}</text>
+            </view>
+            <view class="phase-info">
+              <text class="phase-name">{{ phase['name'] }}</text>
+              <text class="phase-duration">{{ phase['duration'] }}分钟</text>
+            </view>
+            <view class="phase-actions" v-if="!isReadonly">
+              <view class="phase-action-btn" @click="moveUp(index)" v-if="index > 0">
+                <text class="phase-action-icon">↑</text>
+              </view>
+              <view class="phase-action-btn" @click="moveDown(index)" v-if="index < phases.length - 1">
+                <text class="phase-action-icon">↓</text>
+              </view>
+              <view class="phase-action-btn phase-action-delete" @click="removePhase(index)">
+                <text class="phase-action-icon-delete">×</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="phase-empty" v-else>
+          <text class="phase-empty-text">暂无环节，点击上方添加</text>
+        </view>
+        <view class="phase-total" v-if="phases.length > 0">
+          <text class="phase-total-text">共 {{ phases.length }} 个环节，预计 {{ totalDuration }} 分钟</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-bar" v-if="!isReadonly">
+      <view class="btn-confirm" @click="confirmPlanAction" v-if="isDraft">
+        <text class="btn-confirm-text">✅ 确认方案</text>
+      </view>
+      <view class="btn-start" @click="startTraining" v-if="isDraft || isConfirmed">
+        <text class="btn-start-text">🚀 开始培训</text>
+      </view>
+    </view>
+
+    <view class="popup-mask" v-if="addPhaseVisible" @click="hideAddPhase">
+      <view class="popup-content" @click.stop="">
+        <view class="popup-header">
+          <text class="popup-title">添加环节</text>
+          <view class="popup-close" @click="hideAddPhase">
+            <text class="popup-close-icon">×</text>
+          </view>
+        </view>
+        <view class="popup-grid">
+          <view
+            class="popup-grid-item"
+            :class="{ 'popup-grid-item-active': newPhaseName === (item['name'] as string) }"
+            v-for="(item, idx) in phaseTypeList"
+            :key="idx"
+            @click="selectPhaseType(item)"
+          >
+            <text class="popup-grid-icon">{{ item['icon'] }}</text>
+            <text class="popup-grid-label" :class="{ 'popup-grid-label-active': newPhaseName === (item['name'] as string) }">{{ item['name'] }}</text>
+          </view>
+        </view>
+        <view class="popup-form">
+          <view class="popup-form-item">
+            <text class="popup-form-label">环节名称</text>
+            <input class="popup-form-input" v-model="newPhaseName" placeholder="请输入或选择环节类型" />
+          </view>
+          <view class="popup-form-item">
+            <text class="popup-form-label">时长(分钟)</text>
+            <input class="popup-form-input" type="number" v-model="newPhaseDuration" placeholder="10" />
+          </view>
+        </view>
+        <view class="popup-btn" @click="confirmAddPhase">
+          <text class="popup-btn-text">确认添加</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+}
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #FFFFFF;
+  border-bottom: 2rpx solid #F0F0F5;
+}
+.nav-bar-content {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  position: relative;
+}
+.nav-back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-back-icon {
+  font-size: 36rpx;
+  color: #333333;
+  font-weight: 400;
+}
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #000000;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav-action {
+  font-size: 28rpx;
+  color: #4A7CF7;
+  padding: 8rpx 16rpx;
+}
+.content {
+  padding: 24rpx 32rpx;
+  padding-bottom: 180rpx;
+}
+.card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.form-item {
+  margin-bottom: 28rpx;
+}
+.form-item:last-child {
+  margin-bottom: 0;
+}
+.form-row {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+}
+.form-item-half {
+  flex: 1;
+}
+.number-input {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 80rpx;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 16rpx;
+  background-color: #FAFAFA;
+  overflow: hidden;
+}
+.number-btn {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #F0F0F5;
+}
+.number-btn-text {
+  font-size: 32rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.number-field {
+  flex: 1;
+  height: 80rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  background-color: #FAFAFA;
+}
+.tag-empty {
+  font-size: 26rpx;
+  color: #C7C7CC;
+}
+.form-label {
+  font-size: 26rpx;
+  color: #8E8E93;
+  margin-bottom: 12rpx;
+}
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  background-color: #FAFAFA;
+}
+.tag-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.tag-item {
+  padding: 12rpx 28rpx;
+  border-radius: 32rpx;
+  background-color: #F0F0F5;
+}
+.tag-active {
+  background-color: #4A7CF7;
+}
+.tag-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.tag-text-active {
+  color: #FFFFFF;
+}
+.section-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.section-action {
+  font-size: 28rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.phase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.phase-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background-color: #FAFAFA;
+  border-radius: 16rpx;
+}
+.phase-badge {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.phase-badge-text {
+  font-size: 24rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.phase-info {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.phase-name {
+  font-size: 28rpx;
+  color: #1A1A2E;
+  font-weight: 500;
+}
+.phase-duration {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.phase-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-left: 16rpx;
+  gap: 8rpx;
+}
+.phase-action-btn {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+  background-color: #F0F0F5;
+}
+.phase-action-icon {
+  font-size: 28rpx;
+  color: #8E8E93;
+}
+.phase-action-delete {
+  background-color: #FFF0F0;
+}
+.phase-action-icon-delete {
+  font-size: 32rpx;
+  color: #FF3B30;
+}
+.phase-empty {
+  padding: 40rpx 0;
+  align-items: center;
+}
+.phase-empty-text {
+  font-size: 26rpx;
+  color: #C7C7CC;
+}
+.phase-total {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid #F0F0F5;
+}
+.phase-total-text {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background-color: #FFFFFF;
+  box-shadow: 0 -2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.btn-confirm {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+}
+.btn-confirm-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+.btn-start {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  background-color: #34C759;
+}
+.btn-start-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+.popup-content {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #FFFFFF;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 40rpx 32rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+.popup-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+}
+.popup-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.popup-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.popup-close-icon {
+  font-size: 40rpx;
+  color: #8E8E93;
+}
+.popup-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+.popup-grid-item {
+  width: calc(50% - 10rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28rpx 0;
+  border-radius: 20rpx;
+  background-color: #F5F5F7;
+  border: 2rpx solid transparent;
+}
+.popup-grid-item-active {
+  border-color: #4A7CF7;
+  background-color: #F0F3FF;
+}
+.popup-grid-icon {
+  font-size: 48rpx;
+  margin-bottom: 12rpx;
+}
+.popup-grid-label {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.popup-grid-label-active {
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.popup-form {
+  margin-bottom: 32rpx;
+}
+.popup-form-item {
+  margin-bottom: 20rpx;
+}
+.popup-form-item:last-child {
+  margin-bottom: 0;
+}
+.popup-form-label {
+  font-size: 26rpx;
+  color: #8E8E93;
+  margin-bottom: 8rpx;
+}
+.popup-form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  background-color: #FAFAFA;
+}
+.popup-btn {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+}
+.popup-btn-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+</style>

@@ -1,0 +1,21 @@
+import { get, post } from './request'
+
+export function login(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/user/login', data, { showLoading: true, loadingText: '登录中...' })
+}
+
+export function getUserProfile() : Promise<UTSJSONObject> {
+  return get('/user/profile')
+}
+
+export function updateUserProfile(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/user/profile', data)
+}
+
+export function getUserStats() : Promise<UTSJSONObject> {
+  return get('/user/stats')
+}
+
+export function submitUserFeedback(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/user/feedback', data, { showLoading: true, loadingText: '提交中...' })
+}

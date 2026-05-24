@@ -1,0 +1,17 @@
+import { get, post } from './request'
+
+export function getReviewList(params : UTSJSONObject = {} as UTSJSONObject) : Promise<UTSJSONObject> {
+  return get('/review/list', params)
+}
+
+export function getReviewDetail(reviewId : string) : Promise<UTSJSONObject> {
+  return get(`/review/detail/${reviewId}`)
+}
+
+export function startReview(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/review/start', data)
+}
+
+export function saveReview(reviewId : string, data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post(`/review/save/${reviewId}`, data)
+}

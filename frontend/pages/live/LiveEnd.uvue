@@ -1,0 +1,194 @@
+<script setup>
+import { computed, ref } from 'vue'
+import { useLiveStore } from '../../stores/live'
+
+const liveStore = useLiveStore()
+const safeAreaBottom = ref<number>(0)
+
+try {
+  const sysInfo = uni.getSystemInfoSync()
+  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
+} catch (e) {}
+
+const planName = computed(() : string => liveStore.planName || '培训')
+
+const participantCount = computed(() : number => liveStore.participants.length)
+
+const durationMinutes = computed(() : string => {
+  const d = liveStore.duration
+  if (d > 0) {
+    const mins = Math.floor(d / 60)
+    return mins > 0 ? mins + '分钟' : d + '秒'
+  }
+  if (liveStore.startTime) {
+    const elapsed = Math.floor((Date.now() - liveStore.startTime) / 1000)
+    const mins = Math.floor(elapsed / 60)
+    return mins > 0 ? mins + '分钟' : elapsed + '秒'
+  }
+  return '0分钟'
+})
+
+function goFeedback() {
+  uni.navigateTo({ url: '/pages/feedback/index' })
+}
+
+function goReview() {
+  if (liveStore.planId) {
+    uni.navigateTo({ url: `/pages/review/ReviewDetail?planId=${liveStore.planId}` })
+  } else {
+    uni.navigateTo({ url: '/pages/review/ReviewCenter' })
+  }
+}
+
+function goDataDetail() {
+  if (liveStore.sessionId) {
+    uni.navigateTo({ url: `/pages/mine/DataDetail?sessionId=${liveStore.sessionId}` })
+  } else {
+    uni.navigateTo({ url: '/pages/mine/DataDetail' })
+  }
+}
+
+function goHome() {
+  liveStore.reset()
+  uni.switchTab({ url: '/pages/home/index' })
+}
+</script>
+
+<template>
+  <view class="page">
+    <view class="end-container" :style="{ paddingBottom: (safeAreaBottom + 32) + 'px' }">
+      <view class="end-icon-wrap">
+        <text class="end-icon">🎉</text>
+      </view>
+
+      <text class="end-title">培训已结束</text>
+      <text class="end-subtitle">{{ planName }}</text>
+
+      <view class="stats-card">
+        <view class="stat-item">
+          <text class="stat-value">{{ participantCount }}</text>
+          <text class="stat-label">参与人数</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value">{{ durationMinutes }}</text>
+          <text class="stat-label">培训时长</text>
+        </view>
+      </view>
+
+      <view class="action-list">
+        <view class="action-btn action-btn-primary" @click="goFeedback">
+          <text class="action-btn-text">📝 收集反馈</text>
+        </view>
+        <view class="action-btn action-btn-secondary" @click="goReview">
+          <text class="action-btn-text">🔄 开始复盘</text>
+        </view>
+        <view class="action-btn action-btn-secondary" @click="goDataDetail">
+          <text class="action-btn-text">📊 查看数据</text>
+        </view>
+        <view class="action-btn action-btn-ghost" @click="goHome">
+          <text class="action-btn-text-ghost">返回首页</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+}
+.end-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 48rpx 60rpx;
+}
+.end-icon-wrap {
+  margin-bottom: 32rpx;
+}
+.end-icon {
+  font-size: 96rpx;
+}
+.end-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 12rpx;
+}
+.end-subtitle {
+  font-size: 28rpx;
+  color: #8E8E93;
+  margin-bottom: 48rpx;
+}
+.stats-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 36rpx 48rpx;
+  margin-bottom: 48rpx;
+  width: 100%;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stat-value {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #4A7CF7;
+  margin-bottom: 8rpx;
+}
+.stat-label {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background-color: #F0F0F0;
+}
+.action-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.action-btn {
+  width: 100%;
+  height: 96rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-btn-primary {
+  background-color: #4A7CF7;
+}
+.action-btn-secondary {
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+.action-btn-ghost {
+  background-color: transparent;
+}
+.action-btn-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.action-btn-secondary .action-btn-text {
+  color: #1A1A2E;
+}
+.action-btn-text-ghost {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #8E8E93;
+}
+</style>

@@ -1,0 +1,801 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { usePlanStore } from '../../stores/plan'
+import { useActivityStore } from '../../stores/activity'
+import { PLAN_STATUS_LABELS, getPlanTypeLabel, ACTIVITY_SCENE_LABELS } from '../../utils/constants'
+import { calcNavBarInfo } from '../../utils/navbar'
+
+const planStore = usePlanStore()
+const activityStore = useActivityStore()
+
+const navBarInfo = calcNavBarInfo()
+const statusBarHeight = navBarInfo['statusBarHeight'] as number
+const contentHeight = navBarInfo['contentHeight'] as number
+const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
+const prepareHeaderHeight = statusBarHeight + Math.max(contentHeight, 104)
+
+const activeTab = ref<string>('plans')
+const planSearch = ref<string>('')
+const activitySearch = ref<string>('')
+const planTypeFilter = ref<string>('全部')
+const planStatusFilter = ref<string>('全部')
+const activitySceneFilter = ref<string>('全部')
+
+const planTypes = ['全部', '企业培训', '团建活动', '即兴演出', '即兴培训'] as string[]
+const planStatuses = ['全部', '草稿', '已确认', '已交付', '已复盘'] as string[]
+const activityScenes = ['全部', '团队融合', '协作沟通', '领导力', '创新思维', '通用'] as string[]
+
+const filteredPlans = computed(() => {
+  let list = planStore.plans
+  if (planSearch.value) {
+    const q = planSearch.value.toLowerCase()
+    list = list.filter(p => {
+      const name = ((p['name'] as string) || '').toLowerCase()
+      const client = (((p['client'] as string) || (p['clientName'] as string) || '') as string).toLowerCase()
+      return name.includes(q) || client.includes(q)
+    })
+  }
+  if (planTypeFilter.value !== '全部') {
+    list = list.filter(p => getPlanTypeLabel(p['type'] as string) === planTypeFilter.value)
+  }
+  if (planStatusFilter.value !== '全部') {
+    const statusMap = { '草稿': 'draft', '已确认': 'confirmed', '已交付': 'delivered', '已复盘': 'reviewed' } as UTSJSONObject
+    list = list.filter(p => (p['status'] as string) === (statusMap[planStatusFilter.value] as string))
+  }
+  return list
+})
+
+const filteredActivities = computed(() => {
+  let list = activityStore.activities
+  if (activitySearch.value) {
+    const q = activitySearch.value.toLowerCase()
+    list = list.filter(a => {
+      const name = ((a['name'] as string) || '').toLowerCase()
+      const goal = ((a['learningGoal'] as string) || (a['objective'] as string) || '').toLowerCase()
+      const guide = ((a['reviewGuide'] as string) || '').toLowerCase()
+      return name.includes(q) || goal.includes(q) || guide.includes(q)
+    })
+  }
+  if (activitySceneFilter.value !== '全部') {
+    list = list.filter(a => {
+      const scenes = ((a['scenes'] as Array<string>) || []) as Array<string>
+      return scenes.includes(activitySceneFilter.value) || (a['category'] as string) === activitySceneFilter.value
+    })
+  }
+  return list
+})
+
+function switchTab(tab : string) {
+  activeTab.value = tab
+  if (tab === 'plans' && planStore.plans.length === 0) {
+    planStore.fetchPlans()
+  } else if (tab === 'activities' && activityStore.activities.length === 0) {
+    ensureActivitiesLoaded()
+  }
+}
+
+function goPlanDetail(plan : UTSJSONObject) {
+  const status = plan['status'] as string
+  const planId = plan['id'] as string
+  if (status === 'delivered' || status === 'reviewed') {
+    uni.navigateTo({ url: `/pages/plan/PlanPreview?id=${planId}` })
+  } else {
+    uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${planId}` })
+  }
+}
+
+const showTemplateSelect = ref<boolean>(false)
+
+const templateList : Array<UTSJSONObject> = [
+  { key: 'corporate', icon: '🎯', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', tools: '✋👥🏆🧰' },
+  { key: 'teambuilding', icon: '🎉', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', tools: '👥🏆💬🧰' },
+  { key: 'improv_show', icon: '🎭', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', tools: '🎲⏱🔊🧰' },
+  { key: 'improv_training', icon: '🏋️', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', tools: '⏱🎲🧰' }
+]
+
+function goPlanCreate() {
+  showTemplateSelect.value = true
+}
+
+function closeTemplateSelect() {
+  showTemplateSelect.value = false
+}
+
+function getTemplatePhases(key : string) : Array<UTSJSONObject> {
+  if (key === 'corporate') {
+    return [
+      { name: '开场连接', time: 15, color: '#FF6B35', icon: '🤝' },
+      { name: '主题导入', time: 20, color: '#007AFF', icon: '⚡' },
+      { name: '深度探索', time: 40, color: '#5856D6', icon: '🔍' },
+      { name: '实践应用', time: 30, color: '#34C759', icon: '💡' },
+      { name: '总结收束', time: 15, color: '#FF9500', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  } else if (key === 'teambuilding') {
+    return [
+      { name: '破冰热身', time: 20, color: '#FF6B35', icon: '🤝' },
+      { name: '团队挑战', time: 60, color: '#007AFF', icon: '⚡' },
+      { name: '分享庆祝', time: 20, color: '#34C759', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  } else if (key === 'improv_show') {
+    return [
+      { name: '暖场互动', time: 10, color: '#FF6B35', icon: '🤝' },
+      { name: '即兴表演', time: 40, color: '#5856D6', icon: '🎭' },
+      { name: '观众互动', time: 15, color: '#007AFF', icon: '💬' },
+      { name: '谢幕总结', time: 5, color: '#34C759', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  } else if (key === 'improv_training') {
+    return [
+      { name: '热身练习', time: 10, color: '#FF6B35', icon: '🤝' },
+      { name: '技能训练', time: 30, color: '#007AFF', icon: '⚡' },
+      { name: '综合练习', time: 30, color: '#5856D6', icon: '🔍' }
+    ] as Array<UTSJSONObject>
+  }
+  return [] as Array<UTSJSONObject>
+}
+
+async function createFromTemplate(tpl : UTSJSONObject) {
+  showTemplateSelect.value = false
+  const key = tpl['key'] as string
+  const name = '新' + (tpl['name'] as string) + '方案'
+  try {
+    const result = await planStore.createPlan({
+      name: name,
+      type: key,
+      status: 'draft',
+      people: 20,
+      phases: getTemplatePhases(key)
+    } as UTSJSONObject)
+    const planId = (result as UTSJSONObject)['id'] as string
+    uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${planId}` })
+    uni.showToast({ title: '方案已创建', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '创建失败', icon: 'none' })
+  }
+}
+
+function goActivityDetail(activityId : string) {
+  uni.navigateTo({ url: `/pages/plan/ActivityDetail?id=${activityId}` })
+}
+
+function goLiveStart(planId : string) {
+  uni.navigateTo({ url: `/pages/live/index?planId=${planId}` })
+}
+
+function getDifficultyClass(intensity : string) : string {
+  if (intensity === 'low') return 'difficulty-easy'
+  if (intensity === 'medium') return 'difficulty-medium'
+  return 'difficulty-hard'
+}
+
+function getDifficultyText(intensity : string) : string {
+  if (intensity === 'low') return '简单'
+  if (intensity === 'medium') return '中等'
+  return '困难'
+}
+
+const mockActivities : Array<UTSJSONObject> = [
+  { id: 'a1', name: '盲人方阵', category: '协作沟通', intensity: 'medium', duration: 30, minPeople: 8, maxPeople: 15, isFavorite: false, isCustom: true, objective: '提升团队沟通与协作能力', scenes: ['团队融合', '协作沟通'] } as UTSJSONObject,
+  { id: 'a2', name: '极速60秒', category: '创新思维', intensity: 'medium', duration: 45, minPeople: 10, maxPeople: 20, isFavorite: true, isCustom: true, objective: '培养团队分工与信息共享能力', scenes: ['团队融合', '创新思维'] } as UTSJSONObject,
+  { id: 'a3', name: '信任背摔', category: '团队融合', intensity: 'high', duration: 20, minPeople: 8, maxPeople: 12, isFavorite: false, isCustom: false, objective: '建立团队信任感', riskLevel: '高', scenes: ['团队融合'] } as UTSJSONObject,
+  { id: 'a4', name: '即兴故事接龙', category: '创新思维', intensity: 'low', duration: 15, minPeople: 5, maxPeople: 15, isFavorite: true, isCustom: false, objective: '激发创造力与倾听能力', scenes: ['创新思维', '情绪管理'] } as UTSJSONObject,
+  { id: 'a5', name: '情绪天气预报', category: '情绪管理', intensity: 'low', duration: 10, minPeople: 8, maxPeople: 20, isFavorite: false, isCustom: false, objective: '觉察和表达情绪状态', scenes: ['情绪管理'] } as UTSJSONObject,
+  { id: 'a6', name: '领导力沙盘', category: '领导力', intensity: 'high', duration: 60, minPeople: 6, maxPeople: 12, isFavorite: false, isCustom: false, objective: '体验不同领导风格的效果', scenes: ['领导力', '协作沟通'] } as UTSJSONObject
+]
+
+async function ensureActivitiesLoaded() {
+  const list = await activityStore.fetchActivities()
+  if (list.length === 0) {
+    activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
+    console.log('[prepare.ensureActivitiesLoaded]', 'use_mock_activities')
+  }
+}
+
+async function toggleActivityFavorite(id : string) {
+  try {
+    await activityStore.toggleFavorite(id)
+  } catch (e) {}
+}
+
+const swipeOffset = ref<UTSJSONObject>({})
+
+function onTouchStart(e : TouchEvent, activityId : string) {
+  const touch = e.touches[0]
+  swipeOffset.value[activityId] = { startX: touch.clientX, currentX: 0, isOpen: false } as UTSJSONObject
+}
+
+function onTouchMove(e : TouchEvent, activityId : string) {
+  const touch = e.touches[0]
+  const startData = swipeOffset.value[activityId] as UTSJSONObject | null
+  if (!startData) return
+  const startX = startData['startX'] as number
+  const diff = touch.clientX - startX
+  if (diff < 0) {
+    startData['currentX'] = diff
+  }
+}
+
+function onTouchEnd(activityId : string) {
+  const startData = swipeOffset.value[activityId] as UTSJSONObject | null
+  if (!startData) return
+  const currentX = startData['currentX'] as number
+  const activity = filteredActivities.value.find((a : UTSJSONObject) : boolean => (a['id'] as string) === activityId)
+  const isCustom = activity ? (activity['isCustom'] as boolean) : false
+  const threshold = isCustom ? -120 : -60
+  startData['isOpen'] = currentX < threshold
+  if (!startData['isOpen']) {
+    startData['currentX'] = 0
+  }
+}
+
+function getSwipeTransform(activityId : string) : string {
+  const startData = swipeOffset.value[activityId] as UTSJSONObject | null
+  if (!startData) return 'translateX(0)'
+  const isOpen = startData['isOpen'] as boolean
+  const activity = filteredActivities.value.find((a : UTSJSONObject) : boolean => (a['id'] as string) === activityId)
+  const custom = activity ? (activity['isCustom'] as boolean) : false
+  if (isOpen) {
+    return custom ? 'translateX(-180px)' : 'translateX(-60px)'
+  }
+  const currentX = startData['currentX'] as number
+  if (currentX < 0) {
+    return 'translateX(' + currentX + 'px)'
+  }
+  return 'translateX(0)'
+}
+
+function closeSwipe(activityId : string) {
+  const startData = swipeOffset.value[activityId] as UTSJSONObject | null
+  if (startData) {
+    startData['isOpen'] = false
+    startData['currentX'] = 0
+  }
+}
+
+function handleSwipeAction(action : string, activity : UTSJSONObject) {
+  const activityId = activity['id'] as string
+  closeSwipe(activityId)
+  if (action === 'edit') {
+    uni.navigateTo({ url: `/pages/plan/ActivityEdit?id=${activityId}` })
+  } else if (action === 'pin') {
+    uni.showToast({ title: '已置顶', icon: 'success' })
+  } else if (action === 'fav') {
+    toggleActivityFavorite(activityId)
+  }
+}
+
+onMounted(() => {
+  planStore.fetchPlans()
+  ensureActivitiesLoaded().catch(() => {
+    activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
+  })
+})
+</script>
+
+<template>
+  <view class="page">
+    <view class="nav-bar-fixed" :style="{ minHeight: prepareHeaderHeight + 'px', paddingTop: statusBarHeight + 'px', paddingLeft: '32rpx', paddingRight: (rightSafeWidth + 12) + 'px' }">
+      <view class="sub-tab-bar">
+        <view class="sub-tab" :class="{ 'sub-tab-active': activeTab === 'plans' }" @click="switchTab('plans')">
+          <text class="sub-tab-text" :class="{ 'sub-tab-text-active': activeTab === 'plans' }">我的方案</text>
+        </view>
+        <view class="sub-tab" :class="{ 'sub-tab-active': activeTab === 'activities' }" @click="switchTab('activities')">
+          <text class="sub-tab-text" :class="{ 'sub-tab-text-active': activeTab === 'activities' }">活动库</text>
+        </view>
+      </view>
+    </view>
+    <view :style="{ height: prepareHeaderHeight + 'px' }"></view>
+
+    <view class="content" v-if="activeTab === 'plans'">
+      <view class="section-header-row">
+        <text></text>
+        <text class="section-action" @click="goPlanCreate">+ 新建方案</text>
+      </view>
+      <view class="search-bar">
+        <input class="search-input" type="text" placeholder="搜索方案名称或客户名" v-model="planSearch" />
+      </view>
+      <scroll-view class="filter-scroll" scroll-x>
+        <view class="filter-row">
+          <view class="filter-item" :class="{ 'filter-active': planTypeFilter === item }" v-for="(item, idx) in planTypes" :key="idx" @click="planTypeFilter = item">
+            <text class="filter-text" :class="{ 'filter-text-active': planTypeFilter === item }">{{ item }}</text>
+          </view>
+        </view>
+      </scroll-view>
+      <scroll-view class="filter-scroll" scroll-x>
+        <view class="filter-row">
+          <view class="filter-item" :class="{ 'filter-active': planStatusFilter === item }" v-for="(item, idx) in planStatuses" :key="idx" @click="planStatusFilter = item">
+            <text class="filter-text" :class="{ 'filter-text-active': planStatusFilter === item }">{{ item }}</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="plan-list">
+        <view class="plan-card" v-for="plan in filteredPlans" :key="plan['id']" @click="goPlanDetail(plan)">
+          <view class="plan-card-row">
+            <text class="plan-name">{{ plan['name'] as string }}</text>
+            <view class="plan-type-badge">
+              <text class="plan-type-badge-text">{{ getPlanTypeLabel(plan['type'] as string) }}</text>
+            </view>
+          </view>
+          <view class="plan-meta-row">
+            <text class="plan-meta">{{ getPlanTypeLabel(plan['type'] as string) }} · {{ plan['people'] }}人 · {{ plan['duration'] }}分钟</text>
+          </view>
+          <view class="plan-card-footer">
+            <view :class="['status-tag', 'status-' + (plan['status'] as string)]">
+              <text class="status-text">{{ PLAN_STATUS_LABELS[plan['status'] as string] || plan['status'] }}</text>
+            </view>
+            <view class="plan-card-actions" v-if="plan['status'] === 'confirmed'">
+              <view class="btn-start" @click.stop="goLiveStart(plan['id'] as string)">
+                <text class="btn-start-text">开课</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="empty" v-if="filteredPlans.length === 0 && !planStore.loading">
+        <image class="empty-icon-image" src="/static/icons/empty-plan.svg" mode="aspectFit" />
+        <text class="empty-text">暂无方案</text>
+        <view class="btn-create" @click="goPlanCreate">
+          <text class="btn-create-text">+ 新建方案</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="content" v-if="activeTab === 'activities'">
+      <view class="section-header-row">
+        <text></text>
+        <text class="section-action" @click="uni.navigateTo({ url: '/pages/plan/ActivityEdit' })">+ 新增活动</text>
+      </view>
+      <view class="search-bar">
+        <input class="search-input" type="text" placeholder="搜索活动名称或关键词" v-model="activitySearch" />
+      </view>
+      <scroll-view class="filter-scroll" scroll-x>
+        <view class="filter-row">
+          <view class="filter-item" :class="{ 'filter-active': activitySceneFilter === item }" v-for="(item, idx) in activityScenes" :key="idx" @click="activitySceneFilter = item">
+            <text class="filter-text" :class="{ 'filter-text-active': activitySceneFilter === item }">{{ item }}</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="activity-list">
+        <view class="swipe-container" v-for="activity in filteredActivities" :key="activity['id']">
+          <view class="swipe-actions" v-if="(activity['isCustom'] as boolean)">
+            <view class="swipe-btn swipe-btn-edit" @click="handleSwipeAction('edit', activity)">
+              <text class="swipe-btn-icon">✏️</text>
+            </view>
+            <view class="swipe-btn swipe-btn-pin" @click="handleSwipeAction('pin', activity)">
+              <text class="swipe-btn-icon">📌</text>
+            </view>
+            <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
+              <text class="swipe-btn-icon">{{ (activity['isFavorite'] as boolean) ? '❤️' : '🤍' }}</text>
+            </view>
+          </view>
+          <view class="swipe-actions swipe-actions-single" v-else>
+            <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
+              <text class="swipe-btn-icon">{{ (activity['isFavorite'] as boolean) ? '❤️' : '🤍' }}</text>
+            </view>
+          </view>
+          <view class="swipe-content"
+            :style="{ transform: getSwipeTransform(activity['id'] as string) }"
+            @touchstart="onTouchStart($event, activity['id'] as string)"
+            @touchmove="onTouchMove($event, activity['id'] as string)"
+            @touchend="onTouchEnd(activity['id'] as string)"
+          >
+            <view class="activity-card" @click="goActivityDetail(activity['id'] as string)">
+              <view class="activity-card-header">
+                <text class="activity-name">{{ activity['name'] as string }}</text>
+                <view :class="['difficulty-tag', getDifficultyClass(activity['intensity'] as string)]">
+                  <text class="difficulty-text">{{ getDifficultyText(activity['intensity'] as string) }}</text>
+                </view>
+              </view>
+              <view class="activity-meta">
+                <text class="activity-meta-text">{{ activity['duration'] }}分钟</text>
+                <text class="activity-meta-dot">·</text>
+                <text class="activity-meta-text">{{ activity['minPeople'] }}-{{ activity['maxPeople'] }}人</text>
+              </view>
+              <view class="activity-card-footer">
+                <view class="activity-tags">
+                  <view class="activity-tag">
+                  <text class="activity-tag-text">{{ ACTIVITY_SCENE_LABELS[activity['category'] as string] || activity['category'] }}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="empty" v-if="filteredActivities.length === 0 && !activityStore.loading">
+        <text class="empty-icon">🎭</text>
+        <text class="empty-text">暂无活动</text>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showTemplateSelect }" @click="closeTemplateSelect">
+      <view class="popup-mask"></view>
+      <view class="popup-container" :class="{ 'popup-container-visible': showTemplateSelect }" @click.stop="">
+        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
+        <view class="popup-header">
+          <text class="popup-title">选择模板</text>
+          <view class="popup-close" @click="closeTemplateSelect"><text class="popup-close-icon">✕</text></view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view class="template-modal-item" v-for="(tpl, idx) in templateList" :key="idx" @click="createFromTemplate(tpl)">
+            <view class="template-modal-icon-box">
+              <text class="template-modal-icon">{{ tpl['icon'] }}</text>
+            </view>
+            <view class="template-modal-info">
+              <view class="template-modal-name-row">
+                <text class="template-modal-name">{{ tpl['name'] }}</text>
+                <view class="template-modal-tag">
+                  <text class="template-modal-tag-text">{{ tpl['tag'] }}</text>
+                </view>
+              </view>
+              <text class="template-modal-desc">{{ tpl['desc'] }}</text>
+              <text class="template-modal-tools">工具：{{ tpl['tools'] }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+}
+.nav-bar-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.nav-bar-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.sub-tab-bar {
+  display: flex;
+  flex-direction: row;
+  background-color: #F0F0F5;
+  border-radius: 40rpx;
+  padding: 6rpx;
+  margin: 16rpx 0 0;
+  width: 100%;
+  max-width: 560rpx;
+}
+.sub-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx;
+  border-radius: 36rpx;
+}
+.sub-tab-active {
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.sub-tab-text {
+  font-size: 28rpx;
+  color: #8E8E93;
+  font-weight: 500;
+}
+.sub-tab-text-active {
+  color: #1A1A2E;
+  font-weight: 600;
+}
+.content {
+  padding: 16rpx 32rpx 40rpx;
+}
+.section-header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.section-action {
+  font-size: 28rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.search-bar {
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+.search-input {
+  width: 100%;
+  display: block;
+  padding: 20rpx 32rpx;
+  border: none;
+  border-radius: 40rpx;
+  background-color: #FFFFFF;
+  font-size: 28rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+.filter-scroll {
+  margin-bottom: 16rpx;
+  width: 100%;
+  white-space: nowrap;
+}
+.filter-row {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 16rpx;
+  padding-bottom: 8rpx;
+  padding-right: 32rpx;
+}
+.filter-item {
+  flex-shrink: 0;
+  padding: 12rpx 32rpx;
+  border-radius: 32rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.filter-active {
+  background-color: #4A7CF7;
+}
+.filter-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.filter-text-active {
+  color: #FFFFFF;
+}
+.plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.plan-card {
+  background-color: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0,0,0,0.06);
+}
+.plan-card-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+.plan-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  flex: 1;
+  margin-right: 16rpx;
+}
+.plan-type-badge {
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+  flex-shrink: 0;
+}
+.plan-type-badge-text {
+  font-size: 22rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.plan-meta-row {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 16rpx;
+}
+.plan-meta {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.plan-card-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.status-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+}
+.status-draft { background-color: #FFF7E6; }
+.status-sent { background-color: #E6F7FF; }
+.status-confirmed { background-color: #E6F7FF; }
+.status-delivered { background-color: #F6FFED; }
+.status-reviewed { background-color: #F9F0FF; }
+.status-text { font-size: 22rpx; }
+.status-draft .status-text { color: #FA8C16; }
+.status-sent .status-text { color: #1890FF; }
+.status-confirmed .status-text { color: #1890FF; }
+.status-delivered .status-text { color: #34C759; }
+.status-reviewed .status-text { color: #722ED1; }
+.plan-card-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+.btn-start {
+  background-color: #4A7CF7;
+  padding: 12rpx 40rpx;
+  border-radius: 16rpx;
+}
+.btn-start-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+.swipe-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.swipe-actions-single {
+  width: 60px;
+}
+.swipe-btn {
+  width: 60px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swipe-btn-icon {
+  font-size: 32rpx;
+}
+.swipe-btn-edit {
+  background-color: #4A7CF7;
+}
+.swipe-btn-pin {
+  background-color: #FF9500;
+}
+.swipe-btn-fav {
+  background-color: #FF2D55;
+}
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s ease;
+  background-color: #FFFFFF;
+}
+.activity-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.activity-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+.activity-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  flex: 1;
+  margin-right: 16rpx;
+}
+.difficulty-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+}
+.difficulty-easy { background-color: #E8F8EE; }
+.difficulty-medium { background-color: #FFF4E5; }
+.difficulty-hard { background-color: #FFE5E5; }
+.difficulty-text { font-size: 22rpx; }
+.difficulty-easy .difficulty-text { color: #34C759; }
+.difficulty-medium .difficulty-text { color: #FF9500; }
+.difficulty-hard .difficulty-text { color: #FF3B30; }
+.activity-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
+}
+.activity-meta-text {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.activity-meta-dot {
+  font-size: 24rpx;
+  color: #C7C7CC;
+}
+.activity-card-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.activity-tags {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+}
+.activity-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  background-color: #F0F0F5;
+}
+.activity-tag-text {
+  font-size: 22rpx;
+  color: #8E8E93;
+}
+.empty {
+  padding: 120rpx 32rpx 64rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+.empty-icon-image {
+  width: 128rpx;
+  height: 128rpx;
+  margin-bottom: 20rpx;
+}
+.empty-text {
+  font-size: 28rpx;
+  color: #8E8E93;
+  margin-bottom: 24rpx;
+}
+.btn-create {
+  display: inline-flex;
+  background-color: #4A7CF7;
+  padding: 16rpx 48rpx;
+  border-radius: 24rpx;
+}
+.btn-create-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+}
+.popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 999; pointer-events: none; }
+.popup-overlay-visible { pointer-events: auto; }
+.popup-mask { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s ease; }
+.popup-overlay-visible .popup-mask { opacity: 1; }
+.popup-container { position: absolute; left: 0; right: 0; bottom: 118rpx; max-height: 60vh; background-color: #FFFFFF; border-radius: 32rpx 32rpx 0 0; transform: translateY(120%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
+.popup-container-visible { transform: translateY(0); }
+.popup-handle-bar { display: flex; justify-content: center; padding: 16rpx 0 8rpx; }
+.popup-handle { width: 64rpx; height: 8rpx; border-radius: 4rpx; background-color: #D1D1D6; }
+.popup-header { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 16rpx 40rpx 20rpx; border-bottom-width: 1rpx; border-bottom-style: solid; border-bottom-color: #F0F0F0; }
+.popup-title { font-size: 34rpx; font-weight: 600; color: #1A1A2E; }
+.popup-close { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; }
+.popup-close-icon { font-size: 32rpx; color: #8E8E93; }
+.popup-body { flex: 1; padding: 24rpx 40rpx 136rpx; overflow-y: auto; }
+.template-modal-item { display: flex; flex-direction: row; align-items: flex-start; padding: 24rpx; background-color: #F8F9FE; border-radius: 16rpx; margin-bottom: 16rpx; }
+.template-modal-item:last-child { margin-bottom: 0; }
+.template-modal-icon-box { width: 72rpx; height: 72rpx; border-radius: 16rpx; background-color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-right: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); flex-shrink: 0; }
+.template-modal-icon { font-size: 36rpx; }
+.template-modal-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
+.template-modal-name-row { display: flex; flex-direction: row; align-items: center; gap: 12rpx; }
+.template-modal-name { font-size: 30rpx; font-weight: 600; color: #1A1A2E; }
+.template-modal-tag { padding: 2rpx 14rpx; border-radius: 8rpx; background-color: rgba(74,124,247,0.1); }
+.template-modal-tag-text { font-size: 22rpx; color: #4A7CF7; font-weight: 500; }
+.template-modal-desc { font-size: 24rpx; color: #8E8E93; }
+.template-modal-tools { font-size: 22rpx; color: #C7C7CC; }
+</style>

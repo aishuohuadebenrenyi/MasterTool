@@ -1,0 +1,112 @@
+@import './variables.scss';
+
+.btn-primary {
+  background: linear-gradient(135deg, $brand-primary, $brand-primary-light);
+  color: $text-inverse;
+  border: none;
+  border-radius: $radius-lg;
+  padding: 24rpx 48rpx;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  text-align: center;
+
+  &:active {
+    opacity: 0.85;
+  }
+
+  &.btn-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.btn-secondary {
+  background: $bg-primary;
+  color: $brand-primary;
+  border: 2rpx solid $brand-primary;
+  border-radius: $radius-lg;
+  padding: 22rpx 46rpx;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  text-align: center;
+
+  &:active {
+    background: rgba($brand-primary, 0.05);
+  }
+}
+
+.card {
+  background: $bg-primary;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-sm;
+  margin-bottom: $spacing-md;
+}
+
+.section-title {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 12rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  font-weight: 600;
+
+  &.badge-primary {
+    background: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+  }
+
+  &.badge-success {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.badge-warning {
+    background: rgba($warning-color, 0.1);
+    color: $warning-color;
+  }
+
+  &.badge-error {
+    background: rgba($error-color, 0.1);
+    color: $error-color;
+  }
+}
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  font-weight: 500;
+
+  &.status-draft {
+    background: rgba($text-tertiary, 0.1);
+    color: $text-tertiary;
+  }
+
+  &.status-confirmed {
+    background: rgba($info-color, 0.1);
+    color: $info-color;
+  }
+
+  &.status-delivered {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.status-reviewed {
+    background: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+  }
+}

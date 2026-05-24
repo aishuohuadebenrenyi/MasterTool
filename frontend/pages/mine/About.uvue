@@ -1,0 +1,184 @@
+<script setup>
+import { ref } from 'vue'
+
+const appName = ref<string>('培训师工具箱')
+const version = ref<string>('1.0.0')
+const description = ref<string>('专为即兴培训师打造的专业工具，提供备课、现场控制、复盘分析等全流程支持，助力每一次培训精彩呈现。')
+
+function openPrivacy() {
+  uni.showModal({
+    title: '隐私政策',
+    content: '我们仅在提供培训准备、现场交付、反馈收集与复盘分析服务所需范围内处理必要数据，具体以正式上线版本政策为准。',
+    showCancel: false
+  })
+}
+
+function openTerms() {
+  uni.showModal({
+    title: '用户协议',
+    content: '使用本工具即表示你同意将其用于合法合规的培训场景，并妥善保管培训数据与参与者信息。',
+    showCancel: false
+  })
+}
+</script>
+
+<template>
+  <view class="page">
+    <view class="navbar">
+      <view class="navbar-back" @click="uni.navigateBack()">
+        <text class="navbar-back-icon">‹</text>
+      </view>
+      <text class="navbar-title">关于</text>
+      <view class="navbar-placeholder"></view>
+    </view>
+
+    <scroll-view class="content" scroll-y>
+      <view class="app-info-card">
+        <view class="app-icon">
+          <text class="app-icon-text">培</text>
+        </view>
+        <text class="app-name">{{ appName }}</text>
+        <text class="app-version">版本 {{ version }}</text>
+        <text class="app-desc">{{ description }}</text>
+      </view>
+
+      <view class="section-card">
+        <view class="link-item" @click="openPrivacy">
+          <text class="link-label">隐私政策</text>
+          <text class="link-arrow">›</text>
+        </view>
+        <view class="link-item link-item-last" @click="openTerms">
+          <text class="link-label">用户协议</text>
+          <text class="link-arrow">›</text>
+        </view>
+      </view>
+
+      <view class="footer">
+        <text class="footer-text">© 2026 培训师工具箱</text>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+}
+.navbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 24rpx;
+  padding-top: 44rpx;
+  background-color: #4A7CF7;
+}
+.navbar-back {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.navbar-back-icon {
+  font-size: 44rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+.navbar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.navbar-placeholder {
+  width: 72rpx;
+}
+.content {
+  flex: 1;
+  padding: 24rpx;
+}
+.app-info-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 48rpx 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.app-icon {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 28rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+.app-icon-text {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.app-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 8rpx;
+}
+.app-version {
+  font-size: 26rpx;
+  color: #8E8E93;
+  margin-bottom: 24rpx;
+}
+.app-desc {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 44rpx;
+  text-align: center;
+}
+.section-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 0 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+.link-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+.link-item-last {
+  border-bottom: none;
+}
+.link-label {
+  font-size: 30rpx;
+  color: #1A1A2E;
+}
+.link-arrow {
+  font-size: 32rpx;
+  color: #C7C7CC;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx 0 48rpx;
+}
+.footer-text {
+  font-size: 24rpx;
+  color: #C7C7CC;
+}
+</style>

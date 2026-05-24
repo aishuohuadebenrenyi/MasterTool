@@ -1,0 +1,126 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import * as activityApi from '../api/activity'
+
+export const useActivityStore = defineStore('activity', () => {
+  const activities = ref<Array<UTSJSONObject>>([])
+  const currentActivity = ref<UTSJSONObject | null>(null)
+  const loading = ref<boolean>(false)
+  const error = ref<string>('')
+  const filters = ref<UTSJSONObject>({
+    category: '',
+    keyword: ''
+  })
+
+  async function fetchActivities(params : UTSJSONObject = {} as UTSJSONObject) {
+    loading.value = true
+    try {
+      const data = await activityApi.getActivityList({ ...filters.value, ...params })
+      activities.value = data.list || []
+      error.value = ''
+      return activities.value
+    } catch (e : unknown) {
+      activities.value = []
+      error.value = (e instanceof Error ? e.message : '获取活动列表失败')
+      console.log('[activityStore.fetchActivities]', error.value)
+      return [] as Array<UTSJSONObject>
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchActivityDetail(activityId : string) {
+    loading.value = true
+    try {
+      const data = await activityApi.getActivityDetail(activityId)
+      currentActivity.value = data
+      return data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createActivity(activityData : UTSJSONObject) {
+    try {
+      loading.value = true
+      const data = await activityApi.createActivity(activityData)
+      activities.value.unshift(data)
+      error.value = ''
+      return data
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '创建活动失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateActivity(activityId : string, activityData : UTSJSONObject) {
+    try {
+      loading.value = true
+      const data = await activityApi.updateActivity(activityId, activityData)
+      const index = activities.value.findIndex(a => (a['id'] as string) === activityId)
+      if (index !== -1) {
+        activities.value[index] = { ...activities.value[index], ...data }
+      }
+      error.value = ''
+      return data
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '更新活动失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteActivity(activityId : string) {
+    try {
+      loading.value = true
+      await activityApi.deleteActivity(activityId)
+      activities.value = activities.value.filter(a => (a['id'] as string) !== activityId)
+      error.value = ''
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '删除活动失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function toggleFavorite(activityId : string) {
+    try {
+      loading.value = true
+      const data = await activityApi.toggleFavorite(activityId)
+      const index = activities.value.findIndex(a => (a['id'] as string) === activityId)
+      if (index !== -1) {
+        activities.value[index]['isFavorite'] = !(activities.value[index]['isFavorite'] as boolean)
+      }
+      error.value = ''
+      return data
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '切换收藏失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function setFilters(newFilters : UTSJSONObject) {
+    filters.value = { ...filters.value, ...newFilters }
+  }
+
+  return {
+    activities,
+    currentActivity,
+    loading,
+    error,
+    filters,
+    fetchActivities,
+    fetchActivityDetail,
+    createActivity,
+    updateActivity,
+    deleteActivity,
+    toggleFavorite,
+    setFilters
+  }
+})

@@ -1,0 +1,54 @@
+<script>
+import { useUserStore } from './stores/user'
+import { API_BASE_URL } from './utils/constants'
+
+function isMpWeixinRuntime() {
+  try {
+    const sysInfo = uni.getSystemInfoSync()
+    return ((sysInfo || {})['uniPlatform']) === 'mp-weixin'
+  } catch (e) {
+    return false
+  }
+}
+
+function shouldSkipDevAutoLogin() {
+  if (!API_BASE_URL) {
+    return true
+  }
+  if (isMpWeixinRuntime()) {
+    return API_BASE_URL.indexOf('localhost') !== -1 || API_BASE_URL.indexOf('127.0.0.1') !== -1
+  }
+  return false
+}
+
+export default {
+  onLaunch() {
+    console.log('App Launch')
+    const userStore = useUserStore()
+    userStore.restoreSession()
+    if (!userStore.isLoggedIn) {
+      if (shouldSkipDevAutoLogin()) {
+        console.log('Skip dev auto-login:', API_BASE_URL || 'empty_base_url')
+        return
+      }
+      userStore.login({ code: 'dev_test', nickname: '张培训' } as UTSJSONObject).then(() => {
+        console.log('Dev auto-login success')
+      }).catch((e) => {
+        console.log('Dev auto-login failed:', e)
+      })
+    }
+  },
+  onShow() {
+    console.log('App Show')
+  },
+  onHide() {
+    console.log('App Hide')
+  }
+}
+</script>
+
+<style>
+page {
+  background-color: #F5F5F5;
+}
+</style>

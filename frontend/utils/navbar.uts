@@ -1,0 +1,108 @@
+export function calcNavBarInfo() : UTSJSONObject {
+  let statusBarHeight : number = 0
+  let navBarHeight : number = 44
+  let contentHeight : number = 44
+  let menuButtonTop : number = 0
+  let menuButtonHeight : number = 0
+  let menuButtonWidth : number = 0
+  let menuButtonRight : number = 0
+  let menuButtonLeft : number = 0
+  let screenWidth : number = 375
+  const defaultRightSafeWidth : number = 96
+  let rightSafeWidth : number = defaultRightSafeWidth
+  let leftSafeWidth : number = 88
+  let capsuleGap : number = 8
+  let isMpWeixin : boolean = false
+
+  try {
+    const sysInfo = uni.getSystemInfoSync()
+    statusBarHeight = sysInfo.statusBarHeight || 0
+    screenWidth = sysInfo.screenWidth || 375
+    const uniPlatform = (sysInfo as UTSJSONObject)['uniPlatform'] as string | null
+    isMpWeixin = uniPlatform === 'mp-weixin'
+  } catch (e) {}
+
+  if (statusBarHeight === 0) {
+    try {
+      const windowInfo = (uni as unknown as UTSJSONObject)['getWindowInfo'] as (() => UTSJSONObject) | null
+      if (windowInfo != null) {
+        const info = windowInfo()
+        statusBarHeight = (info['statusBarHeight'] as number) || 0
+        screenWidth = (info['screenWidth'] as number) || screenWidth
+      }
+    } catch (e) {}
+  }
+
+  try {
+    const menuButton = (uni as unknown as UTSJSONObject)['getMenuButtonBoundingClientRect'] as (() => UTSJSONObject) | null
+    if (menuButton != null) {
+      const btn = menuButton()
+      menuButtonTop = (btn['top'] as number) || 0
+      menuButtonHeight = (btn['height'] as number) || 0
+      menuButtonWidth = (btn['width'] as number) || 0
+      menuButtonRight = (btn['right'] as number) || 0
+      menuButtonLeft = (btn['left'] as number) || 0
+      if (menuButtonHeight > 0) {
+        const menuButtonBottom : number = menuButtonTop + menuButtonHeight
+        navBarHeight = menuButtonBottom + (menuButtonTop - statusBarHeight)
+        contentHeight = navBarHeight - statusBarHeight
+      }
+    }
+  } catch (e) {
+    navBarHeight = statusBarHeight + 44
+    contentHeight = 44
+  }
+
+  if (navBarHeight === 44 && statusBarHeight > 0) {
+    navBarHeight = statusBarHeight + 44
+    contentHeight = 44
+  }
+
+  const capsuleMarginRight : number = menuButtonRight > 0 ? Math.max(screenWidth - menuButtonRight, capsuleGap) : capsuleGap
+  const capsuleOccupiedWidth : number = menuButtonLeft > 0 ? Math.max(screenWidth - menuButtonLeft + capsuleGap, defaultRightSafeWidth) : defaultRightSafeWidth
+  rightSafeWidth = capsuleOccupiedWidth
+  leftSafeWidth = Math.max(88, capsuleMarginRight + menuButtonWidth)
+  const contentTopOffset : number = navBarHeight + 12
+  const titleLeft : number = leftSafeWidth
+  const titleRight : number = rightSafeWidth
+  const navHorizontalPadding : number = 16
+
+  try {
+    if (isMpWeixin) {
+      console.log('[navbar]', JSON.stringify({
+        statusBarHeight,
+        navBarHeight,
+        contentHeight,
+        menuButtonTop,
+        menuButtonHeight,
+        menuButtonWidth,
+        menuButtonLeft,
+        menuButtonRight,
+        leftSafeWidth,
+        rightSafeWidth
+      }))
+    }
+  } catch (e) {}
+
+  return {
+    statusBarHeight,
+    navBarHeight,
+    contentHeight,
+    menuButtonTop,
+    menuButtonHeight,
+    menuButtonWidth,
+    menuButtonRight,
+    menuButtonLeft: capsuleMarginRight,
+    capsuleLeft: menuButtonLeft,
+    capsuleRight: menuButtonRight,
+    capsuleWidth: menuButtonWidth,
+    capsuleHeight: menuButtonHeight,
+    leftSafeWidth,
+    rightSafeWidth,
+    contentTopOffset,
+    titleLeft,
+    titleRight,
+    navHorizontalPadding,
+    isMpWeixin
+  } as UTSJSONObject
+}

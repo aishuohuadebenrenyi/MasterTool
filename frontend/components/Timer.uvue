@@ -1,0 +1,138 @@
+<script setup>
+import { ref, computed, onUnmounted } from 'vue'
+
+const props = defineProps({
+  seconds: {
+    type: Number,
+    default: 0
+  },
+  autoStart: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['complete', 'tick'])
+
+const remaining = ref<number>(props.seconds)
+const isRunning = ref<boolean>(false)
+let intervalId = null
+
+const display = computed(() => {
+  const mins = Math.floor(remaining.value / 60)
+  const secs = remaining.value % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+})
+
+const progress = computed(() => {
+  if (props.seconds <= 0) return 0
+  return ((props.seconds - remaining.value) / props.seconds) * 100
+})
+
+function start() {
+  if (isRunning.value) return
+  isRunning.value = true
+  intervalId = setInterval(() => {
+    if (remaining.value <= 0) {
+      stop()
+      emit('complete')
+      return
+    }
+    remaining.value--
+    emit('tick', remaining.value)
+  }, 1000)
+}
+
+function stop() {
+  isRunning.value = false
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+}
+
+function reset() {
+  stop()
+  remaining.value = props.seconds
+}
+
+onUnmounted(() => {
+  stop()
+})
+
+if (props.autoStart) {
+  start()
+}
+</script>
+
+<template>
+  <view class="timer">
+    <text class="timer-display" :class="{ running: isRunning }">{{ display }}</text>
+    <view class="timer-bar">
+      <view class="timer-bar-fill" :style="{ width: progress + '%' }"></view>
+    </view>
+    <view class="timer-controls">
+      <view v-if="!isRunning" class="timer-btn start" @click="start">开始</view>
+      <view v-else class="timer-btn pause" @click="stop">暂停</view>
+      <view class="timer-btn reset" @click="reset">重置</view>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-lg;
+}
+.timer-display {
+  font-size: 80rpx;
+  font-weight: 700;
+  color: $text-primary;
+  font-variant-numeric: tabular-nums;
+
+  &.running {
+    color: $brand-primary;
+  }
+}
+.timer-bar {
+  width: 100%;
+  height: 8rpx;
+  background: $bg-tertiary;
+  border-radius: $radius-round;
+  margin: $spacing-md 0;
+  overflow: hidden;
+}
+.timer-bar-fill {
+  height: 100%;
+  background: $brand-primary;
+  border-radius: $radius-round;
+  transition: width 1s linear;
+}
+.timer-controls {
+  display: flex;
+  gap: $spacing-md;
+}
+.timer-btn {
+  padding: 16rpx 40rpx;
+  border-radius: $radius-lg;
+  font-size: $font-size-md;
+  font-weight: 600;
+
+  &.start {
+    background: $brand-primary;
+    color: $text-inverse;
+  }
+
+  &.pause {
+    background: $warning-color;
+    color: $text-inverse;
+  }
+
+  &.reset {
+    background: $bg-tertiary;
+    color: $text-secondary;
+  }
+}
+</style>

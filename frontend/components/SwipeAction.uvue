@@ -1,0 +1,71 @@
+<script setup>
+import { ref } from 'vue'
+
+const props = defineProps({
+  threshold: {
+    type: Number,
+    default: 80
+  }
+})
+
+const emit = defineEmits(['swipeLeft', 'swipeRight'])
+
+const offsetX = ref<number>(0)
+const startX = 0
+const isSwiping = ref<boolean>(false)
+
+function onTouchStart(e) {
+  const touch = e.touches?.[0] || e
+  startX = touch.clientX
+  isSwiping.value = true
+  offsetX.value = 0
+}
+
+function onTouchMove(e) {
+  if (!isSwiping.value) return
+  const touch = e.touches?.[0] || e
+  const deltaX = touch.clientX - startX
+  offsetX.value = Math.max(-props.threshold * 1.5, Math.min(0, deltaX))
+}
+
+function onTouchEnd() {
+  if (!isSwiping.value) return
+  isSwiping.value = false
+
+  if (Math.abs(offsetX.value) >= props.threshold) {
+    emit('swipeLeft')
+  }
+  offsetX.value = 0
+}
+</script>
+
+<template>
+  <view class="swipe-action" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
+    <view class="swipe-content" :style="{ transform: `translateX(${offsetX}px)` }">
+      <slot></slot>
+    </view>
+    <view class="swipe-actions">
+      <slot name="actions"></slot>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.swipe-action {
+  position: relative;
+  overflow: hidden;
+}
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+.swipe-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+}
+</style>

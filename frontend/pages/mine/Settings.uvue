@@ -1,0 +1,206 @@
+<script setup>
+import { computed, onMounted } from 'vue'
+import { useConfigStore } from '../../stores/config'
+
+const configStore = useConfigStore()
+
+const swipeRight = computed<boolean>(() => configStore.swipeNextEnabled)
+const swipeLeft = computed<boolean>(() => configStore.swipePrevEnabled)
+const doubleTapDelay = computed<boolean>(() => configStore.doubleTapDelayEnabled)
+const timerSound = computed<boolean>(() => configStore.soundEnabled)
+const autoSave = computed<boolean>(() => configStore.autoSaveNotes)
+
+function toggleSwipeRight() {
+  configStore.toggleSwipeNext()
+}
+function toggleSwipeLeft() {
+  configStore.toggleSwipePrev()
+}
+function toggleDoubleTapDelay() {
+  configStore.toggleDoubleTapDelay()
+}
+function toggleTimerSound() {
+  configStore.toggleSound()
+}
+function toggleAutoSave() {
+  configStore.toggleAutoSave()
+}
+
+onMounted(() => {
+  configStore.restoreConfig()
+})
+</script>
+
+<template>
+  <view class="page">
+    <view class="navbar">
+      <view class="navbar-back" @click="uni.navigateBack()">
+        <text class="navbar-back-icon">‹</text>
+      </view>
+      <text class="navbar-title">设置</text>
+      <view class="navbar-placeholder"></view>
+    </view>
+
+    <scroll-view class="content" scroll-y>
+      <view class="section-card">
+        <text class="section-title">手势控制</text>
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-label">右滑推进</text>
+            <text class="setting-desc">向右滑动推进到下一步</text>
+          </view>
+          <view :class="['toggle', swipeRight ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeRight">
+            <view class="toggle-thumb"></view>
+          </view>
+        </view>
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-label">左滑回退</text>
+            <text class="setting-desc">向左滑动回退到上一步</text>
+          </view>
+          <view :class="['toggle', swipeLeft ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeLeft">
+            <view class="toggle-thumb"></view>
+          </view>
+        </view>
+        <view class="setting-item setting-item-last">
+          <view class="setting-info">
+            <text class="setting-label">双击延时</text>
+            <text class="setting-desc">双击屏幕启动延时计时</text>
+          </view>
+          <view :class="['toggle', doubleTapDelay ? 'toggle-on' : 'toggle-off']" @click="toggleDoubleTapDelay">
+            <view class="toggle-thumb"></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="section-card">
+        <text class="section-title">其他</text>
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-label">计时器声音</text>
+            <text class="setting-desc">倒计时结束时播放提示音</text>
+          </view>
+          <view :class="['toggle', timerSound ? 'toggle-on' : 'toggle-off']" @click="toggleTimerSound">
+            <view class="toggle-thumb"></view>
+          </view>
+        </view>
+        <view class="setting-item setting-item-last">
+          <view class="setting-info">
+            <text class="setting-label">自动保存</text>
+            <text class="setting-desc">自动保存培训记录和进度</text>
+          </view>
+          <view :class="['toggle', autoSave ? 'toggle-on' : 'toggle-off']" @click="toggleAutoSave">
+            <view class="toggle-thumb"></view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+}
+.navbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 24rpx;
+  padding-top: 44rpx;
+  background-color: #4A7CF7;
+}
+.navbar-back {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.navbar-back-icon {
+  font-size: 44rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+.navbar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.navbar-placeholder {
+  width: 72rpx;
+}
+.content {
+  flex: 1;
+  padding: 24rpx;
+}
+.section-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.section-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8E8E93;
+  margin-bottom: 16rpx;
+}
+.setting-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+.setting-item-last {
+  border-bottom: none;
+}
+.setting-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.setting-label {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+}
+.setting-desc {
+  font-size: 24rpx;
+  color: #8E8E93;
+  margin-top: 4rpx;
+}
+.toggle {
+  width: 96rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  padding: 4rpx;
+  transition: background-color 0.3s;
+}
+.toggle-on {
+  background-color: #4A7CF7;
+  justify-content: flex-end;
+}
+.toggle-off {
+  background-color: #E5E5EA;
+  justify-content: flex-start;
+}
+.toggle-thumb {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+</style>

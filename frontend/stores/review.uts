@@ -1,0 +1,74 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import * as reviewApi from '../api/review'
+
+export const useReviewStore = defineStore('review', () => {
+  const reviews = ref<Array<UTSJSONObject>>([])
+  const currentReview = ref<UTSJSONObject | null>(null)
+  const loading = ref<boolean>(false)
+  const error = ref<string>('')
+
+  async function fetchReviews(params : UTSJSONObject) {
+    loading.value = true
+    try {
+      const data = await reviewApi.getReviewList(params)
+      reviews.value = data.list || []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchReviewDetail(reviewId : string) {
+    loading.value = true
+    try {
+      const data = await reviewApi.getReviewDetail(reviewId)
+      currentReview.value = data
+      return data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function startReview(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await reviewApi.startReview(data)
+      currentReview.value = result
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '开始复盘失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function saveReview(reviewId : string, data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await reviewApi.saveReview(reviewId, data)
+      if (currentReview.value?.id === reviewId) {
+        currentReview.value = { ...currentReview.value, ...result }
+      }
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '保存复盘失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    reviews,
+    currentReview,
+    loading,
+    error,
+    fetchReviews,
+    fetchReviewDetail,
+    startReview,
+    saveReview
+  }
+})

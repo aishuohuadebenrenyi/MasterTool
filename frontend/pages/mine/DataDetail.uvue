@@ -1,0 +1,400 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useUserStore } from '../../stores/user'
+import { usePlanStore } from '../../stores/plan'
+import * as feedbackApi from '../../api/feedback'
+
+const userStore = useUserStore()
+const planStore = usePlanStore()
+
+const rangeType = ref<string>('6个月')
+const monthlyStats = ref<Array<UTSJSONObject>>([] as Array<UTSJSONObject>)
+const sceneStats = ref<Array<UTSJSONObject>>([] as Array<UTSJSONObject>)
+const loading = ref<boolean>(false)
+
+const totalSessions = computed<number>(() => (userStore.stats?.['totalSessions'] as number) || 0)
+const totalParticipants = computed<number>(() => (userStore.stats?.['totalParticipants'] as number) || 0)
+const avgSatisfaction = computed<string>(() => String((userStore.stats?.['avgSatisfaction'] as number) || 0))
+
+function setRange(range : string) {
+  rangeType.value = range
+  buildCharts()
+}
+
+function getCutoffMonthCount() : number {
+  return rangeType.value === '6个月' ? 6 : 12
+}
+
+function buildMonthKey(date : Date) : string {
+  const month = date.getMonth() + 1
+  const monthText = month < 10 ? `0${month}` : `${month}`
+  return `${date.getFullYear()}-${monthText}`
+}
+
+async function buildCharts() {
+  const months = getCutoffMonthCount()
+  const monthMap : UTSJSONObject = {} as UTSJSONObject
+  const sceneMap : UTSJSONObject = {} as UTSJSONObject
+  const plans = planStore.plans
+  const now = new Date()
+
+  for (let i = months - 1; i >= 0; i--) {
+    const current = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    monthMap[buildMonthKey(current)] = {
+      month: buildMonthKey(current),
+      satisfaction: 0,
+      nps: 0,
+      count: 0
+    } as UTSJSONObject
+  }
+
+  for (let i = 0; i < plans.length; i++) {
+    const plan = plans[i]
+    const rawDate = ((plan['updatedAt'] as string) || (plan['createdAt'] as string) || '') as string
+    const planDate = rawDate ? new Date(rawDate) : now
+    const monthKey = buildMonthKey(new Date(planDate.getFullYear(), planDate.getMonth(), 1))
+    const bucket = monthMap[monthKey] as UTSJSONObject | null
+    if (bucket != null) {
+      bucket['count'] = ((bucket['count'] as number) || 0) + 1
+      const sessionId = (plan['sessionId'] as string) || ''
+      if (sessionId.length > 0) {
+        try {
+          const stats = await feedbackApi.getFeedbackStats(sessionId)
+          bucket['satisfaction'] = ((bucket['satisfaction'] as number) || 0) + Number(stats['avgSatisfaction'] || 0)
+          bucket['nps'] = ((bucket['nps'] as number) || 0) + Number(stats['nps'] || 0)
+        } catch (_e : unknown) {
+        }
+      }
+    }
+    const scenes = ((plan['scenes'] as Array<string>) || []) as Array<string>
+    for (let j = 0; j < scenes.length; j++) {
+      const scene = scenes[j]
+      sceneMap[scene] = ((sceneMap[scene] as number) || 0) + 1
+    }
+  }
+
+  monthlyStats.value = Object.values(monthMap).map((item : unknown) => {
+    const row = item as UTSJSONObject
+    const count = (row['count'] as number) || 0
+    return {
+      month: row['month'],
+      satisfaction: count > 0 ? (((row['satisfaction'] as number) || 0) / count).toFixed(1) : '0.0',
+      nps: count > 0 ? Math.round((((row['nps'] as number) || 0) / count)) : 0,
+      count,
+      barWidth: Math.max(12, count * 18)
+    } as UTSJSONObject
+  })
+
+  sceneStats.value = Object.keys(sceneMap).map((key : string) => ({
+    name: key,
+    count: sceneMap[key] as number
+  } as UTSJSONObject)).sort((a : UTSJSONObject, b : UTSJSONObject) => ((b['count'] as number) || 0) - ((a['count'] as number) || 0))
+}
+
+async function loadData() {
+  loading.value = true
+  try {
+    if (userStore.isLoggedIn) {
+      await userStore.fetchStats()
+    }
+    await planStore.fetchPlans()
+    await buildCharts()
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
+</script>
+
+<template>
+  <view class="page">
+    <view class="navbar">
+      <view class="navbar-back" @click="uni.navigateBack()">
+        <text class="navbar-back-icon">‹</text>
+      </view>
+      <text class="navbar-title">数据详情</text>
+      <view class="navbar-placeholder"></view>
+    </view>
+
+    <view class="range-toggle">
+      <view
+        :class="['range-btn', rangeType === '6个月' ? 'range-btn-active' : '']"
+        @click="setRange('6个月')"
+      >
+        <text :class="['range-btn-text', rangeType === '6个月' ? 'range-btn-text-active' : '']">6个月</text>
+      </view>
+      <view
+        :class="['range-btn', rangeType === '12个月' ? 'range-btn-active' : '']"
+        @click="setRange('12个月')"
+      >
+        <text :class="['range-btn-text', rangeType === '12个月' ? 'range-btn-text-active' : '']">12个月</text>
+      </view>
+    </view>
+
+    <scroll-view class="content" scroll-y>
+      <view class="stats-row">
+        <view class="stats-card">
+          <text class="stats-card-value">{{ totalSessions }}</text>
+          <text class="stats-card-label">总培训场次</text>
+        </view>
+        <view class="stats-card">
+          <text class="stats-card-value">{{ totalParticipants }}</text>
+          <text class="stats-card-label">累计参与人数</text>
+        </view>
+      </view>
+
+      <view class="stats-row">
+        <view class="stats-card">
+          <text class="stats-card-value">{{ avgSatisfaction }}</text>
+          <text class="stats-card-label">平均满意度</text>
+        </view>
+        <view class="stats-card">
+          <text class="stats-card-value">{{ rangeType }}</text>
+          <text class="stats-card-label">当前观察区间</text>
+        </view>
+      </view>
+
+      <view class="chart-card">
+        <text class="chart-card-title">满意度趋势</text>
+        <view v-if="loading" class="chart-placeholder">
+          <text class="chart-placeholder-text">正在加载趋势数据...</text>
+        </view>
+        <view v-else-if="monthlyStats.length === 0" class="chart-placeholder">
+          <text class="chart-placeholder-text">暂无趋势数据</text>
+        </view>
+        <view v-else class="chart-list">
+          <view v-for="item in monthlyStats" :key="item['month']" class="chart-row">
+            <text class="chart-row-label">{{ item['month'] }}</text>
+            <view class="chart-bar-track">
+              <view class="chart-bar-fill" :style="{ width: item['barWidth'] + 'rpx' }"></view>
+            </view>
+            <text class="chart-row-value">{{ item['satisfaction'] }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="chart-card">
+        <text class="chart-card-title">NPS趋势</text>
+        <view v-if="loading" class="chart-placeholder">
+          <text class="chart-placeholder-text">正在加载趋势数据...</text>
+        </view>
+        <view v-else-if="monthlyStats.length === 0" class="chart-placeholder">
+          <text class="chart-placeholder-text">暂无趋势数据</text>
+        </view>
+        <view v-else class="chart-list">
+          <view v-for="item in monthlyStats" :key="item['month'] + '_nps'" class="chart-row">
+            <text class="chart-row-label">{{ item['month'] }}</text>
+            <view class="chart-bar-track">
+              <view class="chart-bar-fill chart-bar-fill-green" :style="{ width: Math.max(12, Number(item['nps']) * 2) + 'rpx' }"></view>
+            </view>
+            <text class="chart-row-value">{{ item['nps'] }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="chart-card">
+        <text class="chart-card-title">场景分布</text>
+        <view v-if="loading" class="chart-placeholder">
+          <text class="chart-placeholder-text">正在加载场景数据...</text>
+        </view>
+        <view v-else-if="sceneStats.length === 0" class="chart-placeholder">
+          <text class="chart-placeholder-text">暂无场景分布数据</text>
+        </view>
+        <view v-else class="scene-list">
+          <view v-for="item in sceneStats" :key="item['name']" class="scene-row">
+            <text class="scene-name">{{ item['name'] }}</text>
+            <text class="scene-count">{{ item['count'] }} 次</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+}
+.navbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 24rpx;
+  padding-top: 44rpx;
+  background-color: #4A7CF7;
+}
+.navbar-back {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.navbar-back-icon {
+  font-size: 44rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+.navbar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.navbar-placeholder {
+  width: 72rpx;
+}
+.range-toggle {
+  display: flex;
+  flex-direction: row;
+  margin: 24rpx 24rpx 0;
+  background-color: #FFFFFF;
+  border-radius: 999rpx;
+  padding: 6rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.range-btn {
+  flex: 1;
+  padding: 16rpx 0;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.range-btn-active {
+  background-color: #4A7CF7;
+}
+.range-btn-text {
+  font-size: 28rpx;
+  color: #666666;
+}
+.range-btn-text-active {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.content {
+  flex: 1;
+  padding: 24rpx;
+}
+.stats-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+.stats-card {
+  flex: 1;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.stats-card-value {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #4A7CF7;
+}
+.stats-card-label {
+  font-size: 24rpx;
+  color: #8E8E93;
+  margin-top: 8rpx;
+}
+.chart-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.chart-card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 20rpx;
+}
+.chart-placeholder {
+  height: 320rpx;
+  background-color: #F8F9FA;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx dashed #E5E5EA;
+}
+.chart-placeholder-text {
+  font-size: 28rpx;
+  color: #C7C7CC;
+}
+.chart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+.chart-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+.chart-row-label {
+  width: 120rpx;
+  font-size: 24rpx;
+  color: #666666;
+}
+.chart-bar-track {
+  flex: 1;
+  height: 18rpx;
+  border-radius: 999rpx;
+  background-color: #EEF2FF;
+  overflow: hidden;
+}
+.chart-bar-fill {
+  height: 18rpx;
+  border-radius: 999rpx;
+  background-color: #4A7CF7;
+}
+.chart-bar-fill-green {
+  background-color: #34C759;
+}
+.chart-row-value {
+  width: 80rpx;
+  text-align: right;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.scene-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FA;
+}
+.scene-name {
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.scene-count {
+  font-size: 24rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
+</style>

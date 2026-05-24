@@ -1,0 +1,51 @@
+<script setup>
+defineProps({
+  plan: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+defineEmits(['click', 'edit', 'delete'])
+</script>
+
+<template>
+  <view class="plan-card" @click="$emit('click', plan)">
+    <view class="plan-header">
+      <text class="plan-name">{{ plan.name }}</text>
+      <view :class="['status-tag', `status-${plan.status}`]">{{ plan.statusLabel }}</view>
+    </view>
+    <view class="plan-info">
+      <text class="plan-meta">{{ plan.typeLabel }} · {{ plan.people }}人</text>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.plan-card {
+  background: $bg-primary;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-sm;
+}
+.plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+.plan-name {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: $text-primary;
+}
+.plan-info {
+  display: flex;
+  align-items: center;
+}
+.plan-meta {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+</style>

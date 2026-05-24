@@ -1,0 +1,60 @@
+<script setup>
+defineProps({
+  time: {
+    type: String,
+    default: '00:00'
+  },
+  progress: {
+    type: Number,
+    default: 0
+  },
+  isRunning: {
+    type: Boolean,
+    default: false
+  }
+})
+
+defineEmits(['start', 'pause', 'reset'])
+</script>
+
+<template>
+  <view class="timer-display">
+    <text class="timer-time" :class="{ active: isRunning }">{{ time }}</text>
+    <view class="timer-progress">
+      <view class="progress-bar" :style="{ width: progress + '%' }"></view>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-lg;
+}
+.timer-time {
+  font-size: 80rpx;
+  font-weight: 700;
+  color: $text-primary;
+  font-variant-numeric: tabular-nums;
+
+  &.active {
+    color: $brand-primary;
+  }
+}
+.timer-progress {
+  width: 100%;
+  height: 8rpx;
+  background: $bg-tertiary;
+  border-radius: $radius-round;
+  margin-top: $spacing-md;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: $brand-primary;
+  border-radius: $radius-round;
+  transition: width 0.3s ease;
+}
+</style>

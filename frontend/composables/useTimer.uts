@@ -1,0 +1,75 @@
+import { ref, computed, onUnmounted } from 'vue'
+import { formatCountdown } from '../utils/format'
+
+type TimerOptions = {
+  onComplete ?: () => void
+  autoStart ?: boolean
+}
+
+export function useTimer(initialSeconds : number = 0, options : TimerOptions = {} as TimerOptions) {
+  const { onComplete, autoStart = false } = options
+
+  const seconds = ref<number>(initialSeconds)
+  const totalSeconds = ref<number>(initialSeconds)
+  const isRunning = ref<boolean>(false)
+  let intervalId : number | null = null
+
+  const display = computed<string>(() => formatCountdown(seconds.value))
+
+  const progress = computed<number>(() => {
+    if (totalSeconds.value <= 0) return 0
+    return ((totalSeconds.value - seconds.value) / totalSeconds.value) * 100
+  })
+
+  function start() {
+    if (isRunning.value) return
+    isRunning.value = true
+    intervalId = setInterval(() => {
+      if (seconds.value <= 1) {
+        seconds.value = 0
+        stop()
+        onComplete?.()
+        return
+      }
+      seconds.value--
+    }, 1000)
+  }
+
+  function stop() {
+    isRunning.value = false
+    if (intervalId) {
+      clearInterval(intervalId)
+      intervalId = null
+    }
+  }
+
+  function reset(newSeconds : number | null = null) {
+    stop()
+    const target = newSeconds ?? totalSeconds.value
+    totalSeconds.value = target
+    seconds.value = target
+  }
+
+  function addTime(extraSeconds : number) {
+    seconds.value += extraSeconds
+  }
+
+  onUnmounted(() => {
+    stop()
+  })
+
+  if (autoStart) {
+    start()
+  }
+
+  return {
+    seconds,
+    isRunning,
+    display,
+    progress,
+    start,
+    stop,
+    reset,
+    addTime
+  }
+}

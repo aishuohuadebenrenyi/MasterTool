@@ -1,0 +1,78 @@
+import { computed } from 'vue'
+import { usePlanStore } from '../stores/plan'
+import { PLAN_STATUS, TODO_TYPES } from '../utils/constants'
+
+type TodoItem = {
+  id : string
+  type : string
+  planId : string
+  planName : string
+  title : string
+  action : string
+  status : string
+}
+
+export function useTodoList() {
+  const planStore = usePlanStore()
+
+  const todoItems = computed<Array<TodoItem>>(() => {
+    const items : TodoItem[] = []
+
+    planStore.draftPlans.forEach(plan => {
+      items.push({
+        id: `draft_${plan.id}`,
+        type: TODO_TYPES.DRAFT_PLAN,
+        planId: plan.id,
+        planName: plan.name,
+        title: `方案待确认：${plan.name}`,
+        action: 'confirmPlan',
+        status: plan.status
+      })
+    })
+
+    planStore.confirmedPlans.forEach(plan => {
+      items.push({
+        id: `confirmed_${plan.id}`,
+        type: TODO_TYPES.CONFIRMED_PLAN,
+        planId: plan.id,
+        planName: plan.name,
+        title: `待交付：${plan.name}`,
+        action: 'startLive',
+        status: plan.status
+      })
+    })
+
+    planStore.deliveredPlans.forEach(plan => {
+      items.push({
+        id: `delivered_${plan.id}`,
+        type: TODO_TYPES.DELIVERED_PLAN,
+        planId: plan.id,
+        planName: plan.name,
+        title: `待复盘：${plan.name}`,
+        action: 'startReview',
+        status: plan.status
+      })
+    })
+
+    planStore.reviewedPlans.forEach(plan => {
+      items.push({
+        id: `reviewed_${plan.id}`,
+        type: TODO_TYPES.REVIEWED_PLAN,
+        planId: plan.id,
+        planName: plan.name,
+        title: `可重新复盘：${plan.name}`,
+        action: 'restartReview',
+        status: plan.status
+      })
+    })
+
+    return items
+  })
+
+  const todoCount = computed<number>(() => todoItems.value.length)
+
+  return {
+    todoItems,
+    todoCount
+  }
+}

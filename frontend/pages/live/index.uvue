@@ -1,0 +1,1842 @@
+<script setup>
+import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import { useLiveStore } from '../../stores/live'
+import { usePlanStore } from '../../stores/plan'
+import { useConfigStore } from '../../stores/config'
+import NavBar from '../../components/NavBar.uvue'
+import ConfirmDialog from '../../components/ConfirmDialog.uvue'
+import TimerDisplay from './components/TimerDisplay.uvue'
+import ToolButton from './components/ToolButton.uvue'
+import * as noteApi from '../../api/note'
+import { calcNavBarInfo } from '../../utils/navbar'
+
+const liveStore = useLiveStore()
+const planStore = usePlanStore()
+const configStore = useConfigStore()
+const navBarInfo = calcNavBarInfo()
+const navBarHeight = navBarInfo['navBarHeight'] as number
+
+const templateId = ref<string>('')
+const peopleCount = ref<number>(30)
+
+const showExitDialog = ref<boolean>(false)
+
+const safeAreaBottom = ref<number>(0)
+try {
+  const sysInfo = uni.getSystemInfoSync()
+  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
+} catch (e) {}
+
+const timerSeconds = ref<number>(0)
+const timerRunning = ref<boolean>(false)
+let timerInterval : number | null = null
+let timerTapTimeout : number | null = null
+const touchStartX = ref<number>(0)
+const touchStartY = ref<number>(0)
+const lastTouchTime = ref<number>(0)
+
+const planName = computed<string>(() => liveStore.planName || (planStore.currentPlan ? (planStore.currentPlan['name'] as string) : '培训现场'))
+
+const phases = computed<Array<UTSJSONObject>>(() => {
+  const plan = planStore.currentPlan
+  if (plan && plan['phases']) {
+    return plan['phases'] as Array<UTSJSONObject>
+  }
+  return [
+    { name: '开场' },
+    { name: '破冰' },
+    { name: '主体' },
+    { name: '总结' }
+  ] as Array<UTSJSONObject>
+})
+
+const currentPhaseIndex = computed<number>(() => liveStore.currentPhaseIndex)
+
+const currentPhaseName = computed<string>(() => {
+  const list = phases.value
+  if (list.length === 0) return '准备中'
+  const idx = currentPhaseIndex.value
+  if (idx >= 0 && idx < list.length) {
+    return (list[idx]['name'] as string) || '进行中'
+  }
+  return '进行中'
+})
+
+const reminders = computed<Array<string>>(() => {
+  const list = phases.value
+  const idx = currentPhaseIndex.value
+  if (idx >= 0 && idx < list.length && list[idx]['reminders']) {
+    return list[idx]['reminders'] as Array<string>
+  }
+  return ['注意时间控制', '关注参与者状态', '保持互动节奏']
+})
+
+const timerDisplay = computed<string>(() => {
+  const mins = Math.floor(timerSeconds.value / 60)
+  const secs = timerSeconds.value % 60
+  const m = mins < 10 ? '0' + mins : '' + mins
+  const s = secs < 10 ? '0' + secs : '' + secs
+  return m + ':' + s
+})
+
+const timerProgress = computed<number>(() => {
+  const total = phaseDurationSeconds.value
+  if (total <= 0) return 0
+  const elapsed = total - timerSeconds.value
+  return Math.min((elapsed / total) * 100, 100)
+})
+
+const phaseDurationSeconds = computed<number>(() => {
+  const list = phases.value
+  const idx = currentPhaseIndex.value
+  if (idx >= 0 && idx < list.length) {
+    const phase = list[idx]
+    if (phase['time']) {
+      return (phase['time'] as number) * 60
+    }
+  }
+  return 900
+})
+
+const canPrev = computed<boolean>(() => currentPhaseIndex.value > 0)
+const canNext = computed<boolean>(() => currentPhaseIndex.value < phases.value.length - 1)
+
+const quickTools = computed<Array<UTSJSONObject>>(() => {
+  const tid = templateId.value || 'corporate'
+  if (tid === 'teambuilding') {
+    return [
+      { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
+      { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
+      { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
+      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+    ]
+  } else if (tid === 'improv_show') {
+    return [
+      { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
+      { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
+      { key: 'sound', icon: '🔊', name: '音效' } as UTSJSONObject,
+      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+    ]
+  } else if (tid === 'improv_training') {
+    return [
+      { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
+      { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
+      { key: 'note', icon: '📝', name: '笔记' } as UTSJSONObject,
+      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+    ]
+  }
+  return [
+    { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
+    { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
+    { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
+    { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+  ]
+})
+
+const checkinSheet = ref<boolean>(false)
+const groupSheet = ref<boolean>(false)
+const scoreSheet = ref<boolean>(false)
+const pickSheet = ref<boolean>(false)
+const interactSheet = ref<boolean>(false)
+const soundSheet = ref<boolean>(false)
+const standaloneTimerSheet = ref<boolean>(false)
+const noteSheet = ref<boolean>(false)
+const showToolbox = ref<boolean>(false)
+
+const allTools : Array<UTSJSONObject> = [
+  { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
+  { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
+  { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
+  { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
+  { key: 'interact', icon: '🤝', name: '互动' } as UTSJSONObject,
+  { key: 'sound', icon: '🔊', name: '音效' } as UTSJSONObject,
+  { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
+  { key: 'note', icon: '📝', name: '笔记' } as UTSJSONObject
+]
+
+function closeToolbox() {
+  showToolbox.value = false
+}
+
+function openToolFromToolbox(tool : UTSJSONObject) {
+  showToolbox.value = false
+  const key = tool['key'] as string
+  if (key === 'checkin') checkinSheet.value = true
+  else if (key === 'group') groupSheet.value = true
+  else if (key === 'score') scoreSheet.value = true
+  else if (key === 'pick') pickSheet.value = true
+  else if (key === 'interact') interactSheet.value = true
+  else if (key === 'sound') soundSheet.value = true
+  else if (key === 'timer') standaloneTimerSheet.value = true
+  else if (key === 'note') noteSheet.value = true
+}
+
+const checkinCount = ref<number>(12)
+const recentCheckins = ref<Array<UTSJSONObject>>([
+  { name: '张三', time: '14:32' } as UTSJSONObject,
+  { name: '李四', time: '14:30' } as UTSJSONObject,
+  { name: '王五', time: '14:28' } as UTSJSONObject
+])
+
+const groupMethod = ref<string>('average')
+const groupCount = ref<number>(4)
+const groupResults = ref<Array<UTSJSONObject>>([])
+const isGrouped = ref<boolean>(false)
+
+const scoreMode = ref<string>('simple')
+const teamScores = ref<Array<UTSJSONObject>>([])
+
+const pickTab = ref<string>('actor')
+const pickResult = ref<string>('')
+const isPicking = ref<boolean>(false)
+
+const interactType = ref<string>('')
+
+const activeSound = ref<string>('')
+const soundList : Array<UTSJSONObject> = [
+  { key: 'cheer', icon: '🎉', name: '欢呼' } as UTSJSONObject,
+  { key: 'clap', icon: '👏', name: '鼓掌' } as UTSJSONObject,
+  { key: 'bell', icon: '🔔', name: '铃声' } as UTSJSONObject,
+  { key: 'countdown', icon: '⏰', name: '倒计时' } as UTSJSONObject,
+  { key: 'theme', icon: '🎵', name: '主题' } as UTSJSONObject,
+  { key: 'error', icon: '❌', name: '错误音' } as UTSJSONObject
+]
+
+const standaloneTimerMode = ref<string>('countup')
+const countdownMinutes = ref<number>(1)
+const standaloneSeconds = ref<number>(0)
+const standaloneRunning = ref<boolean>(false)
+let standaloneInterval : number | null = null
+
+const standaloneTimerDisplay = computed<string>(() => {
+  const mins = Math.floor(standaloneSeconds.value / 60)
+  const secs = standaloneSeconds.value % 60
+  const m = mins < 10 ? '0' + mins : '' + mins
+  const s = secs < 10 ? '0' + secs : '' + secs
+  return m + ':' + s
+})
+
+const noteContent = ref<string>('')
+
+const hasOpenSheet = computed<boolean>(() => {
+  return checkinSheet.value || groupSheet.value || scoreSheet.value || pickSheet.value || interactSheet.value ||
+    soundSheet.value || standaloneTimerSheet.value || noteSheet.value || showToolbox.value || showExitDialog.value
+})
+
+function toggleTimer() {
+  if (timerRunning.value) {
+    timerRunning.value = false
+    if (timerInterval) {
+      clearInterval(timerInterval)
+      timerInterval = null
+    }
+    liveStore.pauseSession()
+  } else {
+    if (timerSeconds.value <= 0) {
+      timerSeconds.value = phaseDurationSeconds.value
+    }
+    timerRunning.value = true
+    timerInterval = setInterval(() => {
+      if (timerSeconds.value > 0) {
+        timerSeconds.value--
+      } else {
+        timerRunning.value = false
+        if (timerInterval) {
+          clearInterval(timerInterval)
+          timerInterval = null
+        }
+      }
+    }, 1000)
+    liveStore.resumeSession()
+  }
+}
+
+function delayFiveMinutes() {
+  timerSeconds.value += 300
+  uni.showToast({ title: '已延时 5 分钟', icon: 'none' })
+}
+
+function handleTimerTap() {
+  if (configStore.doubleTapDelayEnabled) {
+    if (timerTapTimeout) {
+      clearTimeout(timerTapTimeout)
+      timerTapTimeout = null
+      delayFiveMinutes()
+      return
+    }
+    timerTapTimeout = setTimeout(() => {
+      timerTapTimeout = null
+      toggleTimer()
+    }, 220)
+    return
+  }
+  toggleTimer()
+}
+
+function handleBack() {
+  showExitDialog.value = true
+}
+
+function confirmExit() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  timerRunning.value = false
+  liveStore.endSession()
+  uni.navigateBack({})
+}
+
+function cancelExit() {
+  showExitDialog.value = false
+}
+
+function handlePrev() {
+  if (canPrev.value) {
+    liveStore.prevPhase()
+  }
+}
+
+function handleNext() {
+  if (canNext.value) {
+    liveStore.nextPhase()
+  } else {
+    if (timerInterval) {
+      clearInterval(timerInterval)
+      timerInterval = null
+    }
+    timerRunning.value = false
+    liveStore.endSession()
+    uni.redirectTo({ url: '/pages/live/LiveEnd' })
+  }
+}
+
+function handleToolClick(idx : number) {
+  const tool = quickTools.value[idx]
+  const key = tool['key'] as string
+  if (key === 'toolbox') {
+    showToolbox.value = true
+    return
+  }
+  if (key === 'checkin') checkinSheet.value = true
+  else if (key === 'group') groupSheet.value = true
+  else if (key === 'score') scoreSheet.value = true
+  else if (key === 'pick') pickSheet.value = true
+  else if (key === 'interact') interactSheet.value = true
+  else if (key === 'sound') soundSheet.value = true
+  else if (key === 'timer') standaloneTimerSheet.value = true
+  else if (key === 'note') noteSheet.value = true
+}
+
+const groupColors : Array<string> = ['#4A7CF7', '#FF6B6B', '#51CF66', '#FFD43B', '#CC5DE8', '#FF922B', '#20C997', '#F06595', '#A9E34B', '#748FFC']
+
+function doGrouping() {
+  const total = peopleCount.value
+  const count = groupCount.value
+  const base = Math.floor(total / count)
+  const remainder = total % count
+  const results : Array<UTSJSONObject> = []
+  for (let i = 0; i < count; i++) {
+    const c = i < remainder ? base + 1 : base
+    results.push({ name: '第' + (i + 1) + '队', count: c, color: groupColors[i % groupColors.length] } as UTSJSONObject)
+  }
+  groupResults.value = results
+  isGrouped.value = false
+}
+
+function syncScoresFromGroups() {
+  const scores : Array<UTSJSONObject> = []
+  for (let i = 0; i < groupResults.value.length; i++) {
+    const g = groupResults.value[i]
+    scores.push({ name: g['name'] as string, score: 0, color: g['color'] as string } as UTSJSONObject)
+  }
+  teamScores.value = scores
+}
+
+function adjustGroupCount(delta : number) {
+  const next = groupCount.value + delta
+  if (next >= 2 && next <= 10) {
+    groupCount.value = next
+  }
+}
+
+function changeScore(idx : number, delta : number) {
+  const currentScore = (teamScores.value[idx]['score'] as number) || 0
+  teamScores.value[idx]['score'] = Math.max(0, currentScore + delta)
+}
+
+function resetScores() {
+  for (let i = 0; i < teamScores.value.length; i++) {
+    teamScores.value[i]['score'] = 0
+  }
+}
+
+function startPick() {
+  isPicking.value = true
+  pickResult.value = ''
+  setTimeout(() => {
+    const names : Array<string> = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十']
+    const idx = Math.floor(Math.random() * names.length)
+    pickResult.value = names[idx]
+    isPicking.value = false
+  }, 1500)
+}
+
+function playSound(key : string) {
+  activeSound.value = key
+  setTimeout(() => {
+    activeSound.value = ''
+  }, 500)
+}
+
+function toggleStandaloneTimer() {
+  if (standaloneRunning.value) {
+    standaloneRunning.value = false
+    if (standaloneInterval) {
+      clearInterval(standaloneInterval)
+      standaloneInterval = null
+    }
+  } else {
+    if (standaloneTimerMode.value === 'countdown' && standaloneSeconds.value === 0) {
+      standaloneSeconds.value = countdownMinutes.value * 60
+    }
+    standaloneRunning.value = true
+    standaloneInterval = setInterval(() => {
+      if (standaloneTimerMode.value === 'countdown') {
+        if (standaloneSeconds.value > 0) {
+          standaloneSeconds.value--
+        } else {
+          standaloneRunning.value = false
+          if (standaloneInterval) {
+            clearInterval(standaloneInterval)
+            standaloneInterval = null
+          }
+        }
+      } else {
+        standaloneSeconds.value++
+      }
+    }, 1000)
+  }
+}
+
+function resetStandaloneTimer() {
+  standaloneRunning.value = false
+  if (standaloneInterval) {
+    clearInterval(standaloneInterval)
+    standaloneInterval = null
+  }
+  standaloneSeconds.value = 0
+}
+
+function saveNote() {
+  const content = noteContent.value.trim()
+  if (!content) return
+  const payload = {
+    phaseIndex: currentPhaseIndex.value,
+    phaseName: currentPhaseName.value,
+    content
+  } as UTSJSONObject
+  liveStore.addNote(payload)
+  const currentSessionId = liveStore.sessionId || ''
+  if (currentSessionId) {
+    noteApi.saveNote({
+      sessionId: currentSessionId,
+      phase: currentPhaseName.value,
+      content
+    } as UTSJSONObject).catch((e : unknown) => {
+      console.log('[live.note.save]', e)
+    })
+  }
+  noteContent.value = ''
+}
+
+function handleTouchStart(event : TouchEvent) {
+  if (hasOpenSheet.value) return
+  const touches = event.touches
+  if (touches.length === 0) return
+  touchStartX.value = touches[0].clientX
+  touchStartY.value = touches[0].clientY
+  lastTouchTime.value = Date.now()
+}
+
+function handleTouchEnd(event : TouchEvent) {
+  if (hasOpenSheet.value) return
+  const changedTouches = event.changedTouches
+  if (changedTouches.length === 0) return
+  const deltaX = changedTouches[0].clientX - touchStartX.value
+  const deltaY = changedTouches[0].clientY - touchStartY.value
+  const duration = Date.now() - lastTouchTime.value
+  if (Math.abs(deltaY) > 48 || Math.abs(deltaX) < 60 || duration > 600) {
+    return
+  }
+  if (deltaX < 0 && configStore.swipeNextEnabled) {
+    console.log('[live.swipe]', 'next', deltaX, deltaY, duration)
+    handleNext()
+  } else if (deltaX > 0 && configStore.swipePrevEnabled) {
+    console.log('[live.swipe]', 'prev', deltaX, deltaY, duration)
+    handlePrev()
+  }
+}
+
+watch(currentPhaseIndex, () => {
+  timerRunning.value = false
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  timerSeconds.value = phaseDurationSeconds.value
+  doGrouping()
+})
+
+onMounted(async () => {
+  configStore.restoreConfig()
+  const instance = getCurrentInstance()
+  if (instance && instance.proxy) {
+    const page = (instance.proxy as unknown as UTSJSONObject)['$page'] as UTSJSONObject | null
+    if (page && page['options']) {
+      const options = page['options'] as UTSJSONObject
+      const pid = options['planId'] as string | null
+      const tid = options['templateId'] as string | null
+      const name = options['name'] as string | null
+      const count = options['peopleCount'] as string | null
+      if (tid) {
+        templateId.value = tid
+      }
+      if (name) {
+        liveStore.planName = (decodeURIComponent(name) as string) || name
+      }
+      if (count) {
+        peopleCount.value = parseInt(count) || 30
+      }
+      if (pid) {
+        await planStore.fetchPlanDetail(pid)
+        templateId.value = (planStore.currentPlan?.['type'] as string) || templateId.value
+        peopleCount.value = Number(planStore.currentPlan?.['people'] || peopleCount.value)
+        await liveStore.startSession({
+          planId: pid,
+          planName: (planStore.currentPlan?.['name'] as string) || '',
+          peopleCount: peopleCount.value
+        } as UTSJSONObject)
+      } else if (tid) {
+        await liveStore.startSession({ templateId: tid, planName: (decodeURIComponent(name || '') as string) } as UTSJSONObject)
+      }
+    }
+  }
+  if (liveStore.sessionId) {
+    try {
+      const savedNotes = await noteApi.getNoteList(liveStore.sessionId)
+      for (let i = savedNotes.length - 1; i >= 0; i--) {
+        liveStore.addNote({
+          phaseName: savedNotes[i]['phase'],
+          content: savedNotes[i]['content'],
+          createdAt: savedNotes[i]['createdAt']
+        } as UTSJSONObject)
+      }
+    } catch (_e : unknown) {
+    }
+  }
+  timerSeconds.value = phaseDurationSeconds.value
+})
+
+onUnmounted(() => {
+  if (timerTapTimeout) {
+    clearTimeout(timerTapTimeout)
+    timerTapTimeout = null
+  }
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  if (standaloneInterval) {
+    clearInterval(standaloneInterval)
+    standaloneInterval = null
+  }
+})
+</script>
+
+<template>
+  <view class="page" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+    <NavBar :title="planName" backgroundColor="#1A1A2E" @back="handleBack"></NavBar>
+
+    <view
+      class="live-body"
+      :style="{ minHeight: 'calc(100vh - ' + navBarHeight + 'px)', paddingBottom: (safeAreaBottom + 24) + 'px' }"
+    >
+      <view class="phase-progress-wrap">
+        <view class="phase-progress">
+          <text class="phase-progress-text">环节 {{ currentPhaseIndex + 1 }}/{{ phases.length }}</text>
+          <view class="phase-progress-bar">
+            <view class="phase-progress-fill" :style="{ width: ((currentPhaseIndex + 1) / phases.length * 100) + '%' }"></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="current-phase-section">
+        <text class="current-phase-name">{{ currentPhaseName }}</text>
+      </view>
+
+      <view class="timer-section" @click="handleTimerTap">
+        <TimerDisplay :time="timerDisplay" :progress="timerProgress" :isRunning="timerRunning"></TimerDisplay>
+        <text class="timer-hint">{{ configStore.doubleTapDelayEnabled ? (timerRunning ? '单击暂停，双击延时 5 分钟' : '单击开始，双击延时 5 分钟') : (timerRunning ? '点击暂停' : '点击开始') }}</text>
+      </view>
+
+      <view class="reminders-section">
+        <view class="reminders-header">
+          <text class="reminders-title">💡 关键提醒</text>
+        </view>
+        <view class="reminder-item" v-for="(item, idx) in reminders" :key="idx">
+          <text class="reminder-bullet">•</text>
+          <text class="reminder-text">{{ item }}</text>
+        </view>
+      </view>
+
+      <view class="bottom-action-section">
+        <view class="toolbar-section">
+          <view class="toolbar-grid">
+            <ToolButton
+              v-for="(tool, idx) in quickTools"
+              :key="idx"
+              :icon="tool['icon'] as string"
+              :label="tool['name'] as string"
+              @click="handleToolClick(idx)"
+            ></ToolButton>
+          </view>
+        </view>
+
+        <view class="nav-buttons">
+          <view :class="['nav-btn', 'nav-btn-prev', { disabled: !canPrev }]" @click="handlePrev">
+            <text class="nav-btn-text">{{ '上一环节' }}</text>
+          </view>
+          <view class="nav-btn nav-btn-next" @click="handleNext">
+            <text class="nav-btn-text">{{ canNext ? '下一环节' : '结束培训' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="checkinSheet" class="sheet-overlay" @click="checkinSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">📋 签到管理</text>
+          <view class="sheet-close" @click="checkinSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view class="checkin-stats">
+            <text class="checkin-stats-text">已签到 {{ checkinCount }} / 预计 {{ peopleCount }} 人</text>
+          </view>
+          <view class="checkin-qr">
+            <text class="checkin-qr-hint">📱 参与者扫码签到</text>
+            <text class="checkin-qr-text">参与者扫码签到</text>
+          </view>
+          <view class="checkin-list-header">
+            <text class="checkin-list-title">最近签到</text>
+          </view>
+          <view class="checkin-item" v-for="(item, idx) in recentCheckins" :key="idx">
+            <view class="checkin-avatar">
+              <text class="checkin-avatar-text">{{ (item['name'] as string).charAt(0) }}</text>
+            </view>
+            <text class="checkin-name">{{ item['name'] as string }}</text>
+            <text class="checkin-time">{{ item['time'] as string }}</text>
+          </view>
+        </scroll-view>
+        <view class="sheet-footer">
+          <view class="sheet-footer-btn sheet-footer-btn-danger" @click="checkinSheet = false">
+            <text class="sheet-footer-btn-text">结束签到</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="groupSheet" class="sheet-overlay" @click="groupSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">👥 分组管理</text>
+          <view class="sheet-close" @click="groupSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <text class="sheet-label">分组方式</text>
+          <view class="group-method-row">
+            <view :class="['group-method-btn', { active: groupMethod === 'average' }]" @click="groupMethod = 'average'">
+              <text class="group-method-text">按人数均分</text>
+            </view>
+            <view :class="['group-method-btn', { active: groupMethod === 'free' }]" @click="groupMethod = 'free'">
+              <text class="group-method-text">自由分组</text>
+            </view>
+            <view :class="['group-method-btn', { active: groupMethod === 'random' }]" @click="groupMethod = 'random'">
+              <text class="group-method-text">随机分组</text>
+            </view>
+          </view>
+          <text class="sheet-label">队伍数量</text>
+          <view class="group-count-row">
+            <view class="group-count-btn" @click="adjustGroupCount(-1)">
+              <text class="group-count-btn-text">−</text>
+            </view>
+            <text class="group-count-value">{{ groupCount }}</text>
+            <view class="group-count-btn" @click="adjustGroupCount(1)">
+              <text class="group-count-btn-text">+</text>
+            </view>
+          </view>
+          <text class="sheet-label">分组结果</text>
+          <view class="group-result-item" v-for="(item, idx) in groupResults" :key="idx">
+            <view class="group-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
+            <text class="group-result-name">{{ item['name'] as string }}</text>
+            <text class="group-result-count">{{ item['count'] as number }}人</text>
+          </view>
+        </scroll-view>
+        <view class="sheet-footer sheet-footer-row">
+          <view class="sheet-footer-btn sheet-footer-btn-secondary" @click="doGrouping()">
+            <text class="sheet-footer-btn-text-secondary">重新分组</text>
+          </view>
+          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="isGrouped = true; syncScoresFromGroups(); groupSheet = false">
+            <text class="sheet-footer-btn-text">确认分组</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="scoreSheet" class="sheet-overlay" @click="scoreSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">🏆 积分管理</text>
+          <view class="sheet-close" @click="scoreSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <text class="sheet-label">积分模式</text>
+          <view class="score-mode-row">
+            <view :class="['score-mode-btn', { active: scoreMode === 'simple' }]" @click="scoreMode = 'simple'">
+              <text class="score-mode-text">简化模式</text>
+            </view>
+            <view :class="['score-mode-btn', { active: scoreMode === 'detailed' }]" @click="scoreMode = 'detailed'">
+              <text class="score-mode-text">详细模式</text>
+            </view>
+          </view>
+          <text class="sheet-label">队伍积分</text>
+          <view v-if="!isGrouped" class="score-not-grouped">
+            <text class="score-not-grouped-text">请先完成分组</text>
+          </view>
+          <view v-if="isGrouped" class="score-item" v-for="(item, idx) in teamScores" :key="idx">
+            <view class="score-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
+            <text class="score-name">{{ item['name'] as string }}</text>
+            <text class="score-value">{{ item['score'] as number }}</text>
+            <view class="score-btn-minus" @click="changeScore(idx, -1)">
+              <text class="score-btn-text">−</text>
+            </view>
+            <view class="score-btn-plus" @click="changeScore(idx, 1)">
+              <text class="score-btn-text">+</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="sheet-footer">
+          <view class="sheet-footer-btn sheet-footer-btn-danger" @click="resetScores">
+            <text class="sheet-footer-btn-text">重置积分</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="pickSheet" class="sheet-overlay" @click="pickSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">🎲 随机抽取</text>
+          <view class="sheet-close" @click="pickSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view class="pick-tabs">
+            <view :class="['pick-tab', { active: pickTab === 'actor' }]" @click="pickTab = 'actor'">
+              <text class="pick-tab-text">抽演员</text>
+            </view>
+            <view :class="['pick-tab', { active: pickTab === 'audience' }]" @click="pickTab = 'audience'">
+              <text class="pick-tab-text">抽观众</text>
+            </view>
+            <view :class="['pick-tab', { active: pickTab === 'topic' }]" @click="pickTab = 'topic'">
+              <text class="pick-tab-text">抽题目</text>
+            </view>
+          </view>
+          <view class="pick-action-area">
+            <view v-if="!isPicking && !pickResult" class="pick-start-btn" @click="startPick">
+              <text class="pick-start-text">开始抽取</text>
+            </view>
+            <view v-if="isPicking" class="pick-animating">
+              <text class="pick-animating-text">抽取中...</text>
+            </view>
+            <view v-if="!isPicking && pickResult" class="pick-result-area">
+              <text class="pick-result-text">{{ pickResult }}</text>
+            </view>
+          </view>
+          <view v-if="!isPicking && pickResult" class="pick-retry">
+            <view class="pick-retry-btn" @click="startPick">
+              <text class="pick-retry-text">再抽一次</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view v-if="interactSheet" class="sheet-overlay" @click="interactSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">🤝 互动工具</text>
+          <view class="sheet-close" @click="interactSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view v-if="!interactType" class="interact-options">
+            <view class="interact-card" @click="interactType = 'wordcloud'">
+              <text class="interact-card-icon">☁️</text>
+              <text class="interact-card-name">词云</text>
+              <text class="interact-card-desc">参与者提交关键词，实时生成词云</text>
+            </view>
+            <view class="interact-card" @click="interactType = 'vote'">
+              <text class="interact-card-icon">📊</text>
+              <text class="interact-card-name">投票</text>
+              <text class="interact-card-desc">发起实时投票，收集参与者意见</text>
+            </view>
+            <view class="interact-card" @click="interactType = 'promise'">
+              <text class="interact-card-icon">🤙</text>
+              <text class="interact-card-name">承诺</text>
+              <text class="interact-card-desc">参与者做出承诺，增强行动意愿</text>
+            </view>
+          </view>
+          <view v-if="interactType === 'wordcloud'" class="interact-detail">
+            <view class="interact-detail-header">
+              <text class="interact-detail-title">☁️ 词云互动</text>
+              <view class="interact-back" @click="interactType = ''">
+                <text class="interact-back-text">返回</text>
+              </view>
+            </view>
+            <view class="interact-placeholder">
+              <text class="interact-placeholder-text">参与者扫码参与词云互动</text>
+            </view>
+          </view>
+          <view v-if="interactType === 'vote'" class="interact-detail">
+            <view class="interact-detail-header">
+              <text class="interact-detail-title">📊 投票互动</text>
+              <view class="interact-back" @click="interactType = ''">
+                <text class="interact-back-text">返回</text>
+              </view>
+            </view>
+            <view class="interact-placeholder">
+              <text class="interact-placeholder-text">参与者扫码参与投票</text>
+            </view>
+          </view>
+          <view v-if="interactType === 'promise'" class="interact-detail">
+            <view class="interact-detail-header">
+              <text class="interact-detail-title">🤙 承诺互动</text>
+              <view class="interact-back" @click="interactType = ''">
+                <text class="interact-back-text">返回</text>
+              </view>
+            </view>
+            <view class="interact-placeholder">
+              <text class="interact-placeholder-text">参与者扫码提交承诺</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view v-if="soundSheet" class="sheet-overlay" @click="soundSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">🔊 音效面板</text>
+          <view class="sheet-close" @click="soundSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view class="sound-grid">
+            <view
+              v-for="(sound, idx) in soundList"
+              :key="idx"
+              :class="['sound-btn', { active: activeSound === (sound['key'] as string) }]"
+              @click="playSound(sound['key'] as string)"
+            >
+              <text class="sound-btn-icon">{{ sound['icon'] as string }}</text>
+              <text class="sound-btn-name">{{ sound['name'] as string }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view v-if="standaloneTimerSheet" class="sheet-overlay" @click="standaloneTimerSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">⏱ 独立计时</text>
+          <view class="sheet-close" @click="standaloneTimerSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <text class="sheet-label">计时模式</text>
+          <view class="stimer-mode-row">
+            <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countup' }]" @click="standaloneTimerMode = 'countup'">
+              <text class="stimer-mode-text">正计时</text>
+            </view>
+            <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countdown' }]" @click="standaloneTimerMode = 'countdown'">
+              <text class="stimer-mode-text">倒计时</text>
+            </view>
+          </view>
+          <view v-if="standaloneTimerMode === 'countdown'" class="stimer-duration-row">
+            <view
+              v-for="(m, idx) in ([1, 3, 5, 10] as Array<number>)"
+              :key="idx"
+              :class="['stimer-duration-btn', { active: countdownMinutes === m }]"
+              @click="countdownMinutes = m"
+            >
+              <text class="stimer-duration-text">{{ m }}分钟</text>
+            </view>
+          </view>
+          <view class="stimer-display">
+            <text class="stimer-time">{{ standaloneTimerDisplay }}</text>
+          </view>
+          <view class="stimer-controls">
+            <view class="stimer-ctrl-btn" @click="resetStandaloneTimer">
+              <text class="stimer-ctrl-text">重置</text>
+            </view>
+            <view :class="['stimer-ctrl-btn', 'stimer-ctrl-primary', { paused: standaloneRunning }]" @click="toggleStandaloneTimer">
+              <text class="stimer-ctrl-text">{{ standaloneRunning ? '暂停' : '开始' }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view v-if="noteSheet" class="sheet-overlay" @click="noteSheet = false">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">📝 培训笔记</text>
+          <view class="sheet-close" @click="noteSheet = false">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view class="note-phase-tag">
+            <text class="note-phase-tag-text">{{ currentPhaseName }}</text>
+          </view>
+          <textarea v-model="noteContent" class="note-input" placeholder="记录本环节要点..."></textarea>
+          <view class="note-saved-list">
+            <view class="note-saved-item" v-for="(note, idx) in liveStore.notes" :key="idx">
+              <text class="note-saved-phase">{{ note['phaseName'] as string }}</text>
+              <text class="note-saved-content">{{ note['content'] as string }}</text>
+              <text class="note-saved-time">{{ note['createdAt'] as string }}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="sheet-footer">
+          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="saveNote">
+            <text class="sheet-footer-btn-text">保存笔记</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="showToolbox" class="sheet-overlay" @click="closeToolbox">
+      <view class="sheet-container" @click.stop>
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <text class="sheet-title">🧰 工具箱</text>
+          <view class="sheet-close" @click="closeToolbox">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="sheet-scroll" scroll-y>
+          <view class="toolbox-grid">
+            <view class="toolbox-item" v-for="(tool, idx) in allTools" :key="idx" @click="openToolFromToolbox(tool)">
+              <view class="toolbox-item-icon-box">
+                <text class="toolbox-item-icon">{{ tool['icon'] }}</text>
+              </view>
+              <text class="toolbox-item-name">{{ tool['name'] }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <ConfirmDialog
+      :visible="showExitDialog"
+      title="确认退出"
+      content="退出后将结束当前培训会话，确定要退出吗？"
+      confirmText="退出"
+      cancelText="继续"
+      @confirm="confirmExit"
+      @cancel="cancelExit"
+    ></ConfirmDialog>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #1A1A2E;
+}
+.live-body {
+  padding: 0 32rpx;
+  padding-top: 32rpx;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.phase-progress-wrap {
+  margin-bottom: 32rpx;
+}
+.phase-progress {
+  margin-bottom: 24rpx;
+}
+.phase-progress-text {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8rpx;
+}
+.phase-progress-bar {
+  height: 6rpx;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3rpx;
+}
+.phase-progress-fill {
+  height: 6rpx;
+  background-color: #FFFFFF;
+  border-radius: 3rpx;
+}
+.current-phase-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+.current-phase-name {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.timer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+.timer-hint {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8rpx;
+}
+.reminders-section {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-radius: 20rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 32rpx;
+}
+.reminders-header {
+  margin-bottom: 16rpx;
+}
+.reminders-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #6B9BFF;
+}
+.reminder-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 8rpx;
+}
+.reminder-bullet {
+  font-size: 26rpx;
+  color: #6B9BFF;
+  margin-right: 12rpx;
+  line-height: 40rpx;
+}
+.reminder-text {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 40rpx;
+  flex: 1;
+}
+.bottom-action-section {
+  margin-top: auto;
+  padding-top: 24rpx;
+}
+.toolbar-section {
+  margin-bottom: 32rpx;
+}
+.toolbar-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  justify-content: center;
+}
+.nav-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+  padding-bottom: 60rpx;
+}
+.nav-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-btn-prev {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.nav-btn-prev.disabled {
+  opacity: 0.4;
+}
+.nav-btn-next {
+  background-color: #4A7CF7;
+}
+.nav-btn-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: overlayFadeIn 0.25s ease;
+}
+.sheet-container {
+  width: 100%;
+  max-height: 70vh;
+  background-color: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: sheetSlideUp 0.3s ease;
+}
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  background-color: #E0E0E0;
+  border-radius: 4rpx;
+  margin: 16rpx auto 0;
+}
+.sheet-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.sheet-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 28rpx;
+  background-color: #F5F5F5;
+}
+.sheet-close-icon {
+  font-size: 28rpx;
+  color: #999999;
+}
+.sheet-scroll {
+  flex: 1;
+  padding: 24rpx 32rpx;
+}
+.sheet-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #666666;
+  margin-bottom: 16rpx;
+  margin-top: 8rpx;
+}
+.sheet-footer {
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+.sheet-footer-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20rpx;
+}
+.sheet-footer-btn {
+  height: 80rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+.sheet-footer-btn-primary {
+  background-color: #4A7CF7;
+}
+.sheet-footer-btn-secondary {
+  background-color: #F5F5F5;
+}
+.sheet-footer-btn-danger {
+  background-color: #FF4D4F;
+}
+.sheet-footer-btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.sheet-footer-btn-text-secondary {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #666666;
+}
+.checkin-stats {
+  margin-bottom: 24rpx;
+}
+.checkin-stats-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.checkin-qr {
+  height: 280rpx;
+  border-width: 2rpx;
+  border-style: dashed;
+  border-color: #CCCCCC;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+.checkin-qr-hint {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.checkin-qr-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+.checkin-list-header {
+  margin-bottom: 12rpx;
+}
+.checkin-list-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #666666;
+}
+.checkin-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F5F5F5;
+}
+.checkin-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.checkin-avatar-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.checkin-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+.checkin-time {
+  font-size: 24rpx;
+  color: #999999;
+}
+.group-method-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+.group-method-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.group-method-btn.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #4A7CF7;
+}
+.group-method-text {
+  font-size: 24rpx;
+  color: #666666;
+}
+.group-method-btn.active .group-method-text {
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.group-count-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.group-count-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.group-count-btn-text {
+  font-size: 32rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.group-count-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0 32rpx;
+}
+.group-result-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F5F5F5;
+}
+.group-color-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 12rpx;
+  margin-right: 20rpx;
+}
+.group-result-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+.group-result-count {
+  font-size: 26rpx;
+  color: #999999;
+}
+.score-mode-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.score-mode-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.score-mode-btn.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #4A7CF7;
+}
+.score-mode-text {
+  font-size: 26rpx;
+  color: #666666;
+}
+.score-mode-btn.active .score-mode-text {
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.score-not-grouped {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200rpx;
+}
+.score-not-grouped-text {
+  font-size: 30rpx;
+  color: #999999;
+}
+.score-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F5F5F5;
+}
+.score-color-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 12rpx;
+  margin-right: 20rpx;
+}
+.score-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+.score-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-right: 20rpx;
+  min-width: 60rpx;
+  text-align: center;
+}
+.score-btn-minus {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 12rpx;
+  background-color: #FFF0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12rpx;
+}
+.score-btn-plus {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 12rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.score-btn-text {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.score-btn-minus .score-btn-text {
+  color: #FF4D4F;
+}
+.score-btn-plus .score-btn-text {
+  color: #4A7CF7;
+}
+.pick-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+  margin-bottom: 32rpx;
+}
+.pick-tab {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pick-tab.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #4A7CF7;
+}
+.pick-tab-text {
+  font-size: 26rpx;
+  color: #666666;
+}
+.pick-tab.active .pick-tab-text {
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.pick-action-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240rpx;
+}
+.pick-start-btn {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 100rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pick-start-text {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.pick-animating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pick-animating-text {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #4A7CF7;
+  animation: pickPulse 0.6s ease infinite alternate;
+}
+.pick-result-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pick-result-text {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.pick-retry {
+  display: flex;
+  justify-content: center;
+  margin-top: 24rpx;
+}
+.pick-retry-btn {
+  height: 72rpx;
+  padding: 0 48rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pick-retry-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4A7CF7;
+}
+.interact-options {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.interact-card {
+  padding: 28rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FA;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #EEEEEE;
+}
+.interact-card-icon {
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+.interact-card-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+.interact-card-desc {
+  font-size: 24rpx;
+  color: #999999;
+}
+.interact-detail-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+.interact-detail-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.interact-back {
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  background-color: #F5F5F5;
+}
+.interact-back-text {
+  font-size: 24rpx;
+  color: #666666;
+}
+.interact-placeholder {
+  height: 280rpx;
+  border-width: 2rpx;
+  border-style: dashed;
+  border-color: #CCCCCC;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.interact-placeholder-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+.sound-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+.sound-btn {
+  width: calc(33.33% - 14rpx);
+  height: 160rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FA;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #EEEEEE;
+}
+.sound-btn.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-color: #4A7CF7;
+  transform: scale(0.95);
+}
+.sound-btn-icon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+.sound-btn-name {
+  font-size: 24rpx;
+  color: #666666;
+}
+.stimer-mode-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.stimer-mode-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stimer-mode-btn.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #4A7CF7;
+}
+.stimer-mode-text {
+  font-size: 26rpx;
+  color: #666666;
+}
+.stimer-mode-btn.active .stimer-mode-text {
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.stimer-duration-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+  margin-bottom: 32rpx;
+}
+.stimer-duration-btn {
+  flex: 1;
+  height: 64rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stimer-duration-btn.active {
+  background-color: rgba(74, 124, 247, 0.1);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #4A7CF7;
+}
+.stimer-duration-text {
+  font-size: 24rpx;
+  color: #666666;
+}
+.stimer-duration-btn.active .stimer-duration-text {
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.stimer-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+.stimer-time {
+  font-size: 80rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  font-variant-numeric: tabular-nums;
+}
+.stimer-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 20rpx;
+  justify-content: center;
+}
+.stimer-ctrl-btn {
+  height: 80rpx;
+  padding: 0 48rpx;
+  border-radius: 16rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stimer-ctrl-primary {
+  background-color: #4A7CF7;
+}
+.stimer-ctrl-primary.paused {
+  background-color: #FF9500;
+}
+.stimer-ctrl-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.stimer-ctrl-btn:not(.stimer-ctrl-primary) .stimer-ctrl-text {
+  color: #666666;
+}
+.note-phase-tag {
+  display: inline-flex;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+  margin-bottom: 20rpx;
+}
+.note-phase-tag-text {
+  font-size: 24rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.note-input {
+  width: 100%;
+  height: 200rpx;
+  border-radius: 12rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #E0E0E0;
+  padding: 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+  margin-bottom: 24rpx;
+}
+.note-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.note-saved-item {
+  padding: 20rpx;
+  border-radius: 12rpx;
+  background-color: #F8F9FA;
+}
+.note-saved-phase {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4A7CF7;
+  margin-bottom: 8rpx;
+}
+.note-saved-content {
+  font-size: 26rpx;
+  color: #333333;
+  margin-bottom: 8rpx;
+}
+.note-saved-time {
+  font-size: 22rpx;
+  color: #999999;
+}
+.toolbox-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 24rpx;
+}
+.toolbox-item {
+  width: calc(50% - 12rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28rpx 0;
+  background-color: #F8F9FE;
+  border-radius: 16rpx;
+}
+.toolbox-item-icon-box {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+.toolbox-item-icon {
+  font-size: 40rpx;
+}
+.toolbox-item-name {
+  font-size: 26rpx;
+  color: #1A1A2E;
+  font-weight: 500;
+}
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes pickPulse {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+</style>

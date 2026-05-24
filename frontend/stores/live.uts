@@ -1,0 +1,195 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import * as liveApi from '../api/live'
+import { LIVE_PHASES } from '../utils/constants'
+
+export const useLiveStore = defineStore('live', () => {
+  const sessionId = ref<string | null>(null)
+  const planId = ref<string | null>(null)
+  const planName = ref<string>('')
+  const phase = ref<string>(LIVE_PHASES['NOT_STARTED'] as string)
+  const currentPhaseIndex = ref<number>(0)
+  const startTime = ref<number | null>(null)
+  const duration = ref<number>(0)
+  const participants = ref<Array<UTSJSONObject>>([])
+  const groups = ref<Array<UTSJSONObject>>([])
+  const scores = ref<UTSJSONObject>({})
+  const notes = ref<Array<UTSJSONObject>>([])
+  const loading = ref<boolean>(false)
+  const error = ref<string>('')
+
+  const isActive = computed<boolean>(() => phase.value === (LIVE_PHASES['IN_PROGRESS'] as string))
+  const isPaused = computed<boolean>(() => phase.value === (LIVE_PHASES['PAUSED'] as string))
+  const isEnded = computed<boolean>(() => phase.value === (LIVE_PHASES['ENDED'] as string))
+
+  async function startSession(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await liveApi.startLiveSession(data)
+      sessionId.value = result['sessionId'] as string | null
+      planId.value = data['planId'] as string | null
+      planName.value = (data['planName'] as string) || ''
+      phase.value = LIVE_PHASES['IN_PROGRESS'] as string
+      startTime.value = typeof result['startTime'] === 'string' ? new Date(result['startTime'] as string).getTime() : ((result['startTime'] as number | null) || Date.now())
+      duration.value = 0
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '开始会话失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function endSession() {
+    if (!sessionId.value) return
+    try {
+      loading.value = true
+      const result = await liveApi.endLiveSession(sessionId.value)
+      phase.value = LIVE_PHASES['ENDED'] as string
+      duration.value = (result['duration'] as number) || 0
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '结束会话失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function pauseSession() {
+    if (phase.value === (LIVE_PHASES['IN_PROGRESS'] as string)) {
+      phase.value = LIVE_PHASES['PAUSED'] as string
+    }
+  }
+
+  function resumeSession() {
+    if (phase.value === (LIVE_PHASES['PAUSED'] as string)) {
+      phase.value = LIVE_PHASES['IN_PROGRESS'] as string
+    }
+  }
+
+  function nextPhase() {
+    currentPhaseIndex.value++
+  }
+
+  function prevPhase() {
+    if (currentPhaseIndex.value > 0) {
+      currentPhaseIndex.value--
+    }
+  }
+
+  async function checkin(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await liveApi.checkin(sessionId.value, data)
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '签到失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createGroup(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await liveApi.createGroup(sessionId.value, data)
+      groups.value = (result['groups'] as Array<UTSJSONObject>) || []
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '创建分组失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateScore(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await liveApi.updateScore(sessionId.value, data)
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '更新分数失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function randomPick(data : UTSJSONObject) {
+    try {
+      loading.value = true
+      const result = await liveApi.randomPick(sessionId.value, data)
+      error.value = ''
+      return result
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '随机抽取失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  let noteCounter = 0
+
+  function addNote(note : UTSJSONObject) {
+    notes.value.push({
+      id: (note['id'] as string) || `${Date.now()}_${++noteCounter}`,
+      ...note,
+      createdAt: (note['createdAt'] as string) || new Date().toISOString()
+    })
+  }
+
+  function reset() {
+    sessionId.value = null
+    planId.value = null
+    planName.value = ''
+    phase.value = LIVE_PHASES['NOT_STARTED'] as string
+    currentPhaseIndex.value = 0
+    startTime.value = null
+    duration.value = 0
+    participants.value = []
+    groups.value = []
+    scores.value = {}
+    notes.value = []
+  }
+
+  return {
+    sessionId,
+    planId,
+    planName,
+    phase,
+    currentPhaseIndex,
+    startTime,
+    duration,
+    participants,
+    groups,
+    scores,
+    notes,
+    loading,
+    error,
+    isActive,
+    isPaused,
+    isEnded,
+    startSession,
+    endSession,
+    pauseSession,
+    resumeSession,
+    nextPhase,
+    prevPhase,
+    checkin,
+    createGroup,
+    updateScore,
+    randomPick,
+    addNote,
+    reset
+  }
+})

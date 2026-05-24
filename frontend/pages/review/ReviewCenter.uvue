@@ -1,0 +1,277 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { usePlanStore } from '../../stores/plan'
+import { PLAN_TYPE_LABELS, PLAN_STATUS } from '../../utils/constants'
+import NavBar from '../../components/NavBar.uvue'
+
+const planStore = usePlanStore()
+
+const reviewFilter = ref<string>('全部')
+const reviewFilters = ['全部', '待复盘', '已复盘'] as string[]
+
+const filteredPlans = computed(() => {
+  let list = [...planStore.deliveredPlans, ...planStore.reviewedPlans] as Array<UTSJSONObject>
+  if (reviewFilter.value === '待复盘') {
+    list = list.filter(p => (p['status'] as string) !== (PLAN_STATUS['REVIEWED'] as string))
+  } else if (reviewFilter.value === '已复盘') {
+    list = list.filter(p => (p['status'] as string) === (PLAN_STATUS['REVIEWED'] as string))
+  }
+  return list
+})
+
+function getTypeLabel(type : string) : string {
+  return (PLAN_TYPE_LABELS[type] as string) || '未知类型'
+}
+
+function isReviewed(plan : UTSJSONObject) : boolean {
+  return (plan['status'] as string) === (PLAN_STATUS['REVIEWED'] as string)
+}
+
+function goBack() {
+  uni.navigateBack({})
+}
+
+function goReviewDetail(planId : string) {
+  uni.navigateTo({ url: `/pages/review/ReviewDetail?planId=${planId}` })
+}
+
+function startReview(planId : string) {
+  uni.navigateTo({ url: `/pages/review/ReviewDetail?planId=${planId}` })
+}
+
+onMounted(() => {
+  planStore.fetchPlans()
+})
+</script>
+
+<template>
+  <view class="page">
+    <NavBar title="复盘中心" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
+
+    <view class="filter-bar">
+      <view
+        class="filter-tab"
+        :class="{ 'filter-tab-active': reviewFilter === item }"
+        v-for="(item, idx) in reviewFilters"
+        :key="idx"
+        @click="reviewFilter = item"
+      >
+        <text class="filter-tab-text" :class="{ 'filter-tab-text-active': reviewFilter === item }">{{ item }}</text>
+      </view>
+    </view>
+
+    <view class="page-content" v-if="filteredPlans.length > 0">
+      <view
+        class="review-card"
+        v-for="plan in filteredPlans"
+        :key="plan['id'] as string"
+      >
+        <view class="review-card-header">
+          <text class="review-name">{{ plan['name'] as string }}</text>
+          <view :class="['review-status-badge', isReviewed(plan) ? 'review-status-done' : 'review-status-pending']">
+            <text :class="['review-status-text', isReviewed(plan) ? 'review-status-text-done' : 'review-status-text-pending']">{{ isReviewed(plan) ? '已复盘' : '待复盘' }}</text>
+          </view>
+        </view>
+        <view class="review-card-body">
+          <view class="review-meta-row">
+            <text class="review-meta-icon">📅</text>
+            <text class="review-meta-text">{{ plan['date'] as string || '未指定日期' }}</text>
+          </view>
+          <view class="review-meta-row">
+            <text class="review-meta-icon">🏷️</text>
+            <text class="review-meta-text">{{ getTypeLabel(plan['type'] as string) }}</text>
+          </view>
+        </view>
+        <view class="review-card-footer" v-if="!isReviewed(plan)">
+          <view class="btn-review" @click="startReview(plan['id'] as string)">
+            <text class="btn-review-text">开始复盘</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" v-else>
+      <text class="empty-icon">📋</text>
+      <text class="empty-title">暂无需要复盘的内容</text>
+      <text class="empty-subtitle">完成培训后可在此进行复盘</text>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+}
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+.nav-bar-content {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  position: relative;
+}
+.nav-back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-back-icon {
+  font-size: 36rpx;
+  color: #333333;
+  font-weight: 400;
+}
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #000000;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav-placeholder {
+  width: 88rpx;
+}
+.filter-bar {
+  display: flex;
+  flex-direction: row;
+  background-color: #FFFFFF;
+  padding: 16rpx 32rpx;
+  gap: 16rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+.filter-tab {
+  padding: 12rpx 32rpx;
+  border-radius: 32rpx;
+  background-color: #F0F0F5;
+}
+.filter-tab-active {
+  background-color: #4A7CF7;
+}
+.filter-tab-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+  font-weight: 500;
+}
+.filter-tab-text-active {
+  color: #FFFFFF;
+}
+.page-content {
+  padding: 24rpx 32rpx;
+}
+.review-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.review-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+.review-name {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-right: 16rpx;
+}
+.review-status-badge {
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  flex-shrink: 0;
+}
+.review-status-pending {
+  background-color: rgba(255, 149, 0, 0.1);
+}
+.review-status-done {
+  background-color: rgba(52, 199, 89, 0.1);
+}
+.review-status-text {
+  font-size: 24rpx;
+  font-weight: 500;
+}
+.review-status-text-pending {
+  color: #FF9500;
+}
+.review-status-text-done {
+  color: #34C759;
+}
+.review-card-body {
+  margin-bottom: 16rpx;
+}
+.review-meta-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+.review-meta-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+}
+.review-meta-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.review-card-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-top: 16rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+.btn-review {
+  background-color: #4A7CF7;
+  padding: 12rpx 40rpx;
+  border-radius: 16rpx;
+}
+.btn-review-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 280rpx;
+}
+.empty-icon {
+  font-size: 96rpx;
+  margin-bottom: 32rpx;
+}
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.empty-subtitle {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+</style>

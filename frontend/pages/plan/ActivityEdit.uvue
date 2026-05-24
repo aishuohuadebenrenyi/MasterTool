@@ -1,0 +1,344 @@
+<script setup>
+import { ref } from 'vue'
+import { useActivityStore } from '../../stores/activity'
+import NavBar from '../../components/NavBar.uvue'
+
+const activityStore = useActivityStore()
+
+const form = ref<UTSJSONObject>({
+  name: '',
+  scenes: [] as Array<string>,
+  difficulty: '',
+  participants: '',
+  duration: '',
+  objective: '',
+  rules: '',
+  reviewQuestions: '',
+  leaderTips: ''
+})
+
+const categories = ref<Array<string>>(['团队融合', '协作沟通', '领导力', '创新思维', '情绪管理'])
+const difficulties = ref<Array<string>>(['简单', '中等', '困难'])
+const isEditing = ref<boolean>(false)
+const editingId = ref<string>('')
+
+function toggleScene(tag : string) {
+  const currentScenes = form.value['scenes'] as Array<string>
+  const idx = currentScenes.indexOf(tag)
+  if (idx === -1) {
+    currentScenes.push(tag)
+  } else {
+    currentScenes.splice(idx, 1)
+  }
+}
+
+function selectDifficulty(tag : string) {
+  form.value['difficulty'] = tag
+}
+
+function isSceneSelected(tag : string) : boolean {
+  const currentScenes = form.value['scenes'] as Array<string>
+  return currentScenes.indexOf(tag) !== -1
+}
+
+function isDifficultySelected(tag : string) : boolean {
+  return (form.value['difficulty'] as string) === tag
+}
+
+async function handleSave() {
+  if (!(form.value['name'] as string).trim()) {
+    uni.showToast({ title: '请输入活动名称', icon: 'none' })
+    return
+  }
+  try {
+    if (isEditing.value && editingId.value) {
+      await activityStore.updateActivity(editingId.value, { ...form.value })
+    } else {
+      await activityStore.createActivity({ ...form.value })
+    }
+    uni.navigateBack()
+  } catch (e : unknown) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  }
+}
+
+async function handleDelete() {
+  if (!isEditing.value || !editingId.value) return
+  uni.showModal({
+    title: '确认删除',
+    content: '删除后无法恢复',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await activityStore.deleteActivity(editingId.value)
+          uni.navigateBack()
+        } catch (e : unknown) {
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        }
+      }
+    }
+  })
+}
+
+function goBack() {
+  uni.navigateBack()
+}
+</script>
+
+<template>
+  <view class="page">
+    <NavBar :title="isEditing ? '编辑活动' : '新增活动'" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
+
+    <scroll-view class="form-scroll" scroll-y>
+      <view class="form-body">
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label">活动名称</text>
+            <text class="form-required">*</text>
+          </view>
+          <input class="form-input" v-model="form['name']" placeholder="请输入活动名称" placeholder-class="input-placeholder" />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">培训场景</text>
+          <view class="tag-list">
+            <view
+              v-for="(tag, index) in categories"
+              :key="index"
+              class="tag-item"
+              :class="{ 'tag-active': isSceneSelected(tag) }"
+              @click="toggleScene(tag)"
+            >
+              <text class="tag-text" :class="{ 'tag-text-active': isSceneSelected(tag) }">{{ tag }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">难度</text>
+          <view class="tag-list">
+            <view
+              v-for="(tag, index) in difficulties"
+              :key="index"
+              class="tag-item"
+              :class="{ 'tag-active': isDifficultySelected(tag) }"
+              @click="selectDifficulty(tag)"
+            >
+              <text class="tag-text" :class="{ 'tag-text-active': isDifficultySelected(tag) }">{{ tag }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-row">
+          <view class="form-group form-group-half">
+            <text class="form-label">人数范围</text>
+            <input class="form-input" v-model="form['participants']" placeholder="如：8-20人" placeholder-class="input-placeholder" />
+          </view>
+          <view class="form-group form-group-half">
+            <text class="form-label">时长</text>
+            <input class="form-input" v-model="form['duration']" placeholder="如：30min" placeholder-class="input-placeholder" />
+          </view>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">学习目标</text>
+          <input class="form-input" v-model="form['objective']" placeholder="请输入学习目标" placeholder-class="input-placeholder" />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">规则说明</text>
+          <textarea class="form-textarea" v-model="form['rules']" placeholder="请输入规则说明" placeholder-class="input-placeholder" :rows="4" />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">复盘引导问题</text>
+          <textarea class="form-textarea" v-model="form['reviewQuestions']" placeholder="请输入复盘引导问题" placeholder-class="input-placeholder" :rows="3" />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">带领者Tips</text>
+          <textarea class="form-textarea" v-model="form['leaderTips']" placeholder="请输入带领者Tips" placeholder-class="input-placeholder" :rows="3" />
+        </view>
+
+        <view class="save-btn" @click="handleSave">
+          <text class="save-btn-text">💾 保存活动</text>
+        </view>
+
+        <view class="delete-btn" v-if="isEditing" @click="handleDelete">
+          <text class="delete-btn-text">🗑️ 删除活动</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+}
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F5;
+}
+.nav-bar-content {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  position: relative;
+}
+.nav-back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-back-icon {
+  font-size: 36rpx;
+  color: #333333;
+  font-weight: 400;
+}
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #000000;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav-placeholder {
+  width: 88rpx;
+}
+.form-scroll {
+  flex: 1;
+}
+.form-body {
+  padding: 24rpx 32rpx 60rpx;
+}
+.form-group {
+  margin-bottom: 32rpx;
+}
+.form-row {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+}
+.form-group-half {
+  flex: 1;
+}
+.form-label-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.form-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+.form-required {
+  font-size: 28rpx;
+  color: #FF3B30;
+  margin-left: 4rpx;
+}
+.form-input {
+  height: 88rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #E5E5EA;
+}
+.form-textarea {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #E5E5EA;
+  width: 100%;
+}
+.input-placeholder {
+  color: #C7C7CC;
+  font-size: 28rpx;
+}
+.tag-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.tag-item {
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background-color: #FFFFFF;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #E5E5EA;
+}
+.tag-active {
+  background-color: #4A7CF7;
+  border-color: #4A7CF7;
+}
+.tag-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.tag-text-active {
+  color: #FFFFFF;
+}
+.save-btn {
+  height: 96rpx;
+  background-color: #4A7CF7;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16rpx;
+}
+.save-btn-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.delete-btn {
+  height: 96rpx;
+  background-color: #FFFFFF;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #FF3B30;
+}
+.delete-btn-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #FF3B30;
+}
+</style>

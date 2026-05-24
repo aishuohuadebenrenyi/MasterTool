@@ -1,0 +1,37 @@
+<script setup>
+defineProps({
+  item: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+defineEmits(['action'])
+</script>
+
+<template>
+  <view class="todo-item" @click="$emit('action', item)">
+    <text class="todo-title">{{ item.title }}</text>
+    <text class="todo-action">去处理</text>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  background: $bg-primary;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-sm;
+}
+.todo-title {
+  font-size: $font-size-md;
+  color: $text-primary;
+}
+.todo-action {
+  font-size: $font-size-sm;
+  color: $brand-primary;
+}
+</style>

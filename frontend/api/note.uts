@@ -1,0 +1,12 @@
+import { get, post } from './request'
+
+export async function getNoteList(sessionId : string) : Promise<Array<UTSJSONObject>> {
+  const data = await get('/note/list', { sessionId })
+  // `request.get` 的静态类型固定为 UTSJSONObject，这里在运行时实际返回数组，
+  // 先 await 再做数据层转换，避免把整个 Promise 直接断言成数组 Promise。
+  return JSON.parse(JSON.stringify(data)) as Array<UTSJSONObject>
+}
+
+export function saveNote(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/note/save', data)
+}

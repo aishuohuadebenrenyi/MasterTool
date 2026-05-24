@@ -1,0 +1,36 @@
+.DS_Store
+
+# Workspace metadata
+.trae/
+.idea/
+.vscode/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Frontend dependencies and build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/unpackage/
+frontend/.hbuilderx/
+frontend/coverage/
+frontend/tests/__uts_mirror__/
+frontend/project.private.config.json
+
+# Backend build artifacts
+backend/dist/
+
+# Local env files
+backend/.env
+frontend/.env
+frontend/.env.development
+frontend/.env.local
+frontend/.env.*.local

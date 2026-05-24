@@ -1,0 +1,45 @@
+<script setup>
+defineProps({
+  icon: {
+    type: String,
+    default: ''
+  },
+  label: {
+    type: String,
+    default: ''
+  }
+})
+
+defineEmits(['click'])
+</script>
+
+<template>
+  <view class="quick-action" @click="$emit('click')">
+    <view class="action-icon">{{ icon }}</view>
+    <text class="action-label">{{ label }}</text>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+}
+.action-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-lg;
+  background: rgba($brand-primary, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: $spacing-xs;
+}
+.action-label {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+</style>

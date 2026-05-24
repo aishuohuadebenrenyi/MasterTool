@@ -1,0 +1,134 @@
+export const PLAN_STATUS : UTSJSONObject = {
+  DRAFT: 'draft',
+  CONFIRMED: 'confirmed',
+  DELIVERED: 'delivered',
+  REVIEWED: 'reviewed'
+}
+
+export const PLAN_STATUS_LABELS : UTSJSONObject = {
+  'draft': '草稿',
+  'confirmed': '已确认',
+  'delivered': '已交付',
+  'reviewed': '已复盘'
+}
+
+export const PLAN_TYPES : UTSJSONObject = {
+  CORPORATE: 'corporate',
+  TEAMBUILDING: 'teambuilding',
+  IMPROV_SHOW: 'improv_show',
+  IMPROV_TRAINING: 'improv_training',
+  TEAM_BUILDING: 'team_building',
+  WORKSHOP: 'workshop',
+  LECTURE: 'lecture',
+  CUSTOM: 'custom'
+}
+
+export const PLAN_TYPE_LABELS : UTSJSONObject = {
+  'corporate': '企业培训',
+  'teambuilding': '团建活动',
+  'improv_show': '即兴演出',
+  'improv_training': '即兴培训',
+  'team_building': '团队建设',
+  'workshop': '工作坊',
+  'lecture': '讲座/授课',
+  'custom': '自定义'
+}
+
+export const LEGACY_PLAN_TYPE_MAP : UTSJSONObject = {
+  'corporate_training': 'corporate',
+  'corporate': 'corporate',
+  'team_building': 'teambuilding',
+  'teambuilding': 'teambuilding',
+  'improv_show': 'improv_show',
+  'improv_training': 'improv_training',
+  'workshop': 'corporate',
+  'lecture': 'corporate',
+  'custom': 'custom'
+}
+
+export const ACTIVITY_SCENES : UTSJSONObject = {
+  TEAM_FUSION: '团队融合',
+  COLLABORATION: '协作沟通',
+  INNOVATION: '创新思维',
+  LEADERSHIP: '领导力',
+  GENERIC: '通用'
+}
+
+export const ACTIVITY_SCENE_LABELS : UTSJSONObject = {
+  '团队融合': '团队融合',
+  '协作沟通': '协作沟通',
+  '创新思维': '创新思维',
+  '领导力': '领导力',
+  '通用': '通用'
+}
+
+export const ACTIVITY_CATEGORIES : UTSJSONObject = {
+  ICEBREAKER: 'icebreaker',
+  ENERGY: 'energy',
+  COLLABORATION: 'collaboration',
+  CREATIVITY: 'creativity',
+  REFLECTION: 'reflection',
+  CUSTOM: 'custom',
+  TEAM_FUSION: '团队融合',
+  GENERIC: '通用'
+}
+
+export const ACTIVITY_CATEGORY_LABELS : UTSJSONObject = {
+  'icebreaker': '破冰',
+  'energy': '能量',
+  'collaboration': '协作',
+  'creativity': '创意',
+  'reflection': '反思',
+  'custom': '自定义',
+  '团队融合': '团队融合',
+  '通用': '通用'
+}
+
+export const REVIEW_METHODS : UTSJSONObject = {
+  ORID: 'orid',
+  FOUR_F: '4f',
+  SSC: 'ssc'
+}
+
+export const REVIEW_METHOD_LABELS : UTSJSONObject = {
+  'orid': 'ORID',
+  '4f': '4F',
+  'ssc': 'SSC'
+}
+
+export const LIVE_PHASES : UTSJSONObject = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  PAUSED: 'paused',
+  ENDED: 'ended'
+}
+
+export const TODO_TYPES : UTSJSONObject = {
+  DRAFT_PLAN: 'draft_plan',
+  CONFIRMED_PLAN: 'confirmed_plan',
+  DELIVERED_PLAN: 'delivered_plan',
+  REVIEWED_PLAN: 'reviewed_plan'
+}
+
+export const STORAGE_KEYS : UTSJSONObject = {
+  TOKEN: 'auth_token',
+  USER_INFO: 'user_info',
+  CURRENT_PLAN: 'current_plan',
+  LIVE_SESSION: 'live_session',
+  DRAFT_NOTES: 'draft_notes',
+  APP_CONFIG: 'app_config'
+}
+
+export const API_BASE_URL : string = import.meta.env.VITE_API_BASE_URL || ''
+
+export function normalizePlanType(planType : string | null) : string {
+  if (planType == null || planType.length === 0) {
+    return PLAN_TYPES['CUSTOM'] as string
+  }
+  return (LEGACY_PLAN_TYPE_MAP[planType] as string) || planType
+}
+
+export function getPlanTypeLabel(planType : string | null) : string {
+  const normalized = normalizePlanType(planType)
+  return (PLAN_TYPE_LABELS[normalized] as string) || '自定义'
+}

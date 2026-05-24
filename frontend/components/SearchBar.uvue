@@ -1,0 +1,83 @@
+<script setup>
+import { ref } from 'vue'
+
+const props = defineProps({
+  placeholder: {
+    type: String,
+    default: '搜索'
+  },
+  value: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['update:value', 'search', 'clear'])
+
+const keyword = ref<string>(props.value)
+
+function onInput(e) {
+  keyword.value = e.detail.value
+  emit('update:value', keyword.value)
+}
+
+function onSearch() {
+  emit('search', keyword.value)
+}
+
+function onClear() {
+  keyword.value = ''
+  emit('update:value', '')
+  emit('clear')
+}
+</script>
+
+<template>
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        :value="keyword"
+        :placeholder="placeholder"
+        placeholder-class="search-placeholder"
+        confirm-type="search"
+        @input="onInput"
+        @confirm="onSearch"
+      />
+      <text v-if="keyword" class="clear-icon" @click="onClear">✕</text>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.search-bar {
+  padding: $spacing-sm $spacing-md;
+}
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  background: $bg-tertiary;
+  border-radius: $radius-round;
+  padding: 0 $spacing-md;
+  height: 72rpx;
+}
+.search-icon {
+  font-size: 28rpx;
+  margin-right: $spacing-xs;
+}
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  font-size: $font-size-md;
+  color: $text-primary;
+}
+.search-placeholder {
+  color: $text-tertiary;
+}
+.clear-icon {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  padding: 8rpx;
+}
+</style>

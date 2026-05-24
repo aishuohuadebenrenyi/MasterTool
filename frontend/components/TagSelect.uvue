@@ -1,0 +1,97 @@
+<script setup>
+defineProps({
+  options: {
+    type: Array,
+    default: () => []
+  },
+  modelValue: {
+    type: [String, Number],
+    default: ''
+  },
+  multiple: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+function onSelect(option) {
+  if (props.multiple) {
+    const current = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+    const index = current.indexOf(option.value)
+    if (index > -1) {
+      current.splice(index, 1)
+    } else {
+      current.push(option.value)
+    }
+    emit('update:modelValue', current)
+    emit('change', current)
+  } else {
+    emit('update:modelValue', option.value)
+    emit('change', option.value)
+  }
+}
+
+const props = defineProps({
+  options: {
+    type: Array,
+    default: () => []
+  },
+  modelValue: {
+    type: [String, Number, Array],
+    default: ''
+  },
+  multiple: {
+    type: Boolean,
+    default: false
+  }
+})
+
+function isActive(option) {
+  if (props.multiple) {
+    return Array.isArray(props.modelValue) && props.modelValue.includes(option.value)
+  }
+  return props.modelValue === option.value
+}
+</script>
+
+<template>
+  <view class="tag-select">
+    <view
+      v-for="option in options"
+      :key="option.value"
+      :class="['tag-item', { active: isActive(option) }]"
+      @click="onSelect(option)"
+    >
+      <text class="tag-text">{{ option.label }}</text>
+    </view>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.tag-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+.tag-item {
+  padding: 12rpx 24rpx;
+  border-radius: $radius-round;
+  background: $bg-tertiary;
+  border: 2rpx solid transparent;
+
+  &.active {
+    background: rgba($brand-primary, 0.1);
+    border-color: $brand-primary;
+
+    .tag-text {
+      color: $brand-primary;
+    }
+  }
+}
+.tag-text {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+</style>

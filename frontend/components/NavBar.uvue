@@ -1,0 +1,90 @@
+<script setup>
+import { ref } from 'vue'
+import { calcNavBarInfo } from '../utils/navbar'
+
+defineProps({
+  title: { type: String, default: '' },
+  showBack: { type: Boolean, default: true },
+  backgroundColor: { type: String, default: '#1A1A2E' },
+  titleColor: { type: String, default: '#FFFFFF' },
+  backIconColor: { type: String, default: '#FFFFFF' }
+})
+
+defineEmits(['back'])
+
+const navBarInfo = calcNavBarInfo()
+const statusBarHeight = navBarInfo['statusBarHeight'] as number
+const navBarHeight = navBarInfo['navBarHeight'] as number
+const contentHeight = navBarInfo['contentHeight'] as number
+const leftSafeWidth = navBarInfo['leftSafeWidth'] as number
+const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
+</script>
+
+<template>
+  <view class="navbar" :style="{ backgroundColor }">
+    <view class="navbar-statusbar" :style="{ height: statusBarHeight + 'px' }"></view>
+    <view class="navbar-content" :style="{ height: contentHeight + 'px' }">
+      <view v-if="showBack" class="navbar-back" @click="$emit('back')">
+        <text class="back-icon" :style="{ color: backIconColor }">‹</text>
+      </view>
+      <view v-else class="navbar-back-placeholder"></view>
+      <text class="navbar-title" :style="{ color: titleColor, left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">{{ title }}</text>
+      <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px' }">
+        <slot name="right"></slot>
+      </view>
+    </view>
+  </view>
+  <view :style="{ height: navBarHeight + 'px' }"></view>
+</template>
+
+<style scoped>
+.navbar {
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+}
+.navbar-statusbar {
+}
+.navbar-content { display: flex; align-items: center; padding: 0 32rpx; position: relative; }
+.navbar-back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.navbar-back-placeholder {
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
+}
+.back-icon {
+  font-size: 48rpx;
+  font-weight: 500;
+  line-height: 1;
+}
+.navbar-title {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navbar-right {
+  flex-shrink: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+</style>

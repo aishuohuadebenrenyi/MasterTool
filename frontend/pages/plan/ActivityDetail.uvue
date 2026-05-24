@@ -1,0 +1,506 @@
+<script setup>
+import { ref, computed } from 'vue'
+import { useActivityStore } from '../../stores/activity'
+import { usePlanStore } from '../../stores/plan'
+import { ACTIVITY_CATEGORY_LABELS } from '../../utils/constants'
+import NavBar from '../../components/NavBar.uvue'
+
+const activityStore = useActivityStore()
+const planStore = usePlanStore()
+
+const activityId = ref<string>('')
+const activity = ref<UTSJSONObject | null>(null)
+const isFavorite = ref<boolean>(false)
+const expandRules = ref<boolean>(false)
+const expandReview = ref<boolean>(false)
+const expandTips = ref<boolean>(false)
+const showAddToPlan = ref<boolean>(false)
+const addToPlanStep = ref<number>(1)
+const selectedPlanId = ref<string>('')
+const selectedPlan = ref<UTSJSONObject | null>(null)
+
+const activityName = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['name'] as string) || ''
+})
+
+const categoryLabel = computed(() : string => {
+  if (activity.value == null) return ''
+  const category = activity.value['category'] as string
+  if (!category) return ''
+  const label = ACTIVITY_CATEGORY_LABELS[category] as string | null
+  return label != null ? label : category
+})
+
+const scenes = computed(() : Array<string> => {
+  if (activity.value == null) return []
+  const s = activity.value['scenes'] as Array<string> | null
+  return s != null ? s : []
+})
+
+const riskLevel = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['riskLevel'] as string) || ''
+})
+
+const difficultyLabel = computed(() : string => {
+  if (activity.value == null) return ''
+  const d = activity.value['difficulty'] as string
+  if (d === 'low' || d === '简单') return '简单'
+  if (d === 'medium' || d === '中等') return '中等'
+  if (d === 'hard' || d === '困难') return '困难'
+  return d || ''
+})
+
+const intensityLabel = computed(() : string => {
+  if (activity.value == null) return ''
+  const i = activity.value['intensity'] as string
+  if (i === 'low') return '低'
+  if (i === 'medium') return '中'
+  if (i === 'high') return '高'
+  return i || ''
+})
+
+const participants = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['participants'] as string) || ''
+})
+
+const duration = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['duration'] as string) || ''
+})
+
+const objective = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['objective'] as string) || ''
+})
+
+const rules = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['rules'] as string) || ''
+})
+
+const reviewQuestions = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['reviewQuestions'] as string) || ''
+})
+
+const leaderTips = computed(() : string => {
+  if (activity.value == null) return ''
+  return (activity.value['leaderTips'] as string) || ''
+})
+
+const availablePlans = computed<Array<UTSJSONObject>>(() => {
+  return planStore.plans.filter(p => {
+    const status = p['status'] as string
+    return status === 'draft' || status === 'confirmed'
+  })
+})
+
+const selectedPlanPhases = computed<Array<UTSJSONObject>>(() => {
+  if (!selectedPlan.value) return [] as Array<UTSJSONObject>
+  return (selectedPlan.value!['phases'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>
+})
+
+onLoad((options) => {
+  if (options != null && options['id'] != null) {
+    activityId.value = options['id'] as string
+    loadActivity(options['id'] as string)
+  }
+})
+
+async function loadActivity(id : string) {
+  try {
+    const data = await activityStore.fetchActivityDetail(id)
+    if (data != null) {
+      activity.value = data
+      isFavorite.value = (data['isFavorite'] as boolean) || false
+    }
+  } catch (e) {}
+}
+
+function goBack() {
+  uni.navigateBack()
+}
+
+async function handleToggleFavorite() {
+  if (!activityId.value) return
+  try {
+    await activityStore.toggleFavorite(activityId.value)
+    isFavorite.value = !isFavorite.value
+  } catch (e) {
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  }
+}
+
+function handleAddToPlan() {
+  addToPlanStep.value = 1
+  selectedPlanId.value = ''
+  selectedPlan.value = null
+  showAddToPlan.value = true
+}
+
+function selectPlanForAdd(plan : UTSJSONObject) {
+  selectedPlanId.value = plan['id'] as string
+  selectedPlan.value = plan
+  addToPlanStep.value = 2
+}
+
+function backToPlanList() {
+  addToPlanStep.value = 1
+}
+
+function selectPhaseForAdd(phaseIndex : number) {
+  showAddToPlan.value = false
+  uni.showToast({ title: '已添加到方案', icon: 'success' })
+}
+</script>
+
+<template>
+  <view class="page">
+    <NavBar title="活动详情" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
+
+    <scroll-view class="content-scroll" scroll-y>
+      <view class="content">
+        <view class="card header-card">
+          <text class="activity-name">{{ activityName }}</text>
+          <view class="header-tags">
+            <view class="scene-tag" v-for="(scene, idx) in scenes" :key="idx">
+              <text class="scene-tag-text">{{ scene }}</text>
+            </view>
+            <view class="difficulty-badge" v-if="difficultyLabel">
+              <text class="difficulty-text">{{ difficultyLabel }}</text>
+            </view>
+            <view class="risk-tag" v-if="riskLevel">
+              <text class="risk-tag-text">⚠️ {{ riskLevel }}风险</text>
+            </view>
+          </view>
+          <view class="header-meta">
+            <text class="header-meta-text">👥 {{ participants }}</text>
+            <text class="header-meta-dot">·</text>
+            <text class="header-meta-text">⏱ {{ duration }}</text>
+          </view>
+        </view>
+
+        <view class="card" v-if="objective">
+          <text class="card-title">学习目标</text>
+          <text class="card-body">{{ objective }}</text>
+        </view>
+
+        <view class="card expandable-card" v-if="rules">
+          <view class="expandable-header" @click="expandRules = !expandRules">
+            <text class="expandable-title">📋 规则说明</text>
+            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandRules }">›</text>
+          </view>
+          <view class="expandable-body" v-if="expandRules">
+            <text class="card-body">{{ rules }}</text>
+          </view>
+        </view>
+
+        <view class="card expandable-card" v-if="reviewQuestions">
+          <view class="expandable-header" @click="expandReview = !expandReview">
+            <text class="expandable-title">🔄 复盘引导</text>
+            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandReview }">›</text>
+          </view>
+          <view class="expandable-body" v-if="expandReview">
+            <text class="card-body">{{ reviewQuestions }}</text>
+          </view>
+        </view>
+
+        <view class="card expandable-card" v-if="leaderTips">
+          <view class="expandable-header" @click="expandTips = !expandTips">
+            <text class="expandable-title">💡 带领者Tips</text>
+            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandTips }">›</text>
+          </view>
+          <view class="expandable-body" v-if="expandTips">
+            <text class="card-body">{{ leaderTips }}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="bottom-bar">
+      <view class="fav-btn" @click="handleToggleFavorite">
+        <text class="fav-icon">{{ isFavorite ? '❤️' : '🤍' }}</text>
+      </view>
+      <view class="add-btn" @click="handleAddToPlan">
+        <text class="add-btn-text">📋 添加到方案</text>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showAddToPlan }" @click="showAddToPlan = false">
+      <view class="popup-mask"></view>
+      <view class="popup-container" :class="{ 'popup-container-visible': showAddToPlan }" @click.stop="">
+        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
+        <view class="popup-header">
+          <text class="popup-title">{{ addToPlanStep === 1 ? '选择方案' : '选择环节' }}</text>
+          <view class="popup-close" @click="showAddToPlan = false"><text class="popup-close-icon">✕</text></view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view v-if="addToPlanStep === 1">
+            <view class="plan-select-card" v-for="plan in availablePlans" :key="plan['id']" @click="selectPlanForAdd(plan)">
+              <text class="plan-select-name">{{ plan['name'] as string }}</text>
+              <view class="plan-select-meta">
+                <text class="plan-select-meta-text">{{ plan['client'] as string || '' }}</text>
+                <text class="plan-select-meta-dot" v-if="plan['client']">·</text>
+                <text class="plan-select-meta-text">{{ plan['people'] }}人</text>
+              </view>
+            </view>
+            <view class="empty-plans" v-if="availablePlans.length === 0">
+              <text class="empty-plans-text">暂无可添加的方案</text>
+            </view>
+          </view>
+          <view v-if="addToPlanStep === 2">
+            <view class="back-to-plans" @click="backToPlanList">
+              <text class="back-to-plans-text">‹ 返回方案列表</text>
+            </view>
+            <view class="phase-select-item" v-for="(phase, idx) in selectedPlanPhases" :key="idx" @click="selectPhaseForAdd(idx)">
+              <view class="phase-select-badge" :style="{ backgroundColor: (phase['color'] as string) || '#4A7CF7' }">
+                <text class="phase-select-badge-text">{{ idx + 1 }}</text>
+              </view>
+              <view class="phase-select-info">
+                <text class="phase-select-name">{{ phase['icon'] as string || '' }} {{ phase['name'] as string }}</text>
+                <text class="phase-select-time">{{ phase['time'] as number || phase['duration'] as number || 0 }}分钟</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+}
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F5;
+}
+.nav-bar-content {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  position: relative;
+}
+.nav-back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-back-icon {
+  font-size: 36rpx;
+  color: #333333;
+  font-weight: 400;
+}
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #000000;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav-placeholder {
+  width: 88rpx;
+}
+.content-scroll {
+  flex: 1;
+}
+.content {
+  padding: 24rpx 32rpx;
+  padding-bottom: 200rpx;
+}
+.card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.header-card {
+  padding-bottom: 24rpx;
+}
+.activity-name {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.header-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+.scene-tag {
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: #E8F0FE;
+}
+.scene-tag-text {
+  font-size: 24rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.difficulty-badge {
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: #FFF3E0;
+}
+.difficulty-text {
+  font-size: 24rpx;
+  color: #F57C00;
+  font-weight: 600;
+}
+.risk-tag {
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: #FFE5E5;
+}
+.risk-tag-text {
+  font-size: 24rpx;
+  color: #FF3B30;
+  font-weight: 600;
+}
+.header-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+}
+.header-meta-text {
+  font-size: 26rpx;
+  color: #8E8E93;
+}
+.header-meta-dot {
+  font-size: 26rpx;
+  color: #C7C7CC;
+}
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.card-body {
+  font-size: 28rpx;
+  color: #3C3C43;
+  line-height: 44rpx;
+}
+.expandable-card {
+  padding: 0;
+}
+.expandable-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+}
+.expandable-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.expandable-arrow {
+  font-size: 32rpx;
+  color: #C7C7CC;
+  transition: transform 0.2s;
+}
+.expandable-arrow-open {
+  transform: rotate(90deg);
+}
+.expandable-body {
+  padding: 0 32rpx 28rpx;
+}
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background-color: #FFFFFF;
+  box-shadow: 0 -2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.fav-btn {
+  width: 96rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 16rpx;
+  background-color: #FFFFFF;
+}
+.fav-icon {
+  font-size: 44rpx;
+  color: #FF9500;
+}
+.add-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+}
+.add-btn-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 999; pointer-events: none; }
+.popup-overlay-visible { pointer-events: auto; }
+.popup-mask { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s ease; }
+.popup-overlay-visible .popup-mask { opacity: 1; }
+.popup-container { position: absolute; left: 0; right: 0; bottom: 0; max-height: 60vh; background-color: #FFFFFF; border-radius: 32rpx 32rpx 0 0; transform: translateY(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
+.popup-container-visible { transform: translateY(0); }
+.popup-handle-bar { display: flex; justify-content: center; padding: 16rpx 0 8rpx; }
+.popup-handle { width: 64rpx; height: 8rpx; border-radius: 4rpx; background-color: #D1D1D6; }
+.popup-header { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 16rpx 40rpx 20rpx; border-bottom-width: 1rpx; border-bottom-style: solid; border-bottom-color: #F0F0F0; }
+.popup-title { font-size: 34rpx; font-weight: 600; color: #1A1A2E; }
+.popup-close { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; }
+.popup-close-icon { font-size: 32rpx; color: #8E8E93; }
+.popup-body { flex: 1; padding: 24rpx 40rpx 40rpx; overflow-y: auto; }
+.plan-select-card { padding: 24rpx; background-color: #F8F9FE; border-radius: 16rpx; margin-bottom: 16rpx; }
+.plan-select-name { font-size: 30rpx; font-weight: 600; color: #1A1A2E; margin-bottom: 8rpx; }
+.plan-select-meta { display: flex; flex-direction: row; align-items: center; gap: 8rpx; }
+.plan-select-meta-text { font-size: 24rpx; color: #8E8E93; }
+.plan-select-meta-dot { font-size: 24rpx; color: #C7C7CC; }
+.empty-plans { padding: 60rpx 0; align-items: center; }
+.empty-plans-text { font-size: 28rpx; color: #C7C7CC; }
+.back-to-plans { padding: 16rpx 0; margin-bottom: 16rpx; }
+.back-to-plans-text { font-size: 28rpx; color: #4A7CF7; font-weight: 500; }
+.phase-select-item { display: flex; flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom-width: 1rpx; border-bottom-style: solid; border-bottom-color: #F0F0F0; }
+.phase-select-badge { width: 48rpx; height: 48rpx; border-radius: 24rpx; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.phase-select-badge-text { font-size: 24rpx; font-weight: 600; color: #FFFFFF; }
+.phase-select-info { flex: 1; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.phase-select-name { font-size: 28rpx; font-weight: 500; color: #1A1A2E; }
+.phase-select-time { font-size: 24rpx; color: #8E8E93; }
+</style>

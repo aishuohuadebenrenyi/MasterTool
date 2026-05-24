@@ -1,0 +1,69 @@
+export type ValidationResult = {
+  valid : boolean
+  message : string
+}
+
+export function isRequired(value : any, fieldName : string = '此字段') : ValidationResult {
+  if (value === null || value === undefined || value === '') {
+    return { valid: false, message: `${fieldName}不能为空` }
+  }
+  return { valid: true, message: '' }
+}
+
+export function isInRange(value : any, min : number, max : number, fieldName : string = '此字段') : ValidationResult {
+  const num = Number(value)
+  if (isNaN(num)) {
+    return { valid: false, message: `${fieldName}必须是数字` }
+  }
+  if (num < min || num > max) {
+    return { valid: false, message: `${fieldName}必须在${min}-${max}之间` }
+  }
+  return { valid: true, message: '' }
+}
+
+export function isMaxLength(value : any, max : number, fieldName : string = '此字段') : ValidationResult {
+  if (value === null || value === undefined) {
+    return { valid: true, message: '' }
+  }
+  if (String(value).length > max) {
+    return { valid: false, message: `${fieldName}不能超过${max}个字符` }
+  }
+  return { valid: true, message: '' }
+}
+
+export type PlanValidateResult = {
+  valid : boolean
+  errors : string[]
+}
+
+export function validatePlan(planData : UTSJSONObject) : PlanValidateResult {
+  const errors : string[] = []
+
+  const nameCheck = isRequired(planData.name, '方案名称')
+  if (!nameCheck.valid) errors.push(nameCheck.message)
+
+  if (planData.people !== undefined) {
+    const peopleCheck = isInRange(planData.people, 1, 999, '参与人数')
+    if (!peopleCheck.valid) errors.push(peopleCheck.message)
+  }
+
+  if (planData.phases && planData.phases.length === 0) {
+    errors.push('方案至少需要一个环节')
+  }
+
+  return { valid: errors.length === 0, errors }
+}
+
+export function validateActivity(activityData : UTSJSONObject) : PlanValidateResult {
+  const errors : string[] = []
+
+  const nameCheck = isRequired(activityData.name, '活动名称')
+  if (!nameCheck.valid) errors.push(nameCheck.message)
+
+  if (activityData.duration !== undefined) {
+    const durationCheck = isInRange(activityData.duration, 1, 480, '活动时长')
+    if (!durationCheck.valid) errors.push(durationCheck.message)
+  }
+
+  return { valid: errors.length === 0, errors }
+}

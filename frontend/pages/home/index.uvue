@@ -1,0 +1,1059 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { usePlanStore } from '../../stores/plan'
+import { useUserStore } from '../../stores/user'
+import { PLAN_TYPES } from '../../utils/constants'
+import { calcNavBarInfo } from '../../utils/navbar'
+
+const planStore = usePlanStore()
+const userStore = useUserStore()
+
+const navBarInfo = calcNavBarInfo()
+const statusBarHeight = navBarInfo['statusBarHeight'] as number
+const contentHeight = navBarInfo['contentHeight'] as number
+const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
+const homeHeaderHeight = statusBarHeight + Math.max(contentHeight, 120)
+const safeAreaBottom = ref<number>(0)
+
+try {
+  const sysInfo = uni.getSystemInfoSync()
+  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
+} catch (_e : unknown) {}
+
+const displayName = computed(() => userStore.displayName)
+
+const greetingText = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return '早上好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+})
+
+const dateText = computed(() => {
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return `${month}月${day}日 ${weekdays[now.getDay()]}`
+})
+
+const reviewCount = computed(() => planStore.deliveredPlans.length)
+
+const todos = computed(() => {
+  const items : Array<UTSJSONObject> = []
+  if (planStore.confirmedPlans.length > 0) {
+    items.push({ icon: '🔴', label: `${planStore.confirmedPlans.length} 个方案待开课`, action: 'confirmed' })
+  }
+  if (planStore.deliveredPlans.length > 0) {
+    items.push({ icon: '📋', label: `${planStore.deliveredPlans.length} 场待复盘`, action: 'review' })
+  }
+  if (planStore.draftPlans.length > 0) {
+    items.push({ icon: '📝', label: `${planStore.draftPlans.length} 个草稿方案`, action: 'draft' })
+  }
+  return items
+})
+
+const showPlanSelect = ref<boolean>(false)
+const showQuickCreate = ref<boolean>(false)
+const showPrepConfirm = ref<boolean>(false)
+const selectedPlanId = ref<string>('')
+
+const flowTemplates : Array<UTSJSONObject> = [
+  { id: 'corporate', icon: '🎯', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', tools: ['签到', '计时器', '分组', '积分', '抽签'] },
+  { id: 'teambuilding', icon: '🎉', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', tools: ['签到', '分组', '积分', '音乐'] },
+  { id: 'improv_show', icon: '🎭', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', tools: ['签到', '计时器', '抽签', '评分'] },
+  { id: 'improv_training', icon: '🏋️', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', tools: ['签到', '计时器', '分组', '抽签'] }
+]
+
+const selectedTemplate = ref<UTSJSONObject | null>(null)
+const trainingName = ref<string>('')
+const peopleCount = ref<string>('')
+
+const prepPeopleCount = ref<string>('')
+const groupMethod = ref<string>('按人数均分')
+const teamCount = ref<string>('待分组')
+const scoreMode = ref<string>('简化模式')
+const checkInMethod = ref<string>('扫码签到')
+
+const showConfigEdit = ref<boolean>(false)
+const configEditTitle = ref<string>('')
+const configEditKey = ref<string>('')
+const configEditOptions : Array<string> = []
+
+const prepToolTags : Array<UTSJSONObject> = [
+  { icon: '✋', name: '签到' },
+  { icon: '👥', name: '分组' },
+  { icon: '🏆', name: '积分' },
+  { icon: '⏱', name: '计时' },
+  { icon: '🎲', name: '抽签' },
+  { icon: '🎵', name: '音乐' }
+]
+
+const filteredToolTags = computed(() => {
+  if (!selectedTemplate.value) return [] as Array<UTSJSONObject>
+  const tools = selectedTemplate.value['tools'] as Array<string>
+  return prepToolTags.filter((tag : UTSJSONObject) => {
+    const tagName = tag['name'] as string
+    return tools.some((tool : string) => {
+      return tool.indexOf(tagName) !== -1 || tagName.indexOf(tool) !== -1
+    })
+  })
+})
+
+function openPlanSelect() {
+  showPlanSelect.value = true
+}
+
+function closePlanSelect() {
+  showPlanSelect.value = false
+}
+
+function selectFromMyPlans() {
+  showPlanSelect.value = false
+  uni.switchTab({ url: '/pages/prepare/index' })
+}
+
+function selectTemplate(tpl : UTSJSONObject) {
+  selectedTemplate.value = tpl
+  trainingName.value = (tpl['name'] as string) || ''
+  peopleCount.value = ''
+  showPlanSelect.value = false
+  setTimeout(() => {
+    showQuickCreate.value = true
+  }, 350)
+}
+
+function closeQuickCreate() {
+  showQuickCreate.value = false
+  selectedTemplate.value = null
+  trainingName.value = ''
+  peopleCount.value = ''
+}
+
+function submitQuickCreate() {
+  if (!trainingName.value) return
+  selectedPlanId.value = ''
+  prepPeopleCount.value = peopleCount.value || '0'
+  teamCount.value = '待分组'
+  showQuickCreate.value = false
+  setTimeout(() => {
+    showPrepConfirm.value = true
+  }, 350)
+}
+
+function closePrepConfirm() {
+  showPrepConfirm.value = false
+}
+
+function openConfigEdit(key : string) {
+  configEditKey.value = key
+  if (key === 'checkin') {
+    configEditTitle.value = '签到方式'
+    configEditOptions.splice(0, configEditOptions.length, '扫码签到', '手动签到', '混合签到')
+  } else if (key === 'group') {
+    configEditTitle.value = '分组方式'
+    configEditOptions.splice(0, configEditOptions.length, '按人数均分', '自由分组', '随机分组')
+  } else if (key === 'score') {
+    configEditTitle.value = '积分模式'
+    configEditOptions.splice(0, configEditOptions.length, '简化模式', '详细模式', '无积分')
+  }
+  showConfigEdit.value = true
+}
+
+function closeConfigEdit() {
+  showConfigEdit.value = false
+}
+
+function isOptionSelected(opt : string) : boolean {
+  if (configEditKey.value === 'checkin') return checkInMethod.value === opt
+  if (configEditKey.value === 'group') return groupMethod.value === opt
+  if (configEditKey.value === 'score') return scoreMode.value === opt
+  return false
+}
+
+function selectConfigOption(opt : string) {
+  if (configEditKey.value === 'checkin') checkInMethod.value = opt
+  else if (configEditKey.value === 'group') groupMethod.value = opt
+  else if (configEditKey.value === 'score') scoreMode.value = opt
+  closeConfigEdit()
+}
+
+function getTemplatePhases(key : string) : Array<UTSJSONObject> {
+  if (key === (PLAN_TYPES['CORPORATE'] as string)) {
+    return [
+      { name: '开场连接', time: 15, color: '#FF6B35', icon: '🤝' },
+      { name: '主题导入', time: 20, color: '#007AFF', icon: '⚡' },
+      { name: '深度探索', time: 40, color: '#5856D6', icon: '🔍' },
+      { name: '实践应用', time: 30, color: '#34C759', icon: '💡' },
+      { name: '总结收束', time: 15, color: '#FF9500', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  }
+  if (key === (PLAN_TYPES['TEAMBUILDING'] as string)) {
+    return [
+      { name: '破冰热身', time: 20, color: '#FF6B35', icon: '🤝' },
+      { name: '团队挑战', time: 60, color: '#007AFF', icon: '⚡' },
+      { name: '分享庆祝', time: 20, color: '#34C759', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  }
+  if (key === (PLAN_TYPES['IMPROV_SHOW'] as string)) {
+    return [
+      { name: '暖场互动', time: 10, color: '#FF6B35', icon: '🤝' },
+      { name: '即兴表演', time: 40, color: '#5856D6', icon: '🎭' },
+      { name: '观众互动', time: 15, color: '#007AFF', icon: '💬' },
+      { name: '谢幕总结', time: 5, color: '#34C759', icon: '🎯' }
+    ] as Array<UTSJSONObject>
+  }
+  return [
+    { name: '热身练习', time: 10, color: '#FF6B35', icon: '🤝' },
+    { name: '技能训练', time: 30, color: '#007AFF', icon: '⚡' },
+    { name: '综合练习', time: 30, color: '#5856D6', icon: '🔍' }
+  ] as Array<UTSJSONObject>
+}
+
+async function startLive() {
+  showPrepConfirm.value = false
+  try {
+    let planId = selectedPlanId.value
+    if (!planId && selectedTemplate.value != null) {
+      const draft = await planStore.createPlan({
+        name: trainingName.value,
+        type: selectedTemplate.value['id'] as string,
+        people: Number(prepPeopleCount.value || peopleCount.value || '0'),
+        phases: getTemplatePhases(selectedTemplate.value['id'] as string),
+        prepConfig: {
+          headcount: Number(prepPeopleCount.value || peopleCount.value || '0'),
+          checkinMode: checkInMethod.value,
+          groupMode: groupMethod.value,
+          groupCount: teamCount.value,
+          scoreMode: scoreMode.value
+        }
+      } as UTSJSONObject)
+      planId = draft['id'] as string
+      await planStore.confirmPlan(planId)
+    }
+    if (!planId) {
+      uni.showToast({ title: '缺少方案信息', icon: 'none' })
+      return
+    }
+    uni.navigateTo({ url: `/pages/live/index?planId=${planId}` })
+  } catch (_e : unknown) {
+    uni.showToast({ title: '开课准备失败', icon: 'none' })
+  }
+}
+
+function goReviewCenter() {
+  uni.navigateTo({ url: '/pages/review/ReviewCenter' })
+}
+
+function handleTodoClick(action : string) {
+  if (action === 'confirmed') {
+    const confirmedPlan = planStore.confirmedPlans.length > 0 ? planStore.confirmedPlans[0] : null
+    if (confirmedPlan) {
+      selectedPlanId.value = confirmedPlan['id'] as string
+      selectedTemplate.value = null
+      trainingName.value = (confirmedPlan['name'] as string) || ''
+      prepPeopleCount.value = String(confirmedPlan['people'] || 0)
+      const prepConfig = (confirmedPlan['prepConfig'] as UTSJSONObject) || {} as UTSJSONObject
+      checkInMethod.value = (prepConfig['checkinMode'] as string) || '扫码签到'
+      groupMethod.value = (prepConfig['groupMode'] as string) || '按人数均分'
+      teamCount.value = String(prepConfig['groupCount'] || '待分组')
+      scoreMode.value = (prepConfig['scoreMode'] as string) || '简化模式'
+      showPrepConfirm.value = true
+    }
+  } else if (action === 'review') {
+    goReviewCenter()
+  } else if (action === 'draft') {
+    const draftPlan = planStore.draftPlans.length > 0 ? planStore.draftPlans[0] : null
+    if (draftPlan) {
+      uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${draftPlan['id'] as string}` })
+    } else {
+      uni.switchTab({ url: '/pages/prepare/index' })
+    }
+  }
+}
+
+onMounted(() => {
+  planStore.fetchPlans()
+})
+
+watch(() => showPlanSelect.value || showQuickCreate.value || showPrepConfirm.value || showConfigEdit.value, (visible : boolean) => {
+  if (visible) {
+    uni.hideTabBar({ animation: false })
+  } else {
+    uni.showTabBar({ animation: false })
+  }
+})
+
+onUnmounted(() => {
+  uni.showTabBar({ animation: false })
+})
+</script>
+
+<template>
+  <view class="page">
+    <view class="nav-bar-fixed" :style="{ minHeight: homeHeaderHeight + 'px', paddingTop: statusBarHeight + 'px', paddingLeft: '32rpx', paddingRight: (rightSafeWidth + 12) + 'px' }">
+      <view class="greeting-bar">
+        <view class="greeting-left">
+          <view class="avatar-small">
+            <text class="avatar-text">{{ displayName.charAt(0) }}</text>
+          </view>
+          <text class="greeting-name">{{ displayName }}，{{ greetingText }}</text>
+        </view>
+        <text class="greeting-date">{{ dateText }}</text>
+      </view>
+    </view>
+    <view :style="{ height: homeHeaderHeight + 'px' }"></view>
+
+    <view class="scene-cards">
+      <view class="scene-card-primary" @click="openPlanSelect">
+        <view class="scene-card-decor"></view>
+        <image class="scene-card-icon-image" src="/static/icons/home-start.svg" mode="aspectFit" />
+        <text class="scene-card-title-primary">我要开课</text>
+        <text class="scene-card-status-primary">开始一场培训</text>
+      </view>
+      <view class="scene-card-secondary" @click="goReviewCenter">
+        <image class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" mode="aspectFit" />
+        <view class="scene-card-text-group">
+          <text class="scene-card-title-secondary">我要复盘</text>
+          <text class="scene-card-status-secondary" v-if="reviewCount > 0">{{ reviewCount }}场待复盘</text>
+          <text class="scene-card-status-secondary" v-else>暂无待复盘</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-header" v-if="todos.length > 0">
+      <text class="section-title">待处理</text>
+    </view>
+    <view class="todo-list" v-if="todos.length > 0">
+      <view class="todo-item" v-for="(item, index) in todos" :key="index" @click="handleTodoClick(item['action'] as string)">
+        <text class="todo-icon">{{ item['icon'] }}</text>
+        <text class="todo-text">{{ item['label'] }}</text>
+        <text class="todo-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showPlanSelect }" @click="closePlanSelect">
+      <view class="popup-mask"></view>
+      <view class="popup-container" :class="{ 'popup-container-visible': showPlanSelect }" @click.stop="">
+        <view class="popup-handle-bar">
+          <view class="popup-handle"></view>
+        </view>
+        <view class="popup-header">
+          <text class="popup-title">选择流程模板</text>
+          <view class="popup-close" @click="closePlanSelect">
+            <text class="popup-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view class="my-plan-option" @click="selectFromMyPlans">
+            <view class="my-plan-icon-box">
+              <text class="my-plan-icon">📋</text>
+            </view>
+            <view class="my-plan-info">
+              <text class="my-plan-title">从我的方案</text>
+              <text class="my-plan-desc">选择已有方案直接开课</text>
+            </view>
+            <text class="my-plan-arrow">›</text>
+          </view>
+          <view class="template-section-label">
+            <text class="template-section-text">流程模板</text>
+          </view>
+          <view class="template-card" v-for="(tpl, idx) in flowTemplates" :key="idx" @click="selectTemplate(tpl)">
+            <view class="template-card-icon-box">
+              <text class="template-card-icon">{{ tpl['icon'] }}</text>
+            </view>
+            <view class="template-card-info">
+              <view class="template-card-name-row">
+                <text class="template-card-name">{{ tpl['name'] }}</text>
+                <view class="template-card-badge">
+                  <text class="template-card-badge-text">{{ tpl['tag'] }}</text>
+                </view>
+              </view>
+              <text class="template-card-desc">{{ tpl['desc'] }}</text>
+            </view>
+            <text class="template-card-arrow">›</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showQuickCreate }" @click="closeQuickCreate">
+      <view class="popup-mask"></view>
+      <view class="popup-container popup-container-tall" :class="{ 'popup-container-visible': showQuickCreate }" @click.stop="">
+        <view class="popup-handle-bar">
+          <view class="popup-handle"></view>
+        </view>
+        <view class="popup-header">
+          <text class="popup-title">快速创建</text>
+          <view class="popup-close" @click="closeQuickCreate">
+            <text class="popup-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view class="form-group" v-if="selectedTemplate">
+            <text class="form-label">选择模板</text>
+            <view class="template-badge">
+              <text class="template-badge-icon">{{ selectedTemplate['icon'] }}</text>
+              <text class="template-badge-text">{{ selectedTemplate['name'] }}</text>
+            </view>
+          </view>
+          <view class="form-group">
+            <text class="form-label">培训名称</text>
+            <input class="form-input" v-model="trainingName" placeholder="请输入培训名称" />
+          </view>
+          <view class="form-group">
+            <text class="form-label">预计人数</text>
+            <input class="form-input" v-model="peopleCount" type="number" placeholder="请输入参与人数" />
+          </view>
+          <view class="form-submit">
+            <view class="submit-btn" @click="submitQuickCreate">
+              <text class="submit-btn-text">🚀 创建并准备</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showPrepConfirm }" @click="closePrepConfirm">
+      <view class="popup-mask"></view>
+      <view class="popup-container popup-container-tall" :class="{ 'popup-container-visible': showPrepConfirm }" @click.stop="">
+        <view class="popup-handle-bar">
+          <view class="popup-handle"></view>
+        </view>
+        <view class="popup-header">
+          <text class="popup-title">准备确认</text>
+          <view class="popup-close" @click="closePrepConfirm">
+            <text class="popup-close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view class="prep-plan-info" v-if="selectedTemplate">
+            <text class="prep-plan-name">{{ trainingName }}</text>
+            <view class="prep-plan-tags">
+              <view class="prep-plan-tag">
+                <text class="prep-plan-tag-text">{{ selectedTemplate['icon'] }} {{ selectedTemplate['name'] }}</text>
+              </view>
+              <view class="prep-plan-tag prep-plan-tag-people">
+                <text class="prep-plan-tag-text">👥 {{ prepPeopleCount }}人</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="prep-section">
+            <view class="prep-section-header">
+              <text class="prep-section-title">签到配置</text>
+            </view>
+            <view class="prep-edit-row" @click="openConfigEdit('checkin')">
+              <text class="prep-edit-label">签到方式</text>
+              <view class="prep-edit-right">
+                <text class="prep-edit-value">{{ checkInMethod }}</text>
+                <text class="prep-edit-arrow">›</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="prep-section">
+            <view class="prep-section-header">
+              <text class="prep-section-title">分组配置</text>
+            </view>
+            <view class="prep-edit-row" @click="openConfigEdit('group')">
+              <text class="prep-edit-label">分组方式</text>
+              <view class="prep-edit-right">
+                <text class="prep-edit-value">{{ groupMethod }}</text>
+                <text class="prep-edit-arrow">›</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="prep-section">
+            <view class="prep-section-header">
+              <text class="prep-section-title">积分配置</text>
+            </view>
+            <view class="prep-edit-row" @click="openConfigEdit('score')">
+              <text class="prep-edit-label">积分模式</text>
+              <view class="prep-edit-right">
+                <text class="prep-edit-value">{{ scoreMode }}</text>
+                <text class="prep-edit-arrow">›</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="prep-section" v-if="selectedTemplate">
+            <view class="prep-section-header">
+              <text class="prep-section-title">工具配置</text>
+            </view>
+            <view class="prep-tools-card">
+              <view class="prep-tool-tag" v-for="(tool, idx) in filteredToolTags" :key="idx">
+                <text class="prep-tool-tag-text">{{ tool['icon'] }} {{ tool['name'] }}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="form-submit">
+            <view class="submit-btn" @click="startLive">
+              <text class="submit-btn-text">🚀 一键开始</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showConfigEdit }" @click="closeConfigEdit">
+      <view class="popup-mask"></view>
+      <view class="popup-container" :class="{ 'popup-container-visible': showConfigEdit }" @click.stop="">
+        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
+        <view class="popup-header">
+          <text class="popup-title">{{ configEditTitle }}</text>
+          <view class="popup-close" @click="closeConfigEdit"><text class="popup-close-icon">✕</text></view>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view class="config-option" v-for="(opt, idx) in configEditOptions" :key="idx" @click="selectConfigOption(opt)">
+            <text class="config-option-text">{{ opt }}</text>
+            <text class="config-option-check" v-if="isOptionSelected(opt)">✓</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  background-color: #F5F5F7;
+  padding: 0 32rpx;
+}
+.nav-bar-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #F5F5F7;
+}
+.nav-bar-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.greeting-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  width: 100%;
+}
+.greeting-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
+}
+.avatar-small {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.greeting-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.greeting-date {
+  font-size: 26rpx;
+  color: #8E8E93;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+.scene-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
+}
+.scene-card-primary {
+  background: linear-gradient(135deg, #4A7CF7, #6B9BFF);
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx;
+  position: relative;
+  overflow: hidden;
+}
+.scene-card-decor {
+  position: absolute;
+  top: -40rpx;
+  right: -40rpx;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 80rpx;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.scene-card-icon {
+  font-size: 72rpx;
+  margin-bottom: 16rpx;
+}
+.scene-card-icon-image {
+  width: 88rpx;
+  height: 88rpx;
+  margin-bottom: 16rpx;
+}
+.scene-card-title-primary {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 12rpx;
+}
+.scene-card-status-primary {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+.scene-card-secondary {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx 40rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 28rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.scene-card-icon-sm {
+  font-size: 56rpx;
+}
+.scene-card-icon-sm-image {
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+}
+.scene-card-text-group {
+  display: flex;
+  flex-direction: column;
+}
+.scene-card-title-secondary {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+.scene-card-status-secondary {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.section-header {
+  padding: 24rpx 0 16rpx;
+}
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.todo-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 24rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+.todo-icon {
+  font-size: 40rpx;
+  margin-right: 24rpx;
+}
+.todo-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.todo-arrow {
+  font-size: 32rpx;
+  color: #C7C7CC;
+}
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+.popup-overlay-visible {
+  pointer-events: auto;
+}
+.popup-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.popup-overlay-visible .popup-mask {
+  opacity: 1;
+}
+.popup-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 60vh;
+  background-color: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.popup-container-visible {
+  transform: translateY(0);
+}
+.popup-container-tall {
+  max-height: 75vh;
+}
+.popup-handle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 0 8rpx;
+}
+.popup-handle {
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background-color: #D1D1D6;
+}
+.popup-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 40rpx 20rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+.popup-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.popup-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.popup-close-icon {
+  font-size: 32rpx;
+  color: #8E8E93;
+}
+.popup-body {
+  flex: 1;
+  padding: 24rpx 40rpx 40rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom) + 24rpx);
+  overflow-y: auto;
+}
+.my-plan-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 28rpx 24rpx;
+  background: linear-gradient(135deg, #4A7CF7, #6B9BFF);
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+}
+.my-plan-icon-box {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 16rpx;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+.my-plan-icon {
+  font-size: 40rpx;
+}
+.my-plan-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.my-plan-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.my-plan-desc {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+.my-plan-arrow {
+  font-size: 36rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-left: 16rpx;
+}
+.template-section-label {
+  margin-bottom: 16rpx;
+}
+.template-section-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #8E8E93;
+}
+.template-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 24rpx;
+  background-color: #F8F9FE;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+}
+.template-card:last-child {
+  margin-bottom: 0;
+}
+.template-card-icon-box {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 16rpx;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+.template-card-icon {
+  font-size: 36rpx;
+}
+.template-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.template-card-name-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+.template-card-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.template-card-badge {
+  padding: 2rpx 14rpx;
+  border-radius: 8rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+}
+.template-card-badge-text {
+  font-size: 22rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.template-card-desc {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.template-card-arrow {
+  font-size: 36rpx;
+  color: #C7C7CC;
+  margin-left: 16rpx;
+}
+.form-group {
+  margin-bottom: 32rpx;
+}
+.form-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+.template-badge {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: rgba(74, 124, 247, 0.1);
+  border-radius: 12rpx;
+  padding: 12rpx 24rpx;
+  gap: 12rpx;
+}
+.template-badge-icon {
+  font-size: 28rpx;
+}
+.template-badge-text {
+  font-size: 28rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  background-color: #F5F5F7;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.form-submit {
+  margin-top: 48rpx;
+  padding-bottom: 20rpx;
+}
+.submit-btn {
+  width: 100%;
+  height: 96rpx;
+  background-color: #4A7CF7;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.submit-btn-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.prep-section {
+  margin-bottom: 28rpx;
+}
+.prep-section-header {
+  margin-bottom: 12rpx;
+}
+.prep-section-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #8E8E93;
+}
+.prep-plan-info {
+  background-color: #F8F9FE;
+  border-radius: 16rpx;
+  padding: 28rpx 24rpx;
+  margin-bottom: 28rpx;
+}
+.prep-plan-name {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 12rpx;
+}
+.prep-plan-tags {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+}
+.prep-plan-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+}
+.prep-plan-tag-people {
+  background-color: rgba(52, 199, 89, 0.1);
+}
+.prep-plan-tag-text {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #4A7CF7;
+}
+.prep-plan-tag-people .prep-plan-tag-text {
+  color: #34C759;
+}
+.prep-edit-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 24rpx;
+  background-color: #F8F9FE;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+.prep-edit-label {
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.prep-edit-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+}
+.prep-edit-value {
+  font-size: 28rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+.prep-edit-arrow {
+  font-size: 32rpx;
+  color: #C7C7CC;
+}
+.config-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+.config-option:last-child {
+  border-bottom-width: 0;
+}
+.config-option-text {
+  font-size: 30rpx;
+  color: #1A1A2E;
+}
+.config-option-check {
+  font-size: 32rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
+.prep-tools-card {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  background-color: #F8F9FE;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+.prep-tool-tag {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: rgba(74, 124, 247, 0.1);
+}
+.prep-tool-tag-text {
+  font-size: 24rpx;
+  color: #4A7CF7;
+  font-weight: 500;
+}
+</style>

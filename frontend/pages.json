@@ -1,0 +1,149 @@
+{
+  "pages": [
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "培训师工具箱",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/prepare/index",
+      "style": {
+        "navigationBarTitleText": "备课",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/plan/PlanEdit",
+      "style": {
+        "navigationBarTitleText": "方案编辑",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/plan/PlanPreview",
+      "style": {
+        "navigationBarTitleText": "方案预览",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/plan/ActivityDetail",
+      "style": {
+        "navigationBarTitleText": "活动详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/plan/ActivityEdit",
+      "style": {
+        "navigationBarTitleText": "编辑活动",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/live/index",
+      "style": {
+        "navigationBarTitleText": "培训现场",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/live/LiveEnd",
+      "style": {
+        "navigationBarTitleText": "培训结束"
+      }
+    },
+    {
+      "path": "pages/review/ReviewCenter",
+      "style": {
+        "navigationBarTitleText": "复盘中心",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/review/ReviewDetail",
+      "style": {
+        "navigationBarTitleText": "复盘详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/feedback/index",
+      "style": {
+        "navigationBarTitleText": "反馈收集",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/TrainingRecords",
+      "style": {
+        "navigationBarTitleText": "培训记录"
+      }
+    },
+    {
+      "path": "pages/mine/DataDetail",
+      "style": {
+        "navigationBarTitleText": "数据详情"
+      }
+    },
+    {
+      "path": "pages/mine/Settings",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/mine/HelpFeedback",
+      "style": {
+        "navigationBarTitleText": "帮助与反馈"
+      }
+    },
+    {
+      "path": "pages/mine/About",
+      "style": {
+        "navigationBarTitleText": "关于"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "培训师工具箱",
+    "navigationBarBackgroundColor": "#4A7CF7",
+    "backgroundColor": "#F5F5F7"
+  },
+  "tabBar": {
+    "color": "#8E8E93",
+    "selectedColor": "#4A7CF7",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/tab-home.png",
+        "selectedIconPath": "static/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/prepare/index",
+        "text": "备课",
+        "iconPath": "static/tab-prepare.png",
+        "selectedIconPath": "static/tab-prepare-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tab-mine.png",
+        "selectedIconPath": "static/tab-mine-active.png"
+      }
+    ]
+  }
+}

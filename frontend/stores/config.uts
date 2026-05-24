@@ -1,0 +1,95 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { STORAGE_KEYS } from '../utils/constants'
+import * as storage from '../utils/storage'
+
+export const useConfigStore = defineStore('config', () => {
+  const theme = ref<string>('light')
+  const swipeNextEnabled = ref<boolean>(true)
+  const swipePrevEnabled = ref<boolean>(true)
+  const doubleTapDelayEnabled = ref<boolean>(false)
+  const soundEnabled = ref<boolean>(true)
+  const vibrationEnabled = ref<boolean>(true)
+  const autoSaveNotes = ref<boolean>(true)
+
+  function persistConfig() {
+    storage.set(STORAGE_KEYS['APP_CONFIG'] as string, {
+      theme: theme.value,
+      swipeNextEnabled: swipeNextEnabled.value,
+      swipePrevEnabled: swipePrevEnabled.value,
+      doubleTapDelayEnabled: doubleTapDelayEnabled.value,
+      soundEnabled: soundEnabled.value,
+      vibrationEnabled: vibrationEnabled.value,
+      autoSaveNotes: autoSaveNotes.value
+    } as UTSJSONObject)
+  }
+
+  function restoreConfig() {
+    const raw = storage.get(STORAGE_KEYS['APP_CONFIG'] as string)
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as UTSJSONObject
+      theme.value = (parsed['theme'] as string) || 'light'
+      swipeNextEnabled.value = (parsed['swipeNextEnabled'] as boolean) ?? true
+      swipePrevEnabled.value = (parsed['swipePrevEnabled'] as boolean) ?? true
+      doubleTapDelayEnabled.value = (parsed['doubleTapDelayEnabled'] as boolean) ?? false
+      soundEnabled.value = (parsed['soundEnabled'] as boolean) ?? true
+      vibrationEnabled.value = (parsed['vibrationEnabled'] as boolean) ?? true
+      autoSaveNotes.value = (parsed['autoSaveNotes'] as boolean) ?? true
+    } catch (_e : unknown) {
+    }
+  }
+
+  function setTheme(newTheme : string) {
+    theme.value = newTheme
+    persistConfig()
+  }
+
+  function toggleSwipeNext() {
+    swipeNextEnabled.value = !swipeNextEnabled.value
+    persistConfig()
+  }
+
+  function toggleSwipePrev() {
+    swipePrevEnabled.value = !swipePrevEnabled.value
+    persistConfig()
+  }
+
+  function toggleDoubleTapDelay() {
+    doubleTapDelayEnabled.value = !doubleTapDelayEnabled.value
+    persistConfig()
+  }
+
+  function toggleSound() {
+    soundEnabled.value = !soundEnabled.value
+    persistConfig()
+  }
+
+  function toggleVibration() {
+    vibrationEnabled.value = !vibrationEnabled.value
+    persistConfig()
+  }
+
+  function toggleAutoSave() {
+    autoSaveNotes.value = !autoSaveNotes.value
+    persistConfig()
+  }
+
+  return {
+    theme,
+    swipeNextEnabled,
+    swipePrevEnabled,
+    doubleTapDelayEnabled,
+    soundEnabled,
+    vibrationEnabled,
+    autoSaveNotes,
+    restoreConfig,
+    setTheme,
+    toggleSwipeNext,
+    toggleSwipePrev,
+    toggleDoubleTapDelay,
+    toggleSound,
+    toggleVibration,
+    toggleAutoSave
+  }
+})

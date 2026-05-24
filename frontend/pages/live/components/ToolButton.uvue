@@ -1,0 +1,51 @@
+<script setup>
+defineProps({
+  icon: {
+    type: String,
+    default: ''
+  },
+  label: {
+    type: String,
+    default: ''
+  },
+  active: {
+    type: Boolean,
+    default: false
+  }
+})
+
+defineEmits(['click'])
+</script>
+
+<template>
+  <view :class="['tool-button', { active }]" @click="$emit('click')">
+    <text class="tool-icon">{{ icon }}</text>
+    <text class="tool-label">{{ label }}</text>
+  </view>
+</template>
+
+<style lang="scss" scoped>
+.tool-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: $radius-lg;
+  background: $bg-primary;
+  box-shadow: $shadow-sm;
+
+  &.active {
+    background: rgba($brand-primary, 0.1);
+  }
+}
+.tool-icon {
+  font-size: 40rpx;
+  margin-bottom: 4rpx;
+}
+.tool-label {
+  font-size: $font-size-xs;
+  color: $text-secondary;
+}
+</style>
