@@ -590,7 +590,7 @@ onUnmounted(() => {
         </view>
       </view>
 
-      <view class="bottom-action-section">
+      <view v-if="!hasOpenSheet" class="bottom-action-section">
         <view class="toolbar-section">
           <view class="toolbar-grid">
             <ToolButton
@@ -948,7 +948,7 @@ onUnmounted(() => {
     </view>
 
     <view v-if="showToolbox" class="sheet-overlay" @click="closeToolbox">
-      <view class="sheet-container" @click.stop>
+      <view class="sheet-container sheet-container-toolbox" @click.stop>
         <view class="sheet-handle"></view>
         <view class="sheet-header">
           <text class="sheet-title">🧰 工具箱</text>
@@ -1131,6 +1131,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   animation: sheetSlideUp 0.3s ease;
+}
+.sheet-container-toolbox {
+  max-height: 84vh;
 }
 .sheet-handle {
   width: 64rpx;

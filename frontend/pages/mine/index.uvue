@@ -9,7 +9,7 @@ const navBarInfo = calcNavBarInfo()
 const statusBarHeight = navBarInfo['statusBarHeight'] as number
 const contentHeight = navBarInfo['contentHeight'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const profileHeaderHeight = statusBarHeight + Math.max(contentHeight, 152)
+const profileHeaderHeight = statusBarHeight + Math.max(contentHeight, 132)
 
 const nickname = computed(() : string => userStore.displayName)
 const totalSessions = computed(() : number => userStore.stats?.['totalSessions'] || 0)
@@ -94,7 +94,7 @@ onMounted(() => {
 .page {
   min-height: 100vh;
   background-color: #F5F5F7;
-  padding: 32rpx;
+  padding: 0 32rpx 32rpx;
 }
 .nav-bar-fixed {
   position: fixed;
@@ -115,7 +115,7 @@ onMounted(() => {
 .mine-profile-card {
   background-color: #FFFFFF;
   border-radius: 24rpx;
-  margin-top: 8rpx;
+  margin-top: 0;
   margin-bottom: 24rpx;
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -127,9 +127,9 @@ onMounted(() => {
   gap: 28rpx;
   width: 100%;
   max-width: 620rpx;
-  min-height: 144rpx;
-  margin-top: 16rpx;
-  padding: 12rpx 0 12rpx;
+  min-height: 132rpx;
+  margin-top: 8rpx;
+  padding: 8rpx 0 8rpx;
 }
 .mine-avatar {
   width: 112rpx;

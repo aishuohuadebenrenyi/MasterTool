@@ -57,6 +57,8 @@ CORS(app)
 
 
 def build_event():
+    # 本地 Flask 调试统一拼成和云函数一致的 event 结构，
+    # 这样 functions/* 下的逻辑可以同时复用于本地开发和 serverless 部署。
     headers = dict(request.headers)
     body = request.get_json(silent=True) or {}
     query = dict(request.args)
@@ -72,6 +74,7 @@ def build_event():
 
 
 def handle_response(result):
+    # 本地开发允许 handler 直接返回 (dict, status_code) 或普通 dict，这里统一转成 Flask Response。
     if isinstance(result, tuple):
         data, status_code = result
         if isinstance(data, dict):

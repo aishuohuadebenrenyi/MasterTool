@@ -60,6 +60,7 @@ def main(event, context):
         updated_review = db.reviews.find_one({'_id': ObjectId(review_id)})
 
         if review.get('planId'):
+            # 复盘结果会反写回方案，保证首页/列表直接读取 plan 时也能看到最新复盘摘要和状态。
             plan_update = {'updatedAt': datetime.utcnow()}
             if 'method' in update_fields:
                 plan_update['reviewMethod'] = update_fields['method']

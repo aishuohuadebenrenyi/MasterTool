@@ -15,6 +15,7 @@ export function calcNavBarInfo() : UTSJSONObject {
   let isMpWeixin : boolean = false
 
   try {
+    // 先走 getSystemInfoSync，兼容 uni-app x 当前运行环境；拿不到时再退回更细的 windowInfo。
     const sysInfo = uni.getSystemInfoSync()
     statusBarHeight = sysInfo.statusBarHeight || 0
     screenWidth = sysInfo.screenWidth || 375
@@ -34,6 +35,7 @@ export function calcNavBarInfo() : UTSJSONObject {
   }
 
   try {
+    // 胶囊位置决定了微信端标题能否真正居中，所以左右安全区都基于它来计算，而不是写死固定值。
     const menuButton = (uni as unknown as UTSJSONObject)['getMenuButtonBoundingClientRect'] as (() => UTSJSONObject) | null
     if (menuButton != null) {
       const btn = menuButton()
@@ -58,6 +60,8 @@ export function calcNavBarInfo() : UTSJSONObject {
     contentHeight = 44
   }
 
+  // rightSafeWidth 预留给胶囊占位，leftSafeWidth 预留给返回区；
+  // 两边都参与标题布局，才能避免“视觉上看似居中、实际上被胶囊挤偏”的问题。
   const capsuleMarginRight : number = menuButtonRight > 0 ? Math.max(screenWidth - menuButtonRight, capsuleGap) : capsuleGap
   const capsuleOccupiedWidth : number = menuButtonLeft > 0 ? Math.max(screenWidth - menuButtonLeft + capsuleGap, defaultRightSafeWidth) : defaultRightSafeWidth
   rightSafeWidth = capsuleOccupiedWidth

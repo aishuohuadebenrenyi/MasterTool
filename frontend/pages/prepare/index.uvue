@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { useActivityStore } from '../../stores/activity'
 import { PLAN_STATUS_LABELS, getPlanTypeLabel, ACTIVITY_SCENE_LABELS } from '../../utils/constants'
@@ -12,7 +12,7 @@ const navBarInfo = calcNavBarInfo()
 const statusBarHeight = navBarInfo['statusBarHeight'] as number
 const contentHeight = navBarInfo['contentHeight'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const prepareHeaderHeight = statusBarHeight + Math.max(contentHeight, 104)
+const prepareHeaderHeight = statusBarHeight + Math.max(contentHeight, 56)
 
 const activeTab = ref<string>('plans')
 const planSearch = ref<string>('')
@@ -184,6 +184,8 @@ const mockActivities : Array<UTSJSONObject> = [
 
 async function ensureActivitiesLoaded() {
   const list = await activityStore.fetchActivities()
+  // 微信端联调阶段接口可能因为鉴权或域名校验拿不到数据；
+  // 这里保留一份本地兜底，优先保证“活动库结构可用、交互可验证”。
   if (list.length === 0) {
     activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
     console.log('[prepare.ensureActivitiesLoaded]', 'use_mock_activities')
@@ -268,6 +270,18 @@ onMounted(() => {
   ensureActivitiesLoaded().catch(() => {
     activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
   })
+})
+
+watch(() => showTemplateSelect.value, (visible : boolean) => {
+  if (visible) {
+    uni.hideTabBar({ animation: false })
+  } else {
+    uni.showTabBar({ animation: false })
+  }
+})
+
+onUnmounted(() => {
+  uni.showTabBar({ animation: false })
 })
 </script>
 
@@ -464,7 +478,7 @@ onMounted(() => {
   background-color: #F0F0F5;
   border-radius: 40rpx;
   padding: 6rpx;
-  margin: 16rpx 0 0;
+  margin: 0;
   width: 100%;
   max-width: 560rpx;
 }
@@ -490,14 +504,14 @@ onMounted(() => {
   font-weight: 600;
 }
 .content {
-  padding: 16rpx 32rpx 40rpx;
+  padding: 0 32rpx 40rpx;
 }
 .section-header-row {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 8rpx;
 }
 .section-action {
   font-size: 28rpx;
@@ -511,7 +525,7 @@ onMounted(() => {
 .search-input {
   width: 100%;
   display: block;
-  padding: 20rpx 32rpx;
+  padding: 10rpx 32rpx;
   border: none;
   border-radius: 40rpx;
   background-color: #FFFFFF;
@@ -778,15 +792,15 @@ onMounted(() => {
 .popup-overlay-visible { pointer-events: auto; }
 .popup-mask { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s ease; }
 .popup-overlay-visible .popup-mask { opacity: 1; }
-.popup-container { position: absolute; left: 0; right: 0; bottom: 118rpx; max-height: 60vh; background-color: #FFFFFF; border-radius: 32rpx 32rpx 0 0; transform: translateY(120%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
-.popup-container-visible { transform: translateY(0); }
+.popup-container { position: absolute; left: 0; right: 0; bottom: 0; max-height: 60vh; background-color: #FFFFFF; border-radius: 32rpx 32rpx 0 0; transform: translateY(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; opacity: 0; visibility: hidden; }
+.popup-container-visible { transform: translateY(0); opacity: 1; visibility: visible; }
 .popup-handle-bar { display: flex; justify-content: center; padding: 16rpx 0 8rpx; }
 .popup-handle { width: 64rpx; height: 8rpx; border-radius: 4rpx; background-color: #D1D1D6; }
 .popup-header { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 16rpx 40rpx 20rpx; border-bottom-width: 1rpx; border-bottom-style: solid; border-bottom-color: #F0F0F0; }
 .popup-title { font-size: 34rpx; font-weight: 600; color: #1A1A2E; }
 .popup-close { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; }
 .popup-close-icon { font-size: 32rpx; color: #8E8E93; }
-.popup-body { flex: 1; padding: 24rpx 40rpx 136rpx; overflow-y: auto; }
+.popup-body { flex: 1; padding: 24rpx 40rpx 40rpx; padding-bottom: calc(40rpx + env(safe-area-inset-bottom) + 24rpx); overflow-y: auto; }
 .template-modal-item { display: flex; flex-direction: row; align-items: flex-start; padding: 24rpx; background-color: #F8F9FE; border-radius: 16rpx; margin-bottom: 16rpx; }
 .template-modal-item:last-child { margin-bottom: 0; }
 .template-modal-icon-box { width: 72rpx; height: 72rpx; border-radius: 16rpx; background-color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-right: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); flex-shrink: 0; }

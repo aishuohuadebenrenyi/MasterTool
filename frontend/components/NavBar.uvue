@@ -24,10 +24,11 @@ const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
   <view class="navbar" :style="{ backgroundColor }">
     <view class="navbar-statusbar" :style="{ height: statusBarHeight + 'px' }"></view>
     <view class="navbar-content" :style="{ height: contentHeight + 'px' }">
-      <view v-if="showBack" class="navbar-back" @click="$emit('back')">
-        <text class="back-icon" :style="{ color: backIconColor }">‹</text>
+      <view v-if="showBack" class="navbar-back" :style="{ minWidth: leftSafeWidth + 'px' }" @click="$emit('back')">
+        <text class="back-icon" :style="{ color: backIconColor }">&lt;</text>
+        <text class="back-text" :style="{ color: backIconColor }">返回</text>
       </view>
-      <view v-else class="navbar-back-placeholder"></view>
+      <view v-else class="navbar-back-placeholder" :style="{ minWidth: leftSafeWidth + 'px' }"></view>
       <text class="navbar-title" :style="{ color: titleColor, left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">{{ title }}</text>
       <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px' }">
         <slot name="right"></slot>
@@ -52,8 +53,10 @@ const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
   width: 88rpx;
   height: 88rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8rpx;
   flex-shrink: 0;
   z-index: 1;
 }
@@ -64,6 +67,11 @@ const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
 }
 .back-icon {
   font-size: 48rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+.back-text {
+  font-size: 26rpx;
   font-weight: 500;
   line-height: 1;
 }

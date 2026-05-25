@@ -35,6 +35,7 @@ def main(event, context):
     if not Plan.can_deliver(plan['status']):
         return error('当前方案状态不允许开始实施', ErrorCode.STATUS_ERROR, 400)
 
+    # 同一方案在未结束前只保留一个活跃 session，重复开课直接返回现有场次，避免并发创建脏数据。
     existing = db.live_sessions.find_one({
         'planId': plan_id,
         'userId': user_id,
@@ -43,6 +44,7 @@ def main(event, context):
     if existing:
         return success(LiveSession.to_dict(existing))
 
+    # 开课时复制一份方案快照到 session，后续即使方案详情被调整，现场仍按当次开课版本执行。
     plan_snapshot = Plan.to_dict(plan)
 
     session_data = {
@@ -54,6 +56,8 @@ def main(event, context):
 
     try:
         db.live_sessions.insert_one(session)
+        # 这里只回写 sessionId 建立链路，不把方案直接改成 delivered。
+        # 交付完成的业务语义发生在 live/end，避免“刚开始就算已交付”。
         db.plans.update_one(
             {'_id': ObjectId(plan_id)},
             {'$set': {'sessionId': str(session['_id']), 'updatedAt': datetime.utcnow()}}

@@ -26,6 +26,7 @@ export const useLiveStore = defineStore('live', () => {
     try {
       loading.value = true
       const result = await liveApi.startLiveSession(data)
+      // sessionId 是现场链路的核心主键，后续签到、分组、积分、抽人、复盘都会沿着它继续往下走。
       sessionId.value = result['sessionId'] as string | null
       planId.value = data['planId'] as string | null
       planName.value = (data['planName'] as string) || ''
@@ -47,6 +48,7 @@ export const useLiveStore = defineStore('live', () => {
     try {
       loading.value = true
       const result = await liveApi.endLiveSession(sessionId.value)
+      // 结束现场后以后端返回的最终时长为准，避免前端计时和服务端统计出现偏差。
       phase.value = LIVE_PHASES['ENDED'] as string
       duration.value = (result['duration'] as number) || 0
       error.value = ''
@@ -141,6 +143,7 @@ export const useLiveStore = defineStore('live', () => {
   let noteCounter = 0
 
   function addNote(note : UTSJSONObject) {
+    // store 里的 notes 主要承担当前会话态展示；真正落库仍由页面层显式调用 note API 完成。
     notes.value.push({
       id: (note['id'] as string) || `${Date.now()}_${++noteCounter}`,
       ...note,
@@ -149,6 +152,7 @@ export const useLiveStore = defineStore('live', () => {
   }
 
   function reset() {
+    // 离开现场或重新开课前必须清空整个 live 上下文，避免旧 sessionId/分组/积分串到新场次。
     sessionId.value = null
     planId.value = null
     planName.value = ''

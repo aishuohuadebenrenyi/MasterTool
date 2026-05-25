@@ -64,6 +64,8 @@ function showToastOnce(message : string) {
 }
 
 function getConnectionErrorMessage(errMsg : string) : string {
+  // 微信开发者工具里最常见的联调问题不是后端逻辑报错，而是地址或域名校验问题。
+  // 这里优先把“环境问题”和“真实网络错误”区分开，避免用户被统一的网络错误提示误导。
   if (!BASE_URL) {
     return '未配置接口地址'
   }
@@ -81,6 +83,7 @@ function buildHeaders(customHeaders : UTSJSONObject = {} as UTSJSONObject) : UTS
     'Content-Type': 'application/json',
     ...customHeaders
   }
+  // 鉴权统一在请求层注入，业务 API 不需要各自重复拼 Authorization。
   const token = getAuthToken()
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
@@ -128,6 +131,7 @@ export function request(options : RequestOptions) : Promise<UTSJSONObject> {
 
         if (res.statusCode === 200) {
           const responseData = res.data as UTSJSONObject
+          // 后端统一使用 code/message/data 契约，真正给业务层的数据永远只透出 data。
           if (responseData['code'] === 0) {
             resolve(responseData['data'] as UTSJSONObject)
           } else {
@@ -139,6 +143,7 @@ export function request(options : RequestOptions) : Promise<UTSJSONObject> {
             reject(error)
           }
         } else if (res.statusCode === 401) {
+          // 一旦后端明确返回未授权，立即清空本地 token，避免前端持续带着失效登录态重试。
           storage.remove(STORAGE_KEYS['TOKEN'] as string)
           if (showError) {
             showToastOnce('请先登录')
@@ -155,6 +160,7 @@ export function request(options : RequestOptions) : Promise<UTSJSONObject> {
       fail(err) {
         if (showLoading) uni.hideLoading()
         const errMsg = err.errMsg || '网络连接失败'
+        // fail 分支表示请求还没进入业务响应阶段，通常是地址、域名校验、超时或网络不可达。
         const message = getConnectionErrorMessage(errMsg)
         debugLog('fail', {
           tag: requestTag || url,

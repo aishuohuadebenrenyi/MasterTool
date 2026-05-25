@@ -17,6 +17,8 @@ class Plan:
     TYPE_LECTURE = 'lecture'
     TYPE_CUSTOM = 'custom'
 
+    # 兼容历史数据里的旧类型命名。
+    # 其中 workshop/lecture 会暂时回落到 corporate，保证旧方案在新列表和统计里仍能正常展示。
     LEGACY_TYPE_MAP = {
         'corporate_training': TYPE_CORPORATE,
         'corporate': TYPE_CORPORATE,
@@ -29,6 +31,7 @@ class Plan:
         'custom': TYPE_CUSTOM
     }
 
+    # 已交付和已复盘的方案默认视为只读，避免现场结束后的方案被继续修改导致复盘上下文失真。
     READONLY_STATUSES = {STATUS_DELIVERED, STATUS_REVIEWED}
 
     @staticmethod
@@ -98,6 +101,8 @@ class Plan:
             return None
         result = dict(plan)
         result['id'] = str(result.pop('_id', ''))
+        # to_dict 既做序列化，也顺便补齐 client/clientName、scene/scenes、tags 等兼容字段，
+        # 这样前端列表和详情页可以在新旧数据混用时保持统一读取方式。
         result['type'] = Plan.normalize_type(result.get('type'))
         result['client'] = result.get('client') or result.get('clientName', '')
         result['clientName'] = result['client']
@@ -122,6 +127,7 @@ class Plan:
 
     @staticmethod
     def can_deliver(status):
+        # 只有已确认的方案允许开课；真正进入 delivered 要等 live/end 成功后再推进。
         return status == Plan.STATUS_CONFIRMED
 
     @staticmethod
@@ -130,4 +136,5 @@ class Plan:
 
     @staticmethod
     def can_restart_review(status):
+        # reviewed 允许重新发起复盘，便于补录或修正复盘结论。
         return status == Plan.STATUS_REVIEWED

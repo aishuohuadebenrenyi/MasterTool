@@ -57,6 +57,7 @@ def main(event, context):
             }}
         )
         if session.get('planId'):
+            # 方案在这里才正式进入 delivered，表示本次现场已经完整结束并可进入反馈/复盘环节。
             db.plans.update_one(
                 {'_id': ObjectId(session['planId']), 'userId': user_id},
                 {'$set': {'status': Plan.STATUS_DELIVERED, 'sessionId': session_id, 'updatedAt': now}}

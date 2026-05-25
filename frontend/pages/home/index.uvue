@@ -727,9 +727,13 @@ onUnmounted(() => {
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
 }
 .popup-container-visible {
   transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
 }
 .popup-container-tall {
   max-height: 75vh;
