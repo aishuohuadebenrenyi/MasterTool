@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>培训师工具箱 - 交互原型</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <div class="phone-frame">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="status-icons">
+        <span class="signal">●●●●</span>
+        <span class="wifi">📶</span>
+        <span class="battery">🔋</span>
+      </div>
+    </div>
+    <div class="page-container">
+
+      <!-- 首页 -->
+      <div class="page active" data-page="home">
+        <div class="page-content">
+          <div class="greeting-bar">
+            <div class="greeting-left">
+              <div class="avatar-small">李</div>
+              <span class="greeting-name">李老师，早上好</span>
+            </div>
+            <span class="greeting-date">5月23日 周五</span>
+          </div>
+          <div class="scene-cards">
+            <div class="scene-card scene-card-primary" data-action="gotoPlanSelect">
+              <div class="scene-card-icon">🔴</div>
+              <div class="scene-card-title">我要开课</div>
+              <div class="scene-card-status">开始一场培训</div>
+            </div>
+            <div class="scene-card scene-card-secondary scene-card-full" data-action="gotoReviewCenter">
+              <div class="scene-card-icon">📋</div>
+              <div class="scene-card-title">我要复盘</div>
+              <div class="scene-card-status" id="reviewCardStatus">1场待复盘</div>
+            </div>
+          </div>
+          <div class="section-header">
+            <span>待处理</span>
+          </div>
+          <div class="todo-list" id="todoList"></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active" data-tab="home">
+            <div class="tab-icon">🏠</div>
+            <div class="tab-label">首页</div>
+          </div>
+          <div class="tab-item" data-tab="prepare">
+            <div class="tab-icon">📚</div>
+            <div class="tab-label">备课</div>
+          </div>
+          <div class="tab-item" data-tab="mine">
+            <div class="tab-icon">👤</div>
+            <div class="tab-label">我的</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备课Tab -->
+      <div class="page" data-page="prepare">
+        <div class="page-content">
+          <div class="sub-tab-bar">
+            <div class="sub-tab active" data-sub-tab="plans">我的方案</div>
+            <div class="sub-tab" data-sub-tab="activities">活动库</div>
+          </div>
+          <div class="sub-tab-content active" id="plansContent">
+            <div class="section-header-row">
+              <span></span>
+              <span class="section-action" data-action="showTemplateModal">+ 新建方案</span>
+            </div>
+            <div class="search-bar">
+              <input type="text" placeholder="搜索方案名称或客户名" id="planSearch">
+            </div>
+            <div class="tab-filter" id="planTypeFilter">
+              <div class="filter-item active" data-filter="全部">全部</div>
+              <div class="filter-item" data-filter="企业培训">企业培训</div>
+              <div class="filter-item" data-filter="团建活动">团建活动</div>
+              <div class="filter-item" data-filter="即兴演出">即兴演出</div>
+              <div class="filter-item" data-filter="即兴训练">即兴训练</div>
+            </div>
+            <div class="tab-filter tab-filter-status" id="planStatusFilter">
+              <div class="filter-item active" data-filter="全部">全部</div>
+              <div class="filter-item" data-filter="草稿">草稿</div>
+              <div class="filter-item" data-filter="已发送">已发送</div>
+              <div class="filter-item" data-filter="已确认">已确认</div>
+              <div class="filter-item" data-filter="已交付">已交付</div>
+            </div>
+            <div class="plan-center-list" id="planCenterList"></div>
+          </div>
+          <div class="sub-tab-content" id="activitiesContent">
+            <div class="section-header-row">
+              <span></span>
+              <span class="section-action" data-action="gotoActivityEdit">+ 新增活动</span>
+            </div>
+            <div class="search-bar">
+              <input type="text" placeholder="搜索活动名称或关键词" id="activitySearch">
+            </div>
+            <div class="tab-filter" id="sceneFilter">
+              <div class="filter-item active" data-filter="全部">全部</div>
+              <div class="filter-item" data-filter="团队融合">团队融合</div>
+              <div class="filter-item" data-filter="协作沟通">协作沟通</div>
+              <div class="filter-item" data-filter="领导力">领导力</div>
+              <div class="filter-item" data-filter="创新思维">创新思维</div>
+              <div class="filter-item" data-filter="情绪管理">情绪管理</div>
+            </div>
+            <div class="activity-list" id="activityList"></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" data-tab="home">
+            <div class="tab-icon">🏠</div>
+            <div class="tab-label">首页</div>
+          </div>
+          <div class="tab-item active" data-tab="prepare">
+            <div class="tab-icon">📚</div>
+            <div class="tab-label">备课</div>
+          </div>
+          <div class="tab-item" data-tab="mine">
+            <div class="tab-icon">👤</div>
+            <div class="tab-label">我的</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 方案编辑页 -->
+      <div class="page" data-page="planEdit">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">方案编辑</div>
+          <div class="nav-right" data-action="previewPlan">预览</div>
+        </div>
+        <div class="page-content">
+          <div class="plan-edit-header" id="planEditHeader"></div>
+          <div class="plan-edit-phases" id="planEditPhases"></div>
+          <div class="plan-edit-actions" id="planEditActions"></div>
+        </div>
+      </div>
+
+      <!-- 活动详情 -->
+      <div class="page" data-page="activityDetail">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">活动详情</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content" id="activityDetailContent"></div>
+        <div class="bottom-action-bar">
+          <button class="btn-icon-only" id="btnFavActivity">🤍</button>
+          <button class="btn-primary btn-flex" id="btnAddToPlan">添加到方案</button>
+        </div>
+      </div>
+
+      <!-- 活动编辑页 -->
+      <div class="page" data-page="activityEdit">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title" id="activityEditTitle">新增活动</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="form-group">
+            <label>活动名称 <span class="required">*</span></label>
+            <input type="text" placeholder="请输入活动名称" id="editActivityName">
+          </div>
+          <div class="form-group">
+            <label>培训场景</label>
+            <div class="tag-select" id="editActivityScenes">
+              <div class="tag-option" data-tag="团队融合">团队融合</div>
+              <div class="tag-option" data-tag="协作沟通">协作沟通</div>
+              <div class="tag-option" data-tag="领导力">领导力</div>
+              <div class="tag-option" data-tag="创新思维">创新思维</div>
+              <div class="tag-option" data-tag="情绪管理">情绪管理</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>难度</label>
+            <div class="tag-select" id="editActivityDifficulty">
+              <div class="tag-option" data-tag="简单">简单</div>
+              <div class="tag-option" data-tag="中等">中等</div>
+              <div class="tag-option" data-tag="困难">困难</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group form-group-half">
+              <label>人数范围</label>
+              <input type="text" placeholder="如：8-20人" id="editActivityPeople">
+            </div>
+            <div class="form-group form-group-half">
+              <label>时长</label>
+              <input type="text" placeholder="如：30min" id="editActivityDuration">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>学习目标</label>
+            <input type="text" placeholder="请输入学习目标" id="editActivityGoal">
+          </div>
+          <div class="form-group">
+            <label>规则说明</label>
+            <textarea rows="4" placeholder="请输入规则说明" id="editActivityRules"></textarea>
+          </div>
+          <div class="form-group">
+            <label>复盘引导问题</label>
+            <textarea rows="3" placeholder="请输入复盘引导问题" id="editActivityReview"></textarea>
+          </div>
+          <div class="form-group">
+            <label>带领者Tips</label>
+            <textarea rows="3" placeholder="请输入带领者Tips" id="editActivityTips"></textarea>
+          </div>
+          <button class="btn-primary btn-block btn-large" data-action="saveActivity">💾 保存活动</button>
+          <button class="btn-danger btn-block btn-large" data-action="deleteActivity" id="deleteActivityBtn" style="display:none">🗑️ 删除活动</button>
+        </div>
+      </div>
+
+      <!-- 方案预览 -->
+      <div class="page" data-page="planPreview">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">方案预览</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="view-toggle">
+            <span class="toggle-option active" data-view="trainer">培训师视角</span>
+            <span class="toggle-option" data-view="client">客户视角</span>
+          </div>
+          <div class="export-coming-soon">
+            <button class="btn-secondary btn-block" disabled>📄 导出方案文档（即将上线）</button>
+          </div>
+          <div id="planPreviewContent"></div>
+        </div>
+      </div>
+
+      <!-- 现场流程页（核心） -->
+      <div class="page" data-page="liveFlow" id="liveFlow">
+        <div class="nav-bar live-nav">
+          <div class="nav-back" data-action="confirmExitLive">‹</div>
+          <div class="nav-title">XX公司团队融合工作坊</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content live-content">
+          <div class="live-upper">
+            <div class="phase-indicator">
+              <div class="phase-dot active" data-phase-dot="1"></div>
+              <div class="phase-dot" data-phase-dot="2"></div>
+              <div class="phase-dot" data-phase-dot="3"></div>
+              <div class="phase-dot" data-phase-dot="4"></div>
+              <div class="phase-dot" data-phase-dot="5"></div>
+            </div>
+            <div class="phase-progress-text">环节 1/5</div>
+            <div class="current-phase-name" id="currentPhaseName">开场连接</div>
+            <div class="timer-container" id="timerContainer">
+              <div class="timer-display" id="timerDisplay">15:00</div>
+            </div>
+            <div class="timer-hint">点击开始 · 双击延时5分钟</div>
+            <div class="key-reminders" id="keyReminders">
+              <div class="reminder-item">💡 热情欢迎，营造安全氛围</div>
+              <div class="reminder-item">💡 确保每人都有参与机会</div>
+            </div>
+          </div>
+          <div class="live-toolbar" id="liveToolbar"></div>
+          <div class="live-nav-btns">
+            <button class="btn-secondary btn-half" id="btnPrevPhase" disabled>上一环节</button>
+            <button class="btn-primary btn-half" id="btnNextPhase">下一环节</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 复盘详情页 -->
+      <div class="page" data-page="reviewGuide">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">复盘详情</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="review-detail-summary" id="reviewDetailSummary"></div>
+          <div class="review-detail-feedback" id="reviewDetailFeedback"></div>
+          <div class="review-detail-guide">
+            <div class="review-guide-header">🔄 结构化反思</div>
+            <div class="review-method-bar">
+              <div class="method-option active" data-method="ORID" data-action="switchReviewMethod">ORID</div>
+              <div class="method-option" data-method="4F" data-action="switchReviewMethod">4F</div>
+              <div class="method-option" data-method="SSC" data-action="switchReviewMethod">SSC</div>
+            </div>
+            <div class="flip-card-container" id="flipCardContainer">
+              <div class="flip-card-num" id="flipCardNum">1/4</div>
+              <div class="flip-card-question" id="flipCardQuestion">O-客观：刚才的活动中，你观察到了什么？</div>
+              <textarea class="flip-card-input" id="flipCardInput" placeholder="记录你的思考..."></textarea>
+            </div>
+            <div class="flip-card-nav">
+              <button class="btn-secondary btn-half" id="btnFlipPrev">‹ 上一题</button>
+              <button class="btn-primary btn-half" id="btnFlipNext">下一题 ›</button>
+            </div>
+          </div>
+          <div id="reviewedNotesSection" style="display:none"></div>
+          <button class="btn-primary btn-block" id="btnCompleteReview" data-action="completeReview" style="margin:16px 0">✅ 完成复盘</button>
+        </div>
+      </div>
+
+      <!-- 现场结束页 -->
+      <div class="page" data-page="liveEnd">
+        <div class="page-content center-content">
+          <div class="end-icon">🎉</div>
+          <div class="end-title">培训已结束</div>
+          <div class="end-subtitle">XX公司团队融合工作坊</div>
+          <div class="end-stats">
+            <div class="end-stat">
+              <div class="end-stat-num">28</div>
+              <div class="end-stat-label">参与人数</div>
+            </div>
+            <div class="end-stat">
+              <div class="end-stat-num">100min</div>
+              <div class="end-stat-label">培训时长</div>
+            </div>
+          </div>
+          <div class="end-actions">
+            <button class="btn-primary btn-block" data-action="gotoFeedback">📝 收集参与者反馈</button>
+            <button class="btn-secondary btn-block" data-action="gotoReviewGuide">� 开始复盘引导</button>
+            <button class="btn-secondary btn-block" data-action="gotoReport">📊 查看培训数据</button>
+            <button class="btn-text btn-block" data-action="gotoHome">返回首页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 复盘中心 -->
+      <div class="page" data-page="reviewCenter">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">复盘中心</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="review-list" id="reviewList"></div>
+        </div>
+      </div>
+
+      <!-- 反馈收集 -->
+      <div class="page" data-page="feedback">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">反馈收集</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="feedback-guide">
+            <div class="feedback-guide-title">💡 如何收集参与者反馈</div>
+            <div class="feedback-guide-step">1. 点击下方二维码，参与者扫码即可填写反馈</div>
+            <div class="feedback-guide-step">2. 参与者可自主选择是否匿名提交</div>
+            <div class="feedback-guide-step">3. 反馈数据实时汇总，自动生成统计</div>
+          </div>
+          <div class="feedback-qr-card" data-action="showQR">
+              <div style="font-size:15px;font-weight:600;margin-bottom:4px">📱 参与者反馈入口</div>
+              <div class="feedback-qr-placeholder">
+                <img class="qr-image" id="feedbackQrImage" src="" alt="反馈二维码" style="display:none">
+                <div class="qr-mock" id="feedbackQrMock">扫码反馈</div>
+              </div>
+            <div class="feedback-qr-hint">点击放大二维码 · 参与者扫码即可填写</div>
+            <div class="feedback-qr-stats">已收集 <strong>12</strong> 份反馈 · 回收率 <strong>80%</strong></div>
+          </div>
+          <div class="feedback-stats">
+            <div class="fb-stat">
+              <div class="fb-stat-num">12</div>
+              <div class="fb-stat-label">已收集</div>
+            </div>
+            <div class="fb-stat">
+              <div class="fb-stat-num">4.6</div>
+              <div class="fb-stat-label">平均满意度</div>
+            </div>
+            <div class="fb-stat">
+              <div class="fb-stat-num">72</div>
+              <div class="fb-stat-label">NPS</div>
+            </div>
+            <div class="fb-stat">
+              <div class="fb-stat-num">80%</div>
+              <div class="fb-stat-label">回收率</div>
+            </div>
+          </div>
+          <div class="feedback-anonymous-toggle">
+            <span class="feedback-anonymous-label">☑️ 允许匿名提交</span>
+            <div class="toggle-switch active" id="anonymousToggle"></div>
+          </div>
+          <div class="section-header">
+            <span>满意度分布</span>
+          </div>
+          <div class="satisfaction-chart" id="satisfactionChart"></div>
+          <div class="section-header">
+            <span>反馈列表</span>
+          </div>
+          <div class="feedback-list" id="feedbackList"></div>
+        </div>
+      </div>
+
+      <!-- 我的页面 -->
+      <div class="page" data-page="mine">
+        <div class="page-content">
+          <div class="mine-profile-card">
+            <div class="mine-profile-row">
+              <div class="mine-avatar">李</div>
+              <div class="mine-user-info">
+                <div class="mine-user-name">李老师</div>
+                <div class="mine-user-role">认证培训师</div>
+              </div>
+              <div class="mine-edit-btn" data-action="editProfile">编辑 ›</div>
+            </div>
+            <div class="mine-profile-stats">
+              <div class="mine-stat-item">
+                <div class="mine-stat-num">12</div>
+                <div class="mine-stat-label">培训场次</div>
+              </div>
+              <div class="mine-stat-divider"></div>
+              <div class="mine-stat-item">
+                <div class="mine-stat-num">4.8</div>
+                <div class="mine-stat-label">平均满意度</div>
+              </div>
+              <div class="mine-stat-divider"></div>
+              <div class="mine-stat-item">
+                <div class="mine-stat-num">326</div>
+                <div class="mine-stat-label">参与人数</div>
+              </div>
+            </div>
+          </div>
+          <div class="mine-menu-card">
+            <div class="mine-menu-item" data-action="gotoTrainingRecords">
+              <span class="mine-menu-icon">📝</span>
+              <span class="mine-menu-label">培训记录</span>
+              <span class="mine-menu-arrow">›</span>
+            </div>
+            <div class="mine-menu-item mine-menu-last" data-action="gotoDataDetail">
+              <span class="mine-menu-icon">📊</span>
+              <span class="mine-menu-label">数据详情</span>
+              <span class="mine-menu-arrow">›</span>
+            </div>
+          </div>
+          <div class="mine-menu-card">
+            <div class="mine-menu-item" data-action="gotoSettings">
+              <span class="mine-menu-icon">⚙️</span>
+              <span class="mine-menu-label">设置</span>
+              <span class="mine-menu-arrow">›</span>
+            </div>
+            <div class="mine-menu-item" data-action="gotoHelp">
+              <span class="mine-menu-icon">💬</span>
+              <span class="mine-menu-label">帮助与反馈</span>
+              <span class="mine-menu-arrow">›</span>
+            </div>
+            <div class="mine-menu-item mine-menu-last" data-action="gotoAbout">
+              <span class="mine-menu-icon">ℹ️</span>
+              <span class="mine-menu-label">关于</span>
+              <span class="mine-menu-arrow">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" data-tab="home">
+            <div class="tab-icon">🏠</div>
+            <div class="tab-label">首页</div>
+          </div>
+          <div class="tab-item" data-tab="prepare">
+            <div class="tab-icon">📚</div>
+            <div class="tab-label">备课</div>
+          </div>
+          <div class="tab-item active" data-tab="mine">
+            <div class="tab-icon">👤</div>
+            <div class="tab-label">我的</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 培训记录页 -->
+      <div class="page" data-page="trainingRecords">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">培训记录</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="filter-bar">
+            <div class="filter-chip active">全部</div>
+            <div class="filter-chip">企业培训</div>
+            <div class="filter-chip">团建活动</div>
+            <div class="filter-chip">即兴演出</div>
+            <div class="filter-chip">即兴训练</div>
+          </div>
+          <div class="record-list">
+            <div class="record-card">
+              <div class="record-header">
+                <div class="record-title">企业领导力培训</div>
+                <div class="record-date">2026-05-20</div>
+              </div>
+              <div class="record-stats">
+                <span class="record-stat">👥 28人</span>
+                <span class="record-stat">⭐ 4.8</span>
+                <span class="record-stat">📊 NPS 85</span>
+              </div>
+            </div>
+            <div class="record-card">
+              <div class="record-header">
+                <div class="record-title">团队协作工作坊</div>
+                <div class="record-date">2026-05-15</div>
+              </div>
+              <div class="record-stats">
+                <span class="record-stat">👥 22人</span>
+                <span class="record-stat">⭐ 4.5</span>
+                <span class="record-stat">📊 NPS 70</span>
+              </div>
+            </div>
+            <div class="record-card">
+              <div class="record-header">
+                <div class="record-title">即兴表达训练</div>
+                <div class="record-date">2026-05-10</div>
+              </div>
+              <div class="record-stats">
+                <span class="record-stat">👥 15人</span>
+                <span class="record-stat">⭐ 4.7</span>
+                <span class="record-stat">📊 NPS 78</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据详情页 -->
+      <div class="page" data-page="dataDetail">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">数据详情</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="detail-range">
+            <div class="range-option active">6个月</div>
+            <div class="range-option">12个月</div>
+          </div>
+          <div class="detail-chart-card">
+            <div class="detail-chart-title">满意度趋势</div>
+            <svg viewBox="0 0 300 120" class="detail-chart-svg">
+              <line x1="30" y1="10" x2="30" y2="100" stroke="#F0F0F5" stroke-width="1"/>
+              <line x1="30" y1="100" x2="280" y2="100" stroke="#F0F0F5" stroke-width="1"/>
+              <text x="5" y="15" fill="#8E8E93" font-size="8">5.0</text>
+              <text x="5" y="55" fill="#8E8E93" font-size="8">4.5</text>
+              <text x="5" y="100" fill="#8E8E93" font-size="8">4.0</text>
+              <polyline points="50,60 100,40 150,55 200,30 250,25" fill="none" stroke="#FF6B35" stroke-width="2"/>
+              <polyline points="50,60 100,40 150,55 200,30 250,25 250,100 50,100" fill="rgba(255,107,53,0.08)" stroke="none"/>
+              <circle cx="50" cy="60" r="4" fill="#FF6B35"/>
+              <circle cx="100" cy="40" r="4" fill="#FF6B35"/>
+              <circle cx="150" cy="55" r="4" fill="#FF6B35"/>
+              <circle cx="200" cy="30" r="4" fill="#FF6B35"/>
+              <circle cx="250" cy="25" r="4" fill="#FF6B35"/>
+              <text x="45" y="115" fill="#8E8E93" font-size="8">1月</text>
+              <text x="95" y="115" fill="#8E8E93" font-size="8">2月</text>
+              <text x="145" y="115" fill="#8E8E93" font-size="8">3月</text>
+              <text x="195" y="115" fill="#8E8E93" font-size="8">4月</text>
+              <text x="245" y="115" fill="#8E8E93" font-size="8">5月</text>
+            </svg>
+          </div>
+          <div class="detail-chart-card">
+            <div class="detail-chart-title">NPS趋势</div>
+            <svg viewBox="0 0 300 120" class="detail-chart-svg">
+              <line x1="30" y1="10" x2="30" y2="100" stroke="#F0F0F5" stroke-width="1"/>
+              <line x1="30" y1="100" x2="280" y2="100" stroke="#F0F0F5" stroke-width="1"/>
+              <text x="5" y="15" fill="#8E8E93" font-size="8">100</text>
+              <text x="5" y="55" fill="#8E8E93" font-size="8">50</text>
+              <text x="5" y="100" fill="#8E8E93" font-size="8">0</text>
+              <polyline points="50,50 100,45 150,55 200,35 250,30" fill="none" stroke="#007AFF" stroke-width="2"/>
+              <polyline points="50,50 100,45 150,55 200,35 250,30 250,100 50,100" fill="rgba(0,122,255,0.08)" stroke="none"/>
+              <circle cx="50" cy="50" r="4" fill="#007AFF"/>
+              <circle cx="100" cy="45" r="4" fill="#007AFF"/>
+              <circle cx="150" cy="55" r="4" fill="#007AFF"/>
+              <circle cx="200" cy="35" r="4" fill="#007AFF"/>
+              <circle cx="250" cy="30" r="4" fill="#007AFF"/>
+              <text x="45" y="115" fill="#8E8E93" font-size="8">1月</text>
+              <text x="95" y="115" fill="#8E8E93" font-size="8">2月</text>
+              <text x="145" y="115" fill="#8E8E93" font-size="8">3月</text>
+              <text x="195" y="115" fill="#8E8E93" font-size="8">4月</text>
+              <text x="245" y="115" fill="#8E8E93" font-size="8">5月</text>
+            </svg>
+          </div>
+          <div class="detail-stats-row">
+            <div class="detail-stat-card">
+              <div class="detail-stat-num">12</div>
+              <div class="detail-stat-label">总培训场次</div>
+            </div>
+            <div class="detail-stat-card">
+              <div class="detail-stat-num">286</div>
+              <div class="detail-stat-label">累计参与人数</div>
+            </div>
+          </div>
+          <div class="detail-chart-card">
+            <div class="detail-chart-title">培训场景分布</div>
+            <div class="detail-pie-placeholder">
+              <div class="detail-pie-item"><span class="pie-dot" style="background:#007AFF"></span>企业培训 50%</div>
+              <div class="detail-pie-item"><span class="pie-dot" style="background:#34C759"></span>团建活动 25%</div>
+              <div class="detail-pie-item"><span class="pie-dot" style="background:#FF9500"></span>即兴演出 17%</div>
+              <div class="detail-pie-item"><span class="pie-dot" style="background:#AF52DE"></span>即兴训练 8%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 帮助与反馈页 -->
+      <div class="page" data-page="helpFeedback">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">帮助与反馈</div>
+        </div>
+        <div class="page-content">
+          <div class="help-section">
+            <div class="help-section-title">❓ 常见问题</div>
+            <div class="help-faq-item">
+              <div class="help-faq-q">如何创建培训方案？</div>
+              <div class="help-faq-a">点击首页"我要开课"，选择流程模板，填写培训名称和人数即可快速创建。也可以在备课Tab中新建方案，自定义编辑环节。</div>
+            </div>
+            <div class="help-faq-item">
+              <div class="help-faq-q">如何修改方案中的环节？</div>
+              <div class="help-faq-a">进入方案编辑页，可以添加、删除、排序环节。点击"+ 添加环节"可选择预设类型或自定义环节。</div>
+            </div>
+            <div class="help-faq-item">
+              <div class="help-faq-q">培训结束后如何复盘？</div>
+              <div class="help-faq-a">培训结束后点击"开始复盘引导"，或在首页点击"我要复盘"。复盘支持ORID、4F、SSC三种方法。</div>
+            </div>
+            <div class="help-faq-item">
+              <div class="help-faq-q">如何收集参与者反馈？</div>
+              <div class="help-faq-a">培训结束后点击"收集参与者反馈"，展示二维码供参与者扫码填写。支持匿名提交。</div>
+            </div>
+            <div class="help-faq-item">
+              <div class="help-faq-q">已交付的方案还能编辑吗？</div>
+              <div class="help-faq-a">已交付和已复盘的方案为只读状态，不可编辑。这是为了保护历史数据的一致性。</div>
+            </div>
+          </div>
+          <div class="help-section">
+            <div class="help-section-title">💬 意见反馈</div>
+            <div class="help-feedback-form">
+              <textarea class="help-feedback-input" id="helpFeedbackInput" placeholder="请描述您遇到的问题或建议..."></textarea>
+              <button class="btn-primary btn-block" data-action="submitFeedback">提交反馈</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设置页 -->
+      <div class="page" data-page="settings">
+        <div class="nav-bar">
+          <div class="nav-back" data-action="back">‹</div>
+          <div class="nav-title">设置</div>
+          <div class="nav-right"></div>
+        </div>
+        <div class="page-content">
+          <div class="settings-section">
+            <div class="settings-section-title">手势控制</div>
+            <div class="settings-item">
+              <span>右滑推进环节</span>
+              <div class="toggle-switch active" data-setting="swipeRight"></div>
+            </div>
+            <div class="settings-item">
+              <span>左滑回退环节</span>
+              <div class="toggle-switch active" data-setting="swipeLeft"></div>
+            </div>
+            <div class="settings-item">
+              <span>双击延时5分钟</span>
+              <div class="toggle-switch active" data-setting="doubleTapDelay"></div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">其他</div>
+            <div class="settings-item">
+              <span>计时器声音提醒</span>
+              <div class="toggle-switch" data-setting="timerSound"></div>
+            </div>
+            <div class="settings-item">
+              <span>自动保存方案</span>
+              <div class="toggle-switch active" data-setting="autoSave"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 签到半屏弹窗 -->
+      <div class="half-sheet" id="checkinSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">签到管理</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="qr-placeholder" id="qrPlaceholder">
+              <img class="qr-image" id="checkinQrImage" src="" alt="签到二维码" style="display:none">
+              <div class="qr-mock" id="checkinQrMock">扫码签到</div>
+              <button class="btn-small" data-action="enlargeQR">全屏放大</button>
+            </div>
+            <div class="checkin-stats">
+              <span class="stats-num">18</span>/<span>28人</span>
+              <span class="stats-pct">64%</span>
+            </div>
+            <div class="checkin-list" id="checkinList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分组半屏弹窗 -->
+      <div class="half-sheet" id="groupSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">分组管理</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="group-options">
+              <div class="option-row">
+                <span>跨部门打乱</span>
+                <div class="toggle-switch active" id="crossDeptToggle"></div>
+              </div>
+              <button class="btn-secondary btn-block" data-action="regroup">🔄 重新分组</button>
+            </div>
+            <div class="group-list" id="groupList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 积分弹窗 -->
+      <div class="half-sheet" id="scoreSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">积分排行</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="score-list" id="scoreList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 随机抽取弹窗 -->
+      <div class="half-sheet" id="pickSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content sheet-tall">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">随机抽取</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="pick-tabs">
+              <div class="pick-tab active" data-pick-tab="actor">抽演员</div>
+              <div class="pick-tab" data-pick-tab="audience">抽观众</div>
+              <div class="pick-tab" data-pick-tab="topic">抽题目</div>
+            </div>
+            <div class="pick-count" id="pickCountSection">
+              <span>抽取人数：</span>
+              <div class="count-options">
+                <div class="count-option active" data-count="1">1人</div>
+                <div class="count-option" data-count="2">2人</div>
+                <div class="count-option" data-count="3">3人</div>
+              </div>
+            </div>
+            <div class="pick-topic-section" id="pickTopicSection" style="display:none">
+              <div class="topic-categories">
+                <div class="topic-cat active" data-cat="即兴">即兴</div>
+                <div class="topic-cat" data-cat="职场">职场</div>
+                <div class="topic-cat" data-cat="生活">生活</div>
+              </div>
+            </div>
+            <div class="pick-display" id="pickDisplay">
+              <div class="pick-name" id="pickName">?</div>
+            </div>
+            <div class="pick-actions">
+              <button class="btn-primary btn-block btn-large" id="btnPick">🎲 抽取</button>
+              <button class="btn-secondary btn-block" id="btnPickAgain" style="display:none">🔄 再来一次</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 互动弹窗 -->
+      <div class="half-sheet" id="interactSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">互动工具</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="interact-options">
+              <div class="interact-btn" data-action="openWordCloud">☁️ 词云</div>
+              <div class="interact-btn" data-action="openVote">👍 投票</div>
+              <div class="interact-btn" data-action="openCommitment">🤝 承诺</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 独立计时弹窗 -->
+      <div class="half-sheet" id="standaloneTimerSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">计时器</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="standalone-timer-display" id="standaloneTimerDisplay">05:00</div>
+            <div class="standalone-timer-presets">
+              <div class="timer-preset active" data-action="setTimerPreset" data-minutes="5">5min</div>
+              <div class="timer-preset" data-action="setTimerPreset" data-minutes="3">3min</div>
+              <div class="timer-preset" data-action="setTimerPreset" data-minutes="10">10min</div>
+              <div class="timer-preset" data-action="setTimerPreset" data-minutes="15">15min</div>
+            </div>
+            <button class="btn-primary btn-block btn-large" id="btnStandaloneTimer">▶ 开始计时</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 音效弹窗 -->
+      <div class="half-sheet" id="soundSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">🎵 现场氛围</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="sound-grid">
+              <div class="sound-btn" data-action="playSound" data-sound="clap">
+                <div class="sound-icon">👏</div>
+                <div class="sound-name">鼓掌</div>
+              </div>
+              <div class="sound-btn" data-action="playSound" data-sound="cheer">
+                <div class="sound-icon">🎉</div>
+                <div class="sound-name">欢呼</div>
+              </div>
+              <div class="sound-btn" data-action="playSound" data-sound="countdown">
+                <div class="sound-icon">⏰</div>
+                <div class="sound-name">倒计时</div>
+              </div>
+              <div class="sound-btn" data-action="playSound" data-sound="laugh">
+                <div class="sound-icon">😂</div>
+                <div class="sound-name">笑声</div>
+              </div>
+              <div class="sound-btn" data-action="playSound" data-sound="tension">
+                <div class="sound-icon">🥁</div>
+                <div class="sound-name">紧张</div>
+              </div>
+              <div class="sound-btn" data-action="playSound" data-sound="success">
+                <div class="sound-icon">🎊</div>
+                <div class="sound-name">成功</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模板选择弹窗 -->
+      <div class="half-sheet" id="templateSelectSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">选择模板</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="template-modal-list" id="templateModalList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 添加环节弹窗（即兴训练） -->
+      <div class="half-sheet" id="addSegmentSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">添加环节</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="segment-type-list">
+              <div class="segment-type-item" data-action="addSegment" data-segment-type="timer">
+                <span class="segment-type-icon">⏱</span>
+                <span class="segment-type-name">计时练习</span>
+              </div>
+              <div class="segment-type-item" data-action="addSegment" data-segment-type="random">
+                <span class="segment-type-icon">🎲</span>
+                <span class="segment-type-name">随机抽取</span>
+              </div>
+              <div class="segment-type-item" data-action="addSegment" data-segment-type="scene">
+                <span class="segment-type-icon">🎭</span>
+                <span class="segment-type-name">场景模拟</span>
+              </div>
+              <div class="segment-type-item" data-action="addSegment" data-segment-type="reflect">
+                <span class="segment-type-icon">📝</span>
+                <span class="segment-type-name">反思分享</span>
+              </div>
+              <div class="segment-type-item" data-action="addSegment" data-segment-type="custom">
+                <span class="segment-type-icon">✏️</span>
+                <span class="segment-type-name">自定义环节</span>
+              </div>
+            </div>
+            <div class="custom-segment-form" id="customSegmentForm" style="display:none">
+              <div class="edit-form-group">
+                <label class="edit-form-label">环节名称</label>
+                <input type="text" class="edit-form-input" id="customSegmentName" placeholder="输入环节名称">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-form-label">时长（分钟）</label>
+                <input type="number" class="edit-form-input" id="customSegmentTime" value="15" min="5" max="120">
+              </div>
+              <button class="btn-primary btn-block" data-action="addCustomSegment">添加</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 方案选择半屏弹窗 -->
+      <div class="half-sheet" id="planSelectSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">选择流程模板</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div id="flowTemplateList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快速创建半屏弹窗 -->
+      <div class="half-sheet" id="quickCreateSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">快速创建</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="quick-template-badge" id="quickTemplateBadge"></div>
+            <div class="form-group">
+              <label>培训名称</label>
+              <input type="text" placeholder="请输入培训名称" id="quickName">
+            </div>
+            <div class="form-group">
+              <label>预计人数</label>
+              <input type="number" placeholder="如：28" id="quickPeople">
+            </div>
+            <button class="btn-primary btn-block btn-large" data-action="quickCreateSubmit">🚀 创建并准备</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 准备确认半屏弹窗 -->
+      <div class="half-sheet" id="prepConfirmSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content sheet-tall">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">准备确认</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div id="prepPlanInfo"></div>
+            <div class="prep-section">
+              <div class="prep-section-title">签到配置</div>
+              <div class="prep-edit-row" data-action="editPrepPeople">
+                <span>预计人数</span>
+                <span class="prep-value" id="prepPeople">28人</span>
+              </div>
+              <div class="prep-edit-row" data-action="editPrepCheckin">
+                <span>签到方式</span>
+                <span class="prep-value" id="prepCheckin">扫码签到</span>
+              </div>
+            </div>
+            <div class="prep-section">
+              <div class="prep-section-title">分组配置</div>
+              <div class="prep-edit-row" data-action="editPrepGroup">
+                <span>分组方式</span>
+                <span class="prep-value" id="prepGroupMethod">按人数均分</span>
+              </div>
+              <div class="prep-edit-row" data-action="editPrepTeamCount">
+                <span>队伍数量</span>
+                <span class="prep-value" id="prepTeamCount">待分组</span>
+              </div>
+            </div>
+            <div class="prep-section">
+              <div class="prep-section-title">积分配置</div>
+              <div class="prep-edit-row" data-action="editPrepScoreMode">
+                <span>积分模式</span>
+                <span class="prep-value" id="prepScoreMode">简化模式</span>
+              </div>
+            </div>
+            <div class="prep-section">
+              <div class="prep-section-title">工具配置</div>
+              <div id="toolConfigList"></div>
+            </div>
+            <button class="btn-primary btn-block btn-large" data-action="startLive" style="margin-top:16px">🚀 一键开始</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具箱半屏弹窗 -->
+      <div class="half-sheet" id="toolboxSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content sheet-tall">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">🧰 工具箱</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="toolbox-category">👥 团队管理</div>
+            <div class="toolbox-items">
+              <div class="toolbox-item" data-action="openCheckin">✋ 签到</div>
+              <div class="toolbox-item" data-action="openGroup">👥 分组</div>
+              <div class="toolbox-item" data-action="openScore">🏆 积分</div>
+            </div>
+            <div class="toolbox-category">🎲 随机工具</div>
+            <div class="toolbox-items">
+              <div class="toolbox-item" data-action="openPickPerson">🎲 抽人</div>
+              <div class="toolbox-item" data-action="openPickTopic">📋 抽题</div>
+            </div>
+            <div class="toolbox-category">💬 互动工具</div>
+            <div class="toolbox-items">
+              <div class="toolbox-item" data-action="openWordCloud">☁️ 词云</div>
+              <div class="toolbox-item" data-action="openVote">👍 投票</div>
+              <div class="toolbox-item" data-action="openCommitment">🤝 承诺</div>
+            </div>
+            <div class="toolbox-category">🎵 现场氛围</div>
+            <div class="toolbox-items">
+              <div class="toolbox-item" data-action="openSound">🔊 音效</div>
+              <div class="toolbox-item" data-action="openStandaloneTimer">⏱ 计时器</div>
+            </div>
+            <div class="toolbox-category">📝 记录</div>
+            <div class="toolbox-items">
+              <div class="toolbox-item" data-action="openHighlight">⭐ 亮点</div>
+              <div class="toolbox-item" data-action="openLiveNote">📝 笔记</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 笔记弹窗 -->
+      <div class="half-sheet" id="noteSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title">📝 现场笔记</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="note-phase-label" id="notePhaseLabel">当前环节：—</div>
+            <textarea class="note-input" id="noteInput" placeholder="记录现场亮点、参与者反应、改进想法..."></textarea>
+            <div class="note-list" id="noteList"></div>
+            <button class="btn-primary btn-block" data-action="saveNote">保存笔记</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 二维码全屏弹窗 -->
+      <div class="fullscreen-overlay" id="qrFullscreen">
+        <div class="qr-fullscreen-content">
+          <div class="qr-mock-large">扫码签到</div>
+          <button class="btn-secondary" data-action="closeQRFullscreen">关闭</button>
+        </div>
+      </div>
+
+      <!-- 活动选择半屏弹窗 -->
+      <div class="half-popup" id="activityPickerPopup">
+        <div class="half-popup-mask" data-action="hideActivityPicker"></div>
+        <div class="half-popup-content">
+          <div class="half-popup-header">
+            <span>选择活动</span>
+            <span class="half-popup-close" data-action="hideActivityPicker">✕</span>
+          </div>
+          <div class="search-bar" style="padding:0 16px 8px">
+            <input type="text" placeholder="搜索活动" id="activityPickerSearch">
+          </div>
+          <div class="activity-picker-list" id="activityPickerList"></div>
+        </div>
+      </div>
+
+      <!-- 添加到方案弹窗 -->
+      <div class="half-sheet" id="addToPlanSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title" id="addToPlanTitle">选择方案</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div id="addToPlanPlanList"></div>
+            <div id="addToPlanPhaseList" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 积分操作弹窗 -->
+      <div class="half-sheet" id="scorePanelSheet">
+        <div class="sheet-overlay" data-action="closeSheet"></div>
+        <div class="sheet-content">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span class="sheet-title" id="scorePanelTitle">积分操作</span>
+            <span class="sheet-close" data-action="closeSheet">✕</span>
+          </div>
+          <div class="sheet-body">
+            <div class="score-options-grid" id="scorePanelBtns"></div>
+          </div>
+        </div>
+      </div>
+
+<!-- 配置编辑弹窗 -->
+<div class="half-sheet" id="configEditSheet">
+  <div class="sheet-overlay" data-action="closeSheet"></div>
+  <div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="configEditTitle">编辑</span>
+      <span class="sheet-close" data-action="closeSheet">✕</span>
+    </div>
+    <div class="sheet-body">
+      <div id="configEditContent"></div>
+    </div>
+  </div>
+</div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+      <!-- 退出确认弹窗 -->
+      <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+          <div class="confirm-title" id="confirmTitle">确认退出？</div>
+          <div class="confirm-msg" id="confirmMsg">退出后当前进度将保存</div>
+          <div class="confirm-btns">
+            <button class="btn-secondary btn-half" data-action="confirmCancel">取消</button>
+            <button class="btn-primary btn-half" data-action="confirmOk">确认</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

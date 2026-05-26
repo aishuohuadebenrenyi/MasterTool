@@ -20,8 +20,10 @@ const navBarHeight = navBarInfo['navBarHeight'] as number
 const contentHeight = navBarInfo['contentHeight'] as number
 const leftSafeWidth = navBarInfo['leftSafeWidth'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const capsuleMarginRight = navBarInfo['capsuleMarginRight'] as number
-const contentTopOffset = navBarInfo['contentTopOffset'] as number
+const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
+const contentTopOffset = navBarInfo['secondaryContentTopOffset'] as number
+const contentRowTop = navBarInfo['contentRowTop'] as number
+const contentRowHeight = navBarInfo['contentRowHeight'] as number
 const maxWidth = getDesktopMaxWidth()
 
 const backIconName = computed<string>(() => {
@@ -34,18 +36,21 @@ const backIconName = computed<string>(() => {
     <view class="navbar-statusbar" :style="{ height: statusBarHeight + 'px' }"></view>
     <view class="navbar-content-outer">
       <view class="navbar-content" :style="{ height: contentHeight + 'px', maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }">
-      <view v-if="showBack" class="navbar-back" :style="{ minWidth: leftSafeWidth + 'px' }" @click="$emit('back')">
-        <view class="back-icon-box" :style="{ marginLeft: capsuleMarginRight + 'px' }">
-          <AppIcon :name="backIconName" size="36rpx" />
+        <view class="navbar-row" :style="{ top: contentRowTop + 'px', height: contentRowHeight + 'px' }">
+        <view v-if="showBack" class="navbar-back" :style="{ width: leftSafeWidth + 'px' }" @click="$emit('back')">
+          <view class="back-icon-hit" :style="{ marginLeft: navHorizontalPadding + 'px' }">
+            <view class="back-icon-box">
+              <AppIcon :name="backIconName" preset="nav" />
+            </view>
+          </view>
         </view>
-      </view>
-      <view v-else class="navbar-back-placeholder" :style="{ minWidth: leftSafeWidth + 'px' }"></view>
-      <view class="navbar-title-wrap" :style="{ left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">
-        <text class="navbar-title" :style="{ color: titleColor }">{{ title }}</text>
-      </view>
-      <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px', paddingRight: capsuleMarginRight + 'px' }">
-        <slot name="right"></slot>
-      </view>
+        <view class="navbar-title-wrap" :style="{ left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">
+          <text class="navbar-title" :style="{ color: titleColor }">{{ title }}</text>
+        </view>
+        <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px', paddingRight: navHorizontalPadding + 'px' }">
+          <slot name="right"></slot>
+        </view>
+        </view>
       </view>
     </view>
   </view>
@@ -67,31 +72,36 @@ const backIconName = computed<string>(() => {
   display: flex;
   justify-content: center;
 }
-.navbar-content { width: 100%; display: flex; align-items: center; justify-content: space-between; position: relative; box-sizing: border-box; }
+.navbar-content { width: 100%; position: relative; box-sizing: border-box; }
+.navbar-row { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; }
 .navbar-back {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  height: 100%;
   flex-shrink: 0;
-  z-index: 1;
+  z-index: 2;
 }
-.back-icon-box {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 36rpx;
-  background-color: rgba(255, 255, 255, 0.18);
-  border-width: 2rpx;
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.2);
+.back-icon-hit {
+  width: 88rpx;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
 }
-.navbar-back-placeholder {
-  height: 100%;
-  flex-shrink: 0;
+.back-icon-box {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 .navbar-title-wrap {
   position: absolute;
@@ -110,6 +120,7 @@ const backIconName = computed<string>(() => {
   white-space: nowrap;
   max-width: 100%;
   text-align: center;
+  line-height: 1.25;
 }
 .navbar-right {
   flex-shrink: 0;

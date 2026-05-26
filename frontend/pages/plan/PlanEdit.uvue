@@ -302,7 +302,7 @@ function startTraining() {
       </view>
     </view>
 
-    <HalfSheet :visible="addPhaseVisible" title="添加环节" @update:visible="addPhaseVisible = $event">
+    <HalfSheet :visible="addPhaseVisible" size="standard" title="添加环节" @update:visible="addPhaseVisible = $event">
       <view class="popup-grid">
         <view
           class="popup-grid-item"

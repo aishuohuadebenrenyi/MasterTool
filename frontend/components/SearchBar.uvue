@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import AppIcon from './AppIcon.uvue'
 
 const props = defineProps({
@@ -16,6 +16,10 @@ const props = defineProps({
 const emit = defineEmits(['update:value', 'search', 'clear'])
 
 const keyword = ref<string>(props.value)
+
+watch(() => props.value, (value : string) => {
+  keyword.value = value
+})
 
 function onInput(e) {
   keyword.value = e.detail.value
@@ -36,7 +40,6 @@ function onClear() {
 <template>
   <view class="search-bar">
     <view class="search-input-wrap">
-      <AppIcon name="stateSearch" size="28rpx" />
       <input
         class="search-input"
         :value="keyword"
@@ -46,6 +49,9 @@ function onClear() {
         @input="onInput"
         @confirm="onSearch"
       />
+      <view class="search-icon" :class="{ 'search-icon-with-clear': keyword }">
+        <AppIcon name="stateSearch" preset="action" />
+      </view>
       <view v-if="keyword" class="clear-icon" @click="onClear">
         <AppIcon name="stateClose" size="20rpx" />
       </view>
@@ -55,35 +61,60 @@ function onClear() {
 
 <style lang="scss" scoped>
 .search-bar {
-  padding: $spacing-sm $spacing-md;
+  width: 100%;
 }
 .search-input-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  background: $bg-tertiary;
-  border-radius: 44rpx;
-  padding: 0 28rpx;
-  min-height: 88rpx;
+  justify-content: flex-start;
+  background: $surface-card;
+  border-radius: $search-radius;
+  padding: 0 28rpx 0 32rpx;
+  min-height: $search-height;
   box-shadow: 0 6rpx 28rpx rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
-}
-.search-icon {
-  margin-right: $spacing-xs;
+  gap: 16rpx;
 }
 .search-input {
   flex: 1;
-  height: 88rpx;
+  width: 100%;
+  height: $search-height;
+  padding-right: 112rpx;
   font-size: 30rpx;
   color: $text-primary;
+  box-sizing: border-box;
 }
 .search-placeholder {
   color: $text-tertiary;
 }
+.search-icon {
+  position: absolute;
+  right: 28rpx;
+  top: 0;
+  bottom: 0;
+  width: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.78;
+}
+.search-icon-with-clear {
+  right: 88rpx;
+}
 .clear-icon {
+  position: absolute;
+  right: 24rpx;
+  top: 50%;
+  margin-top: -22rpx;
   width: 44rpx;
   height: 44rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  border-radius: 22rpx;
+  background-color: $surface-soft;
 }
 </style>

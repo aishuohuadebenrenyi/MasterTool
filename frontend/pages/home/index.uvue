@@ -307,12 +307,20 @@ onUnmounted(() => {
     <view class="scene-cards" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="scene-card-primary" @click="openPlanSelect">
         <view class="scene-card-decor"></view>
-        <AppIcon class="scene-card-icon-image" src="/static/icons/home-start.svg" size="112rpx" />
-        <text class="scene-card-title-primary">我要开课</text>
-        <text class="scene-card-status-primary">开始一场培训</text>
+        <view class="scene-card-primary-top">
+          <view class="scene-card-icon-shell">
+            <AppIcon name="phaseOpening" preset="hero" />
+          </view>
+        </view>
+        <view class="scene-card-copy">
+          <text class="scene-card-title-primary">我要开课</text>
+          <text class="scene-card-status-primary">开始一场培训</text>
+        </view>
       </view>
       <view class="scene-card-secondary" @click="goReviewCenter">
-        <AppIcon class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" size="64rpx" />
+        <view class="scene-card-icon-shell scene-card-icon-shell-secondary">
+          <AppIcon class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" size="56rpx" />
+        </view>
         <view class="scene-card-text-group">
           <text class="scene-card-title-secondary">我要复盘</text>
           <text class="scene-card-status-secondary" v-if="reviewCount > 0">{{ reviewCount }}场待复盘</text>
@@ -326,13 +334,15 @@ onUnmounted(() => {
     </view>
     <view class="todo-list" v-if="todos.length > 0" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="todo-item" v-for="(item, index) in todos" :key="index" @click="handleTodoClick(item['action'] as string)">
-        <AppIcon v-if="item['iconName'] || item['iconSrc']" class="todo-icon" :name="item['iconName'] as string" :src="item['iconSrc'] as string" size="36rpx" />
+        <view class="todo-icon-wrap">
+          <AppIcon v-if="item['iconName'] || item['iconSrc']" class="todo-icon" :name="item['iconName'] as string" :src="item['iconSrc'] as string" size="32rpx" />
+        </view>
         <text class="todo-text">{{ item['label'] }}</text>
         <AppIcon name="stateChevronRight" size="24rpx" />
       </view>
     </view>
 
-    <HalfSheet :visible="showPlanSelect" title="选择流程模板" @update:visible="showPlanSelect = $event">
+    <HalfSheet :visible="showPlanSelect" size="compact" title="选择流程模板" @update:visible="showPlanSelect = $event">
       <view class="my-plan-option" @click="selectFromMyPlans">
         <view class="my-plan-icon-box">
           <AppIcon name="stateDocument" size="36rpx" />
@@ -363,7 +373,7 @@ onUnmounted(() => {
       </view>
     </HalfSheet>
 
-    <HalfSheet :visible="showQuickCreate" title="快速创建" @update:visible="showQuickCreate = $event">
+    <HalfSheet :visible="showQuickCreate" size="standard" title="快速创建" @update:visible="showQuickCreate = $event">
       <view class="form-group" v-if="selectedTemplate">
         <text class="form-label">选择模板</text>
         <view class="template-badge">
@@ -386,7 +396,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="showPrepConfirm" title="准备确认" @update:visible="showPrepConfirm = $event">
+    <HalfSheet :visible="showPrepConfirm" size="large" title="准备确认" @update:visible="showPrepConfirm = $event">
       <view class="prep-plan-info" v-if="selectedTemplate">
         <text class="prep-plan-name">{{ trainingName }}</text>
         <view class="prep-plan-tags">
@@ -465,7 +475,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="showConfigEdit" :title="configEditTitle" @update:visible="showConfigEdit = $event">
+    <HalfSheet :visible="showConfigEdit" size="compact" :title="configEditTitle" @update:visible="showConfigEdit = $event">
       <view class="config-option" v-for="(opt, idx) in configEditOptions" :key="idx" @click="selectConfigOption(opt)">
         <text class="config-option-text">{{ opt }}</text>
         <AppIcon v-if="isOptionSelected(opt)" name="stateCheck" size="20rpx" />
@@ -555,6 +565,7 @@ onUnmounted(() => {
   padding: 48rpx 40rpx;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10rpx 32rpx rgba(74, 124, 247, 0.18);
 }
 .scene-card-decor {
   position: absolute;
@@ -565,24 +576,44 @@ onUnmounted(() => {
   border-radius: 80rpx;
   background-color: rgba(255, 255, 255, 0.1);
 }
-.scene-card-icon {
-  font-size: 72rpx;
-  margin-bottom: 16rpx;
+.scene-card-primary-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 28rpx;
 }
-.scene-card-icon-image {
+.scene-card-icon-shell {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 32rpx;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+}
+.scene-card-icon-shell-secondary {
   width: 88rpx;
   height: 88rpx;
-  margin-bottom: 16rpx;
+  border-radius: 24rpx;
+  background: #F4F7FF;
+  box-shadow: none;
+}
+.scene-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
 }
 .scene-card-title-primary {
-  font-size: 40rpx;
+  font-size: 38rpx;
   font-weight: 600;
   color: #FFFFFF;
-  margin-bottom: 12rpx;
+  line-height: 1.2;
 }
 .scene-card-status-primary {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.88);
 }
 .scene-card-secondary {
   background-color: #FFFFFF;
@@ -594,23 +625,19 @@ onUnmounted(() => {
   gap: 28rpx;
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
 }
-.scene-card-icon-sm {
-  font-size: 56rpx;
-}
 .scene-card-icon-sm-image {
-  width: 72rpx;
-  height: 72rpx;
-  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
 }
 .scene-card-text-group {
   display: flex;
   flex-direction: column;
+  gap: 6rpx;
 }
 .scene-card-title-secondary {
   font-size: 30rpx;
   font-weight: 600;
   color: #1A1A2E;
-  margin-bottom: 4rpx;
 }
 .scene-card-status-secondary {
   font-size: 24rpx;
@@ -639,14 +666,25 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 24rpx;
+  padding: 24rpx 28rpx;
   background-color: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
 }
+.todo-icon-wrap {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background-color: #F4F7FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
 .todo-icon {
-  font-size: 40rpx;
-  margin-right: 24rpx;
+  width: 32rpx;
+  height: 32rpx;
 }
 .todo-text {
   flex: 1;

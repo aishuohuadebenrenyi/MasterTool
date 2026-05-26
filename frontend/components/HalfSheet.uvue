@@ -8,6 +8,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  size: {
+    type: String,
+    default: 'standard'
+  },
   title: {
     type: String,
     default: ''
@@ -47,13 +51,24 @@ const safeAreaBottom = ref<number>(getSafeAreaBottom())
 const viewportHeight = ref<number>(getViewportHeight())
 const maxWidth = getDesktopMaxWidth()
 
-const resolvedHeight = computed<string>(() => {
+const resolvedMaxHeight = computed<string>(() => {
   if (props.height) {
     return props.height
   }
-  const preferred = Math.round(viewportHeight.value * 0.76)
-  const limited = Math.min(preferred, viewportHeight.value - 32)
-  return Math.max(limited, 480) + 'px'
+  let ratio = 0.72
+  let minHeight = 420
+
+  if (props.size === 'compact') {
+    ratio = 0.52
+    minHeight = 320
+  } else if (props.size === 'large') {
+    ratio = 0.86
+    minHeight = 520
+  }
+
+  const preferred = Math.round(viewportHeight.value * ratio)
+  const limited = Math.min(preferred, viewportHeight.value - 24)
+  return Math.max(limited, minHeight) + 'px'
 })
 
 const hasFooter = computed<boolean>(() => slots.footer != null)
@@ -85,7 +100,7 @@ function handleOverlayClick() {
   <view v-if="showOverlay" class="half-sheet-overlay" @click="handleOverlayClick">
     <view
       :class="['half-sheet-content', { active: showContent }]"
-      :style="{ height: resolvedHeight, maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }"
+      :style="{ maxHeight: resolvedMaxHeight, maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }"
       @click.stop
     >
       <view v-if="showHandle" class="sheet-handle"></view>
@@ -99,13 +114,15 @@ function handleOverlayClick() {
           </view>
         </view>
       </view>
-      <scroll-view class="sheet-body" scroll-y :style="{ padding: bodyPadding }">
-        <slot></slot>
-      </scroll-view>
+      <view class="sheet-body-shell">
+        <scroll-view class="sheet-body" scroll-y :style="{ padding: bodyPadding }">
+          <slot></slot>
+          <view v-if="!hasFooter && safeAreaBottom > 0" class="sheet-body-safe" :style="{ height: safeAreaBottom + 'px' }"></view>
+        </scroll-view>
+      </view>
       <view v-if="hasFooter" class="sheet-footer" :style="{ padding: footerPadding, paddingBottom: 'calc(' + safeAreaBottom + 'px + 20rpx)' }">
         <slot name="footer"></slot>
       </view>
-      <view class="sheet-bottom-fill" :style="{ height: safeAreaBottom + 'px' }"></view>
     </view>
   </view>
 </template>
@@ -117,7 +134,7 @@ function handleOverlayClick() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.38);
   z-index: 1000;
   display: flex;
   align-items: flex-end;
@@ -126,14 +143,14 @@ function handleOverlayClick() {
 .half-sheet-content {
   width: 100%;
   background: #FFFFFF;
-  border-radius: 32rpx 32rpx 0 0;
+  border-radius: 36rpx 36rpx 0 0;
   transform: translateY(100%);
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-
+  box-shadow: 0 -8rpx 40rpx rgba(15, 23, 42, 0.12);
 }
 .half-sheet-content.active {
   transform: translateY(0);
@@ -141,7 +158,7 @@ function handleOverlayClick() {
 .sheet-handle {
   width: 64rpx;
   height: 8rpx;
-  background: #E0E0E0;
+  background: #D6D8DE;
   border-radius: 4rpx;
   margin: 16rpx auto 0;
 }
@@ -150,7 +167,7 @@ function handleOverlayClick() {
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  padding: 24rpx 32rpx;
+  padding: 28rpx 32rpx 24rpx;
   border-bottom: 1rpx solid #F0F0F0;
 }
 .sheet-title {
@@ -169,29 +186,32 @@ function handleOverlayClick() {
   gap: 12rpx;
 }
 .sheet-close {
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 28rpx;
-  background-color: #F5F5F5;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background-color: #F4F5F8;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.sheet-body {
+.sheet-body-shell {
   flex: 1;
   min-height: 0;
-  height: 0;
+  background-color: #FFFFFF;
+}
+.sheet-body {
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
   background-color: #FFFFFF;
+}
+.sheet-body-safe {
+  flex-shrink: 0;
 }
 .sheet-footer {
   flex-shrink: 0;
   background-color: #FFFFFF;
   border-top: 1rpx solid #F0F0F0;
   box-sizing: border-box;
-}
-.sheet-bottom-fill {
-  flex-shrink: 0;
-  background-color: #FFFFFF;
 }
 </style>

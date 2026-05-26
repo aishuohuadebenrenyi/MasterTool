@@ -176,19 +176,19 @@ function selectPhaseForAdd(phaseIndex : number) {
             </view>
             <view class="risk-tag" v-if="riskLevel">
               <view class="detail-inline-icon">
-                <AppIcon name="stateWarning" size="20rpx" />
+                <AppIcon name="stateWarning" size="26rpx" />
                 <text class="risk-tag-text">{{ riskLevel }}风险</text>
               </view>
             </view>
           </view>
           <view class="header-meta">
             <view class="detail-inline-icon">
-              <AppIcon name="statePeople" size="20rpx" />
+              <AppIcon name="statePeople" size="26rpx" />
               <text class="header-meta-text">{{ participants }}</text>
             </view>
             <text class="header-meta-dot">·</text>
             <view class="detail-inline-icon">
-              <AppIcon name="stateDuration" size="20rpx" />
+              <AppIcon name="stateDuration" size="26rpx" />
               <text class="header-meta-text">{{ duration }}</text>
             </view>
           </view>
@@ -202,7 +202,7 @@ function selectPhaseForAdd(phaseIndex : number) {
         <view class="card expandable-card" v-if="rules">
           <view class="expandable-header" @click="expandRules = !expandRules">
             <view class="detail-inline-icon">
-              <AppIcon name="stateDocument" size="20rpx" />
+              <AppIcon name="stateDocument" size="26rpx" />
               <text class="expandable-title">规则说明</text>
             </view>
             <view :class="['expandable-arrow', { 'expandable-arrow-open': expandRules }]">
@@ -217,7 +217,7 @@ function selectPhaseForAdd(phaseIndex : number) {
         <view class="card expandable-card" v-if="reviewQuestions">
           <view class="expandable-header" @click="expandReview = !expandReview">
             <view class="detail-inline-icon">
-              <AppIcon name="phaseReflection" size="20rpx" />
+              <AppIcon name="phaseReflection" size="26rpx" />
               <text class="expandable-title">复盘引导</text>
             </view>
             <view :class="['expandable-arrow', { 'expandable-arrow-open': expandReview }]">
@@ -232,7 +232,7 @@ function selectPhaseForAdd(phaseIndex : number) {
         <view class="card expandable-card" v-if="leaderTips">
           <view class="expandable-header" @click="expandTips = !expandTips">
             <view class="detail-inline-icon">
-              <AppIcon name="phaseSummary" size="20rpx" />
+              <AppIcon name="phaseSummary" size="26rpx" />
               <text class="expandable-title">带领者Tips</text>
             </view>
             <view :class="['expandable-arrow', { 'expandable-arrow-open': expandTips }]">
@@ -258,7 +258,7 @@ function selectPhaseForAdd(phaseIndex : number) {
       </view>
     </view>
 
-    <HalfSheet :visible="showAddToPlan" :title="addToPlanStep === 1 ? '选择方案' : '选择环节'" @update:visible="showAddToPlan = $event">
+    <HalfSheet :visible="showAddToPlan" size="standard" :title="addToPlanStep === 1 ? '选择方案' : '选择环节'" @update:visible="showAddToPlan = $event">
       <view v-if="addToPlanStep === 1">
         <view class="plan-select-card" v-for="plan in availablePlans" :key="plan['id']" @click="selectPlanForAdd(plan)">
           <text class="plan-select-name">{{ plan['name'] as string }}</text>
@@ -275,7 +275,7 @@ function selectPhaseForAdd(phaseIndex : number) {
       <view v-if="addToPlanStep === 2">
         <view class="back-to-plans" @click="backToPlanList">
           <view class="detail-inline-icon">
-            <AppIcon name="stateBack" size="18rpx" />
+            <AppIcon name="stateBack" size="24rpx" />
             <text class="back-to-plans-text">返回方案列表</text>
           </view>
         </view>
@@ -285,7 +285,7 @@ function selectPhaseForAdd(phaseIndex : number) {
           </view>
           <view class="phase-select-info">
             <view class="detail-inline-icon">
-              <AppIcon v-if="phase['iconName']" :name="phase['iconName'] as string" size="18rpx" />
+              <AppIcon v-if="phase['iconName']" :name="phase['iconName'] as string" size="24rpx" />
               <text class="phase-select-name">{{ phase['name'] as string }}</text>
             </view>
             <text class="phase-select-time">{{ phase['time'] as number || phase['duration'] as number || 0 }}分钟</text>
@@ -412,9 +412,16 @@ function selectPhaseForAdd(phaseIndex : number) {
   align-items: center;
   gap: 8rpx;
 }
+.detail-inline-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+}
 .header-meta-text {
   font-size: 26rpx;
   color: #8E8E93;
+  line-height: 1.4;
 }
 .header-meta-dot {
   font-size: 26rpx;

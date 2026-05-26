@@ -70,9 +70,14 @@ export function calcNavBarInfo() : UTSJSONObject {
   const capsuleOccupiedWidth : number = menuButtonLeft > 0 ? Math.max(screenWidth - menuButtonLeft + capsuleGap, defaultRightSafeWidth) : defaultRightSafeWidth
   const topGap : number = menuButtonTop > statusBarHeight ? (menuButtonTop - statusBarHeight) : capsuleGap
   rightSafeWidth = capsuleOccupiedWidth
-  leftSafeWidth = Math.max(88, capsuleMarginRight + menuButtonWidth)
-  const contentBelowCapsuleGap : number = Math.max(12, topGap + 4)
-  const contentTopOffset : number = navBarHeight + contentBelowCapsuleGap
+  leftSafeWidth = Math.max(96, capsuleMarginRight + Math.max(menuButtonWidth, 88))
+  const contentRowHeight : number = menuButtonHeight > 0 ? Math.max(menuButtonHeight + 8, 40) : Math.min(Math.max(contentHeight - 4, 40), 46)
+  const capsuleCenterY : number = menuButtonHeight > 0 ? (menuButtonTop + menuButtonHeight / 2) : (statusBarHeight + contentHeight / 2)
+  const contentRowTop : number = Math.max(2, Math.round(capsuleCenterY - statusBarHeight - contentRowHeight / 2))
+  const contentBelowCapsuleGap : number = Math.max(14, topGap + 8)
+  const secondaryContentTopOffset : number = navBarHeight + contentBelowCapsuleGap
+  const tabContentTopOffset : number = navBarHeight + Math.max(18, topGap + 12)
+  const contentTopOffset : number = secondaryContentTopOffset
   const titleLeft : number = leftSafeWidth
   const titleRight : number = rightSafeWidth
   const navHorizontalPadding : number = Math.max(capsuleMarginRight, 12)
@@ -110,8 +115,12 @@ export function calcNavBarInfo() : UTSJSONObject {
     leftSafeWidth,
     rightSafeWidth,
     capsuleMarginRight,
+    contentRowTop,
+    contentRowHeight,
     contentBelowCapsuleGap,
     contentTopOffset,
+    secondaryContentTopOffset,
+    tabContentTopOffset,
     titleLeft,
     titleRight,
     navHorizontalPadding,

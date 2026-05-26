@@ -28,15 +28,6 @@ const safeAreaBottom = ref<number>(getSafeAreaBottom())
 const viewportHeight = ref<number>(getViewportHeight())
 const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
-const toolboxSheetHeight = computed<number>(() => {
-  return Math.max(viewportHeight.value - navBarHeight - 20, 480)
-})
-
-const standardSheetHeight = computed<string>(() => {
-  const preferred = Math.round(viewportHeight.value * 0.72)
-  return Math.max(Math.min(preferred, viewportHeight.value - 36), 480) + 'px'
-})
-
 const timerSeconds = ref<number>(0)
 const timerRunning = ref<boolean>(false)
 let timerInterval : number | null = null
@@ -630,7 +621,7 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <HalfSheet :visible="checkinSheet" title="签到管理" :height="standardSheetHeight" @update:visible="checkinSheet = $event">
+    <HalfSheet :visible="checkinSheet" size="large" title="签到管理" @update:visible="checkinSheet = $event">
       <view class="checkin-stats">
         <text class="checkin-stats-text">已签到 {{ checkinCount }} / 预计 {{ peopleCount }} 人</text>
       </view>
@@ -658,7 +649,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="groupSheet" title="分组管理" :height="standardSheetHeight" @update:visible="groupSheet = $event">
+    <HalfSheet :visible="groupSheet" size="large" title="分组管理" @update:visible="groupSheet = $event">
       <text class="sheet-label">分组方式</text>
       <view class="group-method-row">
         <view :class="['group-method-btn', { active: groupMethod === 'average' }]" @click="groupMethod = 'average'">
@@ -699,7 +690,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="scoreSheet" title="积分管理" :height="standardSheetHeight" @update:visible="scoreSheet = $event">
+    <HalfSheet :visible="scoreSheet" size="large" title="积分管理" @update:visible="scoreSheet = $event">
       <text class="sheet-label">积分模式</text>
       <view class="score-mode-row">
         <view :class="['score-mode-btn', { active: scoreMode === 'simple' }]" @click="scoreMode = 'simple'">
@@ -731,7 +722,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="pickSheet" title="随机抽取" :height="standardSheetHeight" @update:visible="pickSheet = $event">
+    <HalfSheet :visible="pickSheet" size="standard" title="随机抽取" @update:visible="pickSheet = $event">
       <view class="pick-tabs">
         <view :class="['pick-tab', { active: pickTab === 'actor' }]" @click="pickTab = 'actor'">
           <text class="pick-tab-text">抽演员</text>
@@ -761,7 +752,7 @@ onUnmounted(() => {
       </view>
     </HalfSheet>
 
-    <HalfSheet :visible="interactSheet" title="互动工具" :height="standardSheetHeight" @update:visible="interactSheet = $event">
+    <HalfSheet :visible="interactSheet" size="large" title="互动工具" @update:visible="interactSheet = $event">
       <view v-if="!interactType" class="interact-options">
         <view class="interact-card" @click="interactType = 'wordcloud'">
           <AppIcon name="stateCloud" size="36rpx" />
@@ -823,7 +814,7 @@ onUnmounted(() => {
       </view>
     </HalfSheet>
 
-    <HalfSheet :visible="soundSheet" title="音效面板" :height="standardSheetHeight" @update:visible="soundSheet = $event">
+    <HalfSheet :visible="soundSheet" size="standard" title="音效面板" @update:visible="soundSheet = $event">
       <view class="sound-grid">
         <view
           v-for="(sound, idx) in soundList"
@@ -837,7 +828,7 @@ onUnmounted(() => {
       </view>
     </HalfSheet>
 
-    <HalfSheet :visible="standaloneTimerSheet" title="独立计时" :height="standardSheetHeight" @update:visible="standaloneTimerSheet = $event">
+    <HalfSheet :visible="standaloneTimerSheet" size="large" title="独立计时" @update:visible="standaloneTimerSheet = $event">
       <text class="sheet-label">计时模式</text>
       <view class="stimer-mode-row">
         <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countup' }]" @click="standaloneTimerMode = 'countup'">
@@ -872,7 +863,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="noteSheet" title="培训笔记" :height="standardSheetHeight" @update:visible="noteSheet = $event">
+    <HalfSheet :visible="noteSheet" size="large" title="培训笔记" @update:visible="noteSheet = $event">
       <view class="note-phase-tag">
         <text class="note-phase-tag-text">{{ currentPhaseName }}</text>
       </view>
@@ -891,7 +882,7 @@ onUnmounted(() => {
       </template>
     </HalfSheet>
 
-    <HalfSheet :visible="showToolbox" title="工具箱" :height="toolboxSheetHeight + 'px'" @update:visible="showToolbox = $event">
+    <HalfSheet :visible="showToolbox" size="large" title="工具箱" @update:visible="showToolbox = $event">
       <view class="toolbox-grid">
         <view class="toolbox-item" v-for="(tool, idx) in allTools" :key="idx" @click="openToolFromToolbox(tool)">
           <view class="toolbox-item-icon-box">

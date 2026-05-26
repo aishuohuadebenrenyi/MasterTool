@@ -4,8 +4,10 @@ import { usePlanStore } from '../../stores/plan'
 import { PLAN_TYPE_LABELS, PLAN_STATUS } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { getDesktopMaxWidth } from '../../utils/viewport'
 
 const planStore = usePlanStore()
+const pageMaxWidth = getDesktopMaxWidth()
 
 const reviewFilter = ref<string>('全部')
 const reviewFilters = ['全部', '待复盘', '已复盘'] as string[]
@@ -46,12 +48,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="page">
+  <view class="page app-secondary-page">
     <NavBar title="复盘中心" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
 
-    <view class="filter-bar">
+    <view class="filter-bar app-page-content" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view
-        class="filter-tab"
+        class="filter-tab app-filter-chip"
         :class="{ 'filter-tab-active': reviewFilter === item }"
         v-for="(item, idx) in reviewFilters"
         :key="idx"
@@ -61,11 +63,12 @@ onMounted(() => {
       </view>
     </view>
 
-    <view class="page-content" v-if="filteredPlans.length > 0">
+    <view class="page-content app-page-content" v-if="filteredPlans.length > 0" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view
-        class="review-card"
+        class="review-card app-card-surface"
         v-for="plan in filteredPlans"
         :key="plan['id'] as string"
+        @click="goReviewDetail(plan['id'] as string)"
       >
         <view class="review-card-header">
           <text class="review-name">{{ plan['name'] as string }}</text>
@@ -74,27 +77,31 @@ onMounted(() => {
           </view>
         </view>
         <view class="review-card-body">
-          <view class="review-meta-row">
-            <AppIcon name="stateCalendar" size="18rpx" />
-            <text class="review-meta-text">{{ plan['date'] as string || '未指定日期' }}</text>
-          </view>
-          <view class="review-meta-row">
-            <AppIcon name="stateTag" size="18rpx" />
-            <text class="review-meta-text">{{ getTypeLabel(plan['type'] as string) }}</text>
+          <view class="review-meta-row app-meta-row">
+            <view class="app-meta-item">
+              <AppIcon name="stateCalendar" preset="meta" />
+              <text class="review-meta-text">{{ plan['date'] as string || '未指定日期' }}</text>
+            </view>
+            <view class="app-meta-item">
+              <AppIcon name="stateTag" preset="meta" />
+              <text class="review-meta-text">{{ getTypeLabel(plan['type'] as string) }}</text>
+            </view>
           </view>
         </view>
         <view class="review-card-footer" v-if="!isReviewed(plan)">
-          <view class="btn-review" @click="startReview(plan['id'] as string)">
-            <text class="btn-review-text">开始复盘</text>
+          <view class="btn-review app-action-button" @click="startReview(plan['id'] as string)">
+            <text class="btn-review-text app-action-button-text">开始复盘</text>
           </view>
         </view>
       </view>
     </view>
 
-    <view class="empty-state" v-else>
-      <AppIcon name="stateDocument" size="60rpx" />
-      <text class="empty-title">暂无需要复盘的内容</text>
-      <text class="empty-subtitle">完成培训后可在此进行复盘</text>
+    <view class="empty-state app-page-content app-empty-state" v-else :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+      <view class="app-empty-icon-wrap">
+        <AppIcon name="stateDocument" preset="hero" />
+      </view>
+      <text class="app-empty-title">暂无需要复盘的内容</text>
+      <text class="app-empty-subtitle">完成培训后可在此进行复盘</text>
     </view>
   </view>
 </template>
@@ -104,58 +111,15 @@ onMounted(() => {
   min-height: 100vh;
   background-color: #F5F5F7;
 }
-.nav-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 999;
-  background-color: #FFFFFF;
-  border-bottom-width: 1rpx;
-  border-bottom-style: solid;
-  border-bottom-color: #F0F0F0;
-}
-.nav-bar-content {
-  height: 44px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32rpx;
-  position: relative;
-}
-.nav-back {
-  width: 88rpx;
-  height: 88rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.nav-back-icon {
-  font-size: 36rpx;
-  color: #333333;
-  font-weight: 400;
-}
-.nav-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #000000;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.nav-placeholder {
-  width: 88rpx;
-}
 .filter-bar {
   display: flex;
   flex-direction: row;
-  background-color: #FFFFFF;
+  align-items: center;
+  background-color: transparent;
   padding: 16rpx 32rpx;
   gap: 16rpx;
-  border-bottom-width: 1rpx;
-  border-bottom-style: solid;
-  border-bottom-color: #F0F0F0;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 .filter-tab {
   padding: 12rpx 32rpx;
@@ -219,21 +183,15 @@ onMounted(() => {
   color: #34C759;
 }
 .review-card-body {
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
 }
 .review-meta-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
   margin-bottom: 8rpx;
-}
-.review-meta-icon {
-  font-size: 28rpx;
-  margin-right: 12rpx;
 }
 .review-meta-text {
   font-size: 26rpx;
   color: #8E8E93;
+  line-height: 1.4;
 }
 .review-card-footer {
   display: flex;
@@ -245,14 +203,12 @@ onMounted(() => {
   border-top-color: #F0F0F0;
 }
 .btn-review {
-  background-color: #4A7CF7;
-  padding: 12rpx 40rpx;
-  border-radius: 16rpx;
+  min-height: 76rpx;
+  padding: 0 36rpx;
+  border-radius: 20rpx;
 }
 .btn-review-text {
   font-size: 26rpx;
-  color: #FFFFFF;
-  font-weight: 500;
 }
 .empty-state {
   display: flex;
@@ -260,19 +216,5 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding-top: 280rpx;
-}
-.empty-icon {
-  font-size: 96rpx;
-  margin-bottom: 32rpx;
-}
-.empty-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #1A1A2E;
-  margin-bottom: 16rpx;
-}
-.empty-subtitle {
-  font-size: 26rpx;
-  color: #8E8E93;
 }
 </style>

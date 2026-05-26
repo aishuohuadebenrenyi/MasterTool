@@ -15,10 +15,25 @@ const props = defineProps({
     type: String,
     default: '40rpx'
   },
+  preset: {
+    type: String,
+    default: ''
+  },
   mode: {
     type: String,
     default: 'aspectFit'
   }
+})
+
+const presetSize = computed<string>(() => {
+  if (props.preset === 'nav') return '36rpx'
+  if (props.preset === 'meta') return '26rpx'
+  if (props.preset === 'section') return '30rpx'
+  if (props.preset === 'action') return '28rpx'
+  if (props.preset === 'chip') return '24rpx'
+  if (props.preset === 'empty') return '96rpx'
+  if (props.preset === 'hero') return '64rpx'
+  return props.size
 })
 
 const resolvedSrc = computed<string>(() => {
@@ -45,7 +60,7 @@ function onImageError() {
   <image
     v-if="displaySrc"
     class="app-icon"
-    :style="{ width: size, height: size }"
+    :style="{ width: presetSize, height: presetSize }"
     :src="displaySrc"
     :mode="mode"
     @error="onImageError"
@@ -56,5 +71,7 @@ function onImageError() {
 .app-icon {
   display: block;
   flex-shrink: 0;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 </style>

@@ -4,11 +4,16 @@
   background: linear-gradient(135deg, $brand-primary, $brand-primary-light);
   color: $text-inverse;
   border: none;
-  border-radius: $radius-lg;
-  padding: 24rpx 48rpx;
-  font-size: $font-size-lg;
+  border-radius: $button-radius;
+  min-height: $button-height;
+  padding: 0 $button-padding-x;
+  font-size: $font-size-md;
   font-weight: 600;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 
   &:active {
     opacity: 0.85;
@@ -24,11 +29,16 @@
   background: $bg-primary;
   color: $brand-primary;
   border: 2rpx solid $brand-primary;
-  border-radius: $radius-lg;
-  padding: 22rpx 46rpx;
-  font-size: $font-size-lg;
+  border-radius: $button-radius;
+  min-height: $button-height;
+  padding: 0 $button-padding-x;
+  font-size: $font-size-md;
   font-weight: 600;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 
   &:active {
     background: rgba($brand-primary, 0.05);
@@ -85,10 +95,13 @@
 .status-tag {
   display: inline-flex;
   align-items: center;
-  padding: 4rpx 16rpx;
+  justify-content: center;
+  min-height: 40rpx;
+  padding: 6rpx 18rpx;
   border-radius: $radius-round;
   font-size: $font-size-xs;
   font-weight: 500;
+  box-sizing: border-box;
 
   &.status-draft {
     background: rgba($text-tertiary, 0.1);
@@ -109,4 +122,46 @@
     background: rgba($brand-primary, 0.1);
     color: $brand-primary;
   }
+}
+
+.app-action-button {
+  min-height: $button-height;
+  padding: 0 $button-padding-x;
+  border-radius: $button-radius;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: $brand-secondary;
+  box-sizing: border-box;
+}
+
+.app-action-button-text {
+  font-size: $font-size-md;
+  color: $text-inverse;
+  font-weight: 600;
+}
+
+.app-action-button-secondary {
+  background: rgba($brand-secondary, 0.12);
+}
+
+.app-action-button-secondary-text {
+  color: $brand-secondary;
+}
+
+.app-soft-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40rpx;
+  padding: 6rpx 18rpx;
+  border-radius: $radius-round;
+  background: rgba($brand-secondary, 0.1);
+  box-sizing: border-box;
+}
+
+.app-soft-badge-text {
+  font-size: $font-size-xs;
+  color: $brand-secondary;
+  font-weight: 500;
 }
