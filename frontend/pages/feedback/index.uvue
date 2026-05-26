@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useLiveStore } from '../../stores/live'
 import * as feedbackApi from '../../api/feedback'
 import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const liveStore = useLiveStore()
 
@@ -44,10 +45,10 @@ function toggleAnonymous() {
   allowAnonymous.value = !allowAnonymous.value
 }
 
-function getStars(star : number) : string {
-  let result = ''
+function getStars(star : number) : Array<number> {
+  const result : Array<number> = []
   for (let i = 0; i < star; i++) {
-    result += '⭐'
+    result.push(i)
   }
   return result
 }
@@ -123,14 +124,20 @@ onMounted(() => {
     <scroll-view class="page-scroll" scroll-y>
       <view class="page-content">
         <view class="feedback-guide">
-          <text class="feedback-guide-title">💡 如何收集参与者反馈</text>
+          <view class="feedback-inline-icon">
+            <AppIcon name="phaseSummary" size="24rpx" />
+            <text class="feedback-guide-title">如何收集参与者反馈</text>
+          </view>
           <text class="feedback-guide-step">1. 点击下方二维码，参与者扫码即可填写反馈</text>
           <text class="feedback-guide-step">2. 参与者可自主选择是否匿名提交</text>
           <text class="feedback-guide-step">3. 反馈数据实时汇总，自动生成统计</text>
         </view>
 
         <view class="feedback-qr-card">
-          <text class="feedback-qr-title">📱 参与者反馈入口</text>
+          <view class="feedback-inline-icon">
+            <AppIcon name="stateQr" size="24rpx" />
+            <text class="feedback-qr-title">参与者反馈入口</text>
+          </view>
           <view class="feedback-qr-placeholder">
             <text class="feedback-qr-text">扫码反馈</text>
           </view>
@@ -163,7 +170,10 @@ onMounted(() => {
         </view>
 
         <view class="feedback-anonymous-toggle" @click="toggleAnonymous">
-          <text class="feedback-anonymous-label">☑️ 允许匿名提交</text>
+          <view class="feedback-inline-icon">
+            <AppIcon :name="allowAnonymous ? 'stateCheckbox' : 'stateClose'" size="22rpx" />
+            <text class="feedback-anonymous-label">允许匿名提交</text>
+          </view>
           <view class="toggle-switch" :class="{ 'toggle-switch-active': allowAnonymous }">
             <view class="toggle-knob" :class="{ 'toggle-knob-active': allowAnonymous }"></view>
           </view>
@@ -176,7 +186,7 @@ onMounted(() => {
           <view class="chart-bar-group" v-for="(item, index) in satisfactionData" :key="index">
             <text class="chart-value">{{ item['count'] }}</text>
             <view class="chart-bar" :style="{ height: getBarHeight(item['count'] as number), backgroundColor: item['color'] as string }"></view>
-            <text class="chart-label">{{ item['star'] }}⭐</text>
+            <text class="chart-label">{{ item['star'] }}分</text>
           </view>
         </view>
 
@@ -187,7 +197,9 @@ onMounted(() => {
           <view class="feedback-item" v-for="(item, index) in feedbackList" :key="index">
             <view class="feedback-item-header">
               <text class="feedback-author" :class="{ 'feedback-author-anonymous': item['anonymous'] as boolean }">{{ item['author'] as string }}</text>
-              <text class="feedback-stars">{{ getStars(item['star'] as number) }}</text>
+              <view class="feedback-stars">
+                <AppIcon v-for="starIndex in getStars(item['star'] as number)" :key="starIndex" name="stateFavorite" size="20rpx" />
+              </view>
             </view>
             <text class="feedback-text">{{ item['text'] as string }}</text>
           </view>

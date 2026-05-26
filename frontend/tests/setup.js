@@ -16,9 +16,30 @@ global.uni = {
   navigateBack: vi.fn(),
   showModal: vi.fn(),
   showActionSheet: vi.fn(),
-  getSystemInfoSync: vi.fn(() => ({
+  getWindowInfo: vi.fn(() => ({
     windowWidth: 375,
+    screenWidth: 375,
     windowHeight: 812,
-    statusBarHeight: 44
+    screenHeight: 812,
+    statusBarHeight: 44,
+    safeAreaInsets: {
+      bottom: 34
+    }
+  })),
+  getDeviceInfo: vi.fn(() => ({
+    uniPlatform: 'web',
+    brand: 'Apple',
+    model: 'iPhone'
+  })),
+  getAppBaseInfo: vi.fn(() => ({
+    uniPlatform: 'web',
+    hostName: 'h5'
+  })),
+  getMenuButtonBoundingClientRect: vi.fn(() => ({
+    top: 50,
+    height: 32,
+    width: 88,
+    left: 280,
+    right: 368
   }))
 }

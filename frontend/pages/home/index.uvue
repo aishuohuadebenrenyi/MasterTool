@@ -2,23 +2,23 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { useUserStore } from '../../stores/user'
+import HalfSheet from '../../components/HalfSheet.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 import { PLAN_TYPES } from '../../utils/constants'
 import { calcNavBarInfo } from '../../utils/navbar'
+import { getDesktopMaxWidth, getSafeAreaBottom } from '../../utils/viewport'
 
 const planStore = usePlanStore()
 const userStore = useUserStore()
 
 const navBarInfo = calcNavBarInfo()
 const statusBarHeight = navBarInfo['statusBarHeight'] as number
-const contentHeight = navBarInfo['contentHeight'] as number
+const contentTopOffset = navBarInfo['contentTopOffset'] as number
+const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const homeHeaderHeight = statusBarHeight + Math.max(contentHeight, 120)
-const safeAreaBottom = ref<number>(0)
-
-try {
-  const sysInfo = uni.getSystemInfoSync()
-  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
-} catch (_e : unknown) {}
+const homeHeaderHeight = contentTopOffset + 120
+const safeAreaBottom = ref<number>(getSafeAreaBottom())
+const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
 const displayName = computed(() => userStore.displayName)
 
@@ -42,13 +42,13 @@ const reviewCount = computed(() => planStore.deliveredPlans.length)
 const todos = computed(() => {
   const items : Array<UTSJSONObject> = []
   if (planStore.confirmedPlans.length > 0) {
-    items.push({ icon: '🔴', label: `${planStore.confirmedPlans.length} 个方案待开课`, action: 'confirmed' })
+    items.push({ iconSrc: '/static/icons/home-start.svg', label: `${planStore.confirmedPlans.length} 个方案待开课`, action: 'confirmed' })
   }
   if (planStore.deliveredPlans.length > 0) {
-    items.push({ icon: '📋', label: `${planStore.deliveredPlans.length} 场待复盘`, action: 'review' })
+    items.push({ iconSrc: '/static/icons/home-review.svg', label: `${planStore.deliveredPlans.length} 场待复盘`, action: 'review' })
   }
   if (planStore.draftPlans.length > 0) {
-    items.push({ icon: '📝', label: `${planStore.draftPlans.length} 个草稿方案`, action: 'draft' })
+    items.push({ iconName: 'stateDocument', label: `${planStore.draftPlans.length} 个草稿方案`, action: 'draft' })
   }
   return items
 })
@@ -59,10 +59,10 @@ const showPrepConfirm = ref<boolean>(false)
 const selectedPlanId = ref<string>('')
 
 const flowTemplates : Array<UTSJSONObject> = [
-  { id: 'corporate', icon: '🎯', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', tools: ['签到', '计时器', '分组', '积分', '抽签'] },
-  { id: 'teambuilding', icon: '🎉', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', tools: ['签到', '分组', '积分', '音乐'] },
-  { id: 'improv_show', icon: '🎭', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', tools: ['签到', '计时器', '抽签', '评分'] },
-  { id: 'improv_training', icon: '🏋️', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', tools: ['签到', '计时器', '分组', '抽签'] }
+  { id: 'corporate', iconName: 'typeCorporate', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', tools: ['签到', '计时器', '分组', '积分', '抽签'] },
+  { id: 'teambuilding', iconName: 'typeTeam', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', tools: ['签到', '分组', '积分', '音乐'] },
+  { id: 'improv_show', iconName: 'typeShow', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', tools: ['签到', '计时器', '抽签', '评分'] },
+  { id: 'improv_training', iconName: 'typeTraining', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', tools: ['签到', '计时器', '分组', '抽签'] }
 ]
 
 const selectedTemplate = ref<UTSJSONObject | null>(null)
@@ -81,12 +81,12 @@ const configEditKey = ref<string>('')
 const configEditOptions : Array<string> = []
 
 const prepToolTags : Array<UTSJSONObject> = [
-  { icon: '✋', name: '签到' },
-  { icon: '👥', name: '分组' },
-  { icon: '🏆', name: '积分' },
-  { icon: '⏱', name: '计时' },
-  { icon: '🎲', name: '抽签' },
-  { icon: '🎵', name: '音乐' }
+  { iconName: 'toolCheckin', name: '签到' },
+  { iconName: 'toolGroup', name: '分组' },
+  { iconName: 'toolScore', name: '积分' },
+  { iconName: 'toolTimer', name: '计时' },
+  { iconName: 'toolRandom', name: '抽签' },
+  { iconName: 'soundTheme', name: '音乐' }
 ]
 
 const filteredToolTags = computed(() => {
@@ -181,32 +181,32 @@ function selectConfigOption(opt : string) {
 function getTemplatePhases(key : string) : Array<UTSJSONObject> {
   if (key === (PLAN_TYPES['CORPORATE'] as string)) {
     return [
-      { name: '开场连接', time: 15, color: '#FF6B35', icon: '🤝' },
-      { name: '主题导入', time: 20, color: '#007AFF', icon: '⚡' },
-      { name: '深度探索', time: 40, color: '#5856D6', icon: '🔍' },
-      { name: '实践应用', time: 30, color: '#34C759', icon: '💡' },
-      { name: '总结收束', time: 15, color: '#FF9500', icon: '🎯' }
+      { name: '开场连接', time: 15, color: '#FF6B35', iconName: 'phaseOpening' },
+      { name: '主题导入', time: 20, color: '#007AFF', iconName: 'phaseTopic' },
+      { name: '深度探索', time: 40, color: '#5856D6', iconName: 'phaseExplore' },
+      { name: '实践应用', time: 30, color: '#34C759', iconName: 'phasePractice' },
+      { name: '总结收束', time: 15, color: '#FF9500', iconName: 'phaseSummary' }
     ] as Array<UTSJSONObject>
   }
   if (key === (PLAN_TYPES['TEAMBUILDING'] as string)) {
     return [
-      { name: '破冰热身', time: 20, color: '#FF6B35', icon: '🤝' },
-      { name: '团队挑战', time: 60, color: '#007AFF', icon: '⚡' },
-      { name: '分享庆祝', time: 20, color: '#34C759', icon: '🎯' }
+      { name: '破冰热身', time: 20, color: '#FF6B35', iconName: 'phaseWarmup' },
+      { name: '团队挑战', time: 60, color: '#007AFF', iconName: 'phasePractice' },
+      { name: '分享庆祝', time: 20, color: '#34C759', iconName: 'phaseSummary' }
     ] as Array<UTSJSONObject>
   }
   if (key === (PLAN_TYPES['IMPROV_SHOW'] as string)) {
     return [
-      { name: '暖场互动', time: 10, color: '#FF6B35', icon: '🤝' },
-      { name: '即兴表演', time: 40, color: '#5856D6', icon: '🎭' },
-      { name: '观众互动', time: 15, color: '#007AFF', icon: '💬' },
-      { name: '谢幕总结', time: 5, color: '#34C759', icon: '🎯' }
+      { name: '暖场互动', time: 10, color: '#FF6B35', iconName: 'phaseWarmup' },
+      { name: '即兴表演', time: 40, color: '#5856D6', iconName: 'phasePerformance' },
+      { name: '观众互动', time: 15, color: '#007AFF', iconName: 'phaseAudience' },
+      { name: '谢幕总结', time: 5, color: '#34C759', iconName: 'phaseClosing' }
     ] as Array<UTSJSONObject>
   }
   return [
-    { name: '热身练习', time: 10, color: '#FF6B35', icon: '🤝' },
-    { name: '技能训练', time: 30, color: '#007AFF', icon: '⚡' },
-    { name: '综合练习', time: 30, color: '#5856D6', icon: '🔍' }
+    { name: '热身练习', time: 10, color: '#FF6B35', iconName: 'phaseWarmup' },
+    { name: '技能训练', time: 30, color: '#007AFF', iconName: 'phaseSkill' },
+    { name: '综合练习', time: 30, color: '#5856D6', iconName: 'phaseSimulation' }
   ] as Array<UTSJSONObject>
 }
 
@@ -291,8 +291,8 @@ onUnmounted(() => {
 
 <template>
   <view class="page">
-    <view class="nav-bar-fixed" :style="{ minHeight: homeHeaderHeight + 'px', paddingTop: statusBarHeight + 'px', paddingLeft: '32rpx', paddingRight: (rightSafeWidth + 12) + 'px' }">
-      <view class="greeting-bar">
+    <view class="nav-bar-fixed" :style="{ minHeight: homeHeaderHeight + 'px', paddingTop: contentTopOffset + 'px', paddingLeft: navHorizontalPadding + 'px', paddingRight: rightSafeWidth + 'px' }">
+      <view class="greeting-bar" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
         <view class="greeting-left">
           <view class="avatar-small">
             <text class="avatar-text">{{ displayName.charAt(0) }}</text>
@@ -304,15 +304,15 @@ onUnmounted(() => {
     </view>
     <view :style="{ height: homeHeaderHeight + 'px' }"></view>
 
-    <view class="scene-cards">
+    <view class="scene-cards" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="scene-card-primary" @click="openPlanSelect">
         <view class="scene-card-decor"></view>
-        <image class="scene-card-icon-image" src="/static/icons/home-start.svg" mode="aspectFit" />
+        <AppIcon class="scene-card-icon-image" src="/static/icons/home-start.svg" size="112rpx" />
         <text class="scene-card-title-primary">我要开课</text>
         <text class="scene-card-status-primary">开始一场培训</text>
       </view>
       <view class="scene-card-secondary" @click="goReviewCenter">
-        <image class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" mode="aspectFit" />
+        <AppIcon class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" size="64rpx" />
         <view class="scene-card-text-group">
           <text class="scene-card-title-secondary">我要复盘</text>
           <text class="scene-card-status-secondary" v-if="reviewCount > 0">{{ reviewCount }}场待复盘</text>
@@ -321,199 +321,156 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <view class="section-header" v-if="todos.length > 0">
+    <view class="section-header" v-if="todos.length > 0" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <text class="section-title">待处理</text>
     </view>
-    <view class="todo-list" v-if="todos.length > 0">
+    <view class="todo-list" v-if="todos.length > 0" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="todo-item" v-for="(item, index) in todos" :key="index" @click="handleTodoClick(item['action'] as string)">
-        <text class="todo-icon">{{ item['icon'] }}</text>
+        <AppIcon v-if="item['iconName'] || item['iconSrc']" class="todo-icon" :name="item['iconName'] as string" :src="item['iconSrc'] as string" size="36rpx" />
         <text class="todo-text">{{ item['label'] }}</text>
-        <text class="todo-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="24rpx" />
       </view>
     </view>
 
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showPlanSelect }" @click="closePlanSelect">
-      <view class="popup-mask"></view>
-      <view class="popup-container" :class="{ 'popup-container-visible': showPlanSelect }" @click.stop="">
-        <view class="popup-handle-bar">
-          <view class="popup-handle"></view>
+    <HalfSheet :visible="showPlanSelect" title="选择流程模板" @update:visible="showPlanSelect = $event">
+      <view class="my-plan-option" @click="selectFromMyPlans">
+        <view class="my-plan-icon-box">
+          <AppIcon name="stateDocument" size="36rpx" />
         </view>
-        <view class="popup-header">
-          <text class="popup-title">选择流程模板</text>
-          <view class="popup-close" @click="closePlanSelect">
-            <text class="popup-close-icon">✕</text>
-          </view>
+        <view class="my-plan-info">
+          <text class="my-plan-title">从我的方案</text>
+          <text class="my-plan-desc">选择已有方案直接开课</text>
         </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view class="my-plan-option" @click="selectFromMyPlans">
-            <view class="my-plan-icon-box">
-              <text class="my-plan-icon">📋</text>
-            </view>
-            <view class="my-plan-info">
-              <text class="my-plan-title">从我的方案</text>
-              <text class="my-plan-desc">选择已有方案直接开课</text>
-            </view>
-            <text class="my-plan-arrow">›</text>
-          </view>
-          <view class="template-section-label">
-            <text class="template-section-text">流程模板</text>
-          </view>
-          <view class="template-card" v-for="(tpl, idx) in flowTemplates" :key="idx" @click="selectTemplate(tpl)">
-            <view class="template-card-icon-box">
-              <text class="template-card-icon">{{ tpl['icon'] }}</text>
-            </view>
-            <view class="template-card-info">
-              <view class="template-card-name-row">
-                <text class="template-card-name">{{ tpl['name'] }}</text>
-                <view class="template-card-badge">
-                  <text class="template-card-badge-text">{{ tpl['tag'] }}</text>
-                </view>
-              </view>
-              <text class="template-card-desc">{{ tpl['desc'] }}</text>
-            </view>
-            <text class="template-card-arrow">›</text>
-          </view>
-        </scroll-view>
+        <AppIcon name="stateChevronRight" size="24rpx" />
       </view>
-    </view>
-
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showQuickCreate }" @click="closeQuickCreate">
-      <view class="popup-mask"></view>
-      <view class="popup-container popup-container-tall" :class="{ 'popup-container-visible': showQuickCreate }" @click.stop="">
-        <view class="popup-handle-bar">
-          <view class="popup-handle"></view>
-        </view>
-        <view class="popup-header">
-          <text class="popup-title">快速创建</text>
-          <view class="popup-close" @click="closeQuickCreate">
-            <text class="popup-close-icon">✕</text>
-          </view>
-        </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view class="form-group" v-if="selectedTemplate">
-            <text class="form-label">选择模板</text>
-            <view class="template-badge">
-              <text class="template-badge-icon">{{ selectedTemplate['icon'] }}</text>
-              <text class="template-badge-text">{{ selectedTemplate['name'] }}</text>
-            </view>
-          </view>
-          <view class="form-group">
-            <text class="form-label">培训名称</text>
-            <input class="form-input" v-model="trainingName" placeholder="请输入培训名称" />
-          </view>
-          <view class="form-group">
-            <text class="form-label">预计人数</text>
-            <input class="form-input" v-model="peopleCount" type="number" placeholder="请输入参与人数" />
-          </view>
-          <view class="form-submit">
-            <view class="submit-btn" @click="submitQuickCreate">
-              <text class="submit-btn-text">🚀 创建并准备</text>
-            </view>
-          </view>
-        </scroll-view>
+      <view class="template-section-label">
+        <text class="template-section-text">流程模板</text>
       </view>
-    </view>
-
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showPrepConfirm }" @click="closePrepConfirm">
-      <view class="popup-mask"></view>
-      <view class="popup-container popup-container-tall" :class="{ 'popup-container-visible': showPrepConfirm }" @click.stop="">
-        <view class="popup-handle-bar">
-          <view class="popup-handle"></view>
+      <view class="template-card" v-for="(tpl, idx) in flowTemplates" :key="idx" @click="selectTemplate(tpl)">
+        <view class="template-card-icon-box">
+          <AppIcon :name="tpl['iconName'] as string" size="44rpx" />
         </view>
-        <view class="popup-header">
-          <text class="popup-title">准备确认</text>
-          <view class="popup-close" @click="closePrepConfirm">
-            <text class="popup-close-icon">✕</text>
+        <view class="template-card-info">
+          <view class="template-card-name-row">
+            <text class="template-card-name">{{ tpl['name'] }}</text>
+            <view class="template-card-badge">
+              <text class="template-card-badge-text">{{ tpl['tag'] }}</text>
+            </view>
           </view>
+          <text class="template-card-desc">{{ tpl['desc'] }}</text>
         </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view class="prep-plan-info" v-if="selectedTemplate">
-            <text class="prep-plan-name">{{ trainingName }}</text>
-            <view class="prep-plan-tags">
-              <view class="prep-plan-tag">
-                <text class="prep-plan-tag-text">{{ selectedTemplate['icon'] }} {{ selectedTemplate['name'] }}</text>
-              </view>
-              <view class="prep-plan-tag prep-plan-tag-people">
-                <text class="prep-plan-tag-text">👥 {{ prepPeopleCount }}人</text>
-              </view>
-            </view>
-          </view>
-
-          <view class="prep-section">
-            <view class="prep-section-header">
-              <text class="prep-section-title">签到配置</text>
-            </view>
-            <view class="prep-edit-row" @click="openConfigEdit('checkin')">
-              <text class="prep-edit-label">签到方式</text>
-              <view class="prep-edit-right">
-                <text class="prep-edit-value">{{ checkInMethod }}</text>
-                <text class="prep-edit-arrow">›</text>
-              </view>
-            </view>
-          </view>
-
-          <view class="prep-section">
-            <view class="prep-section-header">
-              <text class="prep-section-title">分组配置</text>
-            </view>
-            <view class="prep-edit-row" @click="openConfigEdit('group')">
-              <text class="prep-edit-label">分组方式</text>
-              <view class="prep-edit-right">
-                <text class="prep-edit-value">{{ groupMethod }}</text>
-                <text class="prep-edit-arrow">›</text>
-              </view>
-            </view>
-          </view>
-
-          <view class="prep-section">
-            <view class="prep-section-header">
-              <text class="prep-section-title">积分配置</text>
-            </view>
-            <view class="prep-edit-row" @click="openConfigEdit('score')">
-              <text class="prep-edit-label">积分模式</text>
-              <view class="prep-edit-right">
-                <text class="prep-edit-value">{{ scoreMode }}</text>
-                <text class="prep-edit-arrow">›</text>
-              </view>
-            </view>
-          </view>
-
-          <view class="prep-section" v-if="selectedTemplate">
-            <view class="prep-section-header">
-              <text class="prep-section-title">工具配置</text>
-            </view>
-            <view class="prep-tools-card">
-              <view class="prep-tool-tag" v-for="(tool, idx) in filteredToolTags" :key="idx">
-                <text class="prep-tool-tag-text">{{ tool['icon'] }} {{ tool['name'] }}</text>
-              </view>
-            </view>
-          </view>
-
-          <view class="form-submit">
-            <view class="submit-btn" @click="startLive">
-              <text class="submit-btn-text">🚀 一键开始</text>
-            </view>
-          </view>
-        </scroll-view>
+        <AppIcon name="stateChevronRight" size="24rpx" />
       </view>
-    </view>
+    </HalfSheet>
 
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showConfigEdit }" @click="closeConfigEdit">
-      <view class="popup-mask"></view>
-      <view class="popup-container" :class="{ 'popup-container-visible': showConfigEdit }" @click.stop="">
-        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
-        <view class="popup-header">
-          <text class="popup-title">{{ configEditTitle }}</text>
-          <view class="popup-close" @click="closeConfigEdit"><text class="popup-close-icon">✕</text></view>
+    <HalfSheet :visible="showQuickCreate" title="快速创建" @update:visible="showQuickCreate = $event">
+      <view class="form-group" v-if="selectedTemplate">
+        <text class="form-label">选择模板</text>
+        <view class="template-badge">
+          <AppIcon :name="selectedTemplate['iconName'] as string" size="28rpx" />
+          <text class="template-badge-text">{{ selectedTemplate['name'] }}</text>
         </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view class="config-option" v-for="(opt, idx) in configEditOptions" :key="idx" @click="selectConfigOption(opt)">
-            <text class="config-option-text">{{ opt }}</text>
-            <text class="config-option-check" v-if="isOptionSelected(opt)">✓</text>
-          </view>
-        </scroll-view>
       </view>
-    </view>
+      <view class="form-group">
+        <text class="form-label">培训名称</text>
+        <input class="form-input" v-model="trainingName" placeholder="请输入培训名称" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">预计人数</text>
+        <input class="form-input" v-model="peopleCount" type="number" placeholder="请输入参与人数" />
+      </view>
+      <template #footer>
+        <view class="submit-btn" @click="submitQuickCreate">
+          <text class="submit-btn-text">创建并准备</text>
+        </view>
+      </template>
+    </HalfSheet>
+
+    <HalfSheet :visible="showPrepConfirm" title="准备确认" @update:visible="showPrepConfirm = $event">
+      <view class="prep-plan-info" v-if="selectedTemplate">
+        <text class="prep-plan-name">{{ trainingName }}</text>
+        <view class="prep-plan-tags">
+          <view class="prep-plan-tag">
+            <view class="prep-plan-tag-inner">
+              <AppIcon :name="selectedTemplate['iconName'] as string" size="24rpx" />
+              <text class="prep-plan-tag-text">{{ selectedTemplate['name'] }}</text>
+            </view>
+          </view>
+          <view class="prep-plan-tag prep-plan-tag-people">
+            <view class="prep-plan-tag-inner">
+              <AppIcon name="statePeople" size="24rpx" />
+              <text class="prep-plan-tag-text">{{ prepPeopleCount }}人</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="prep-section">
+        <view class="prep-section-header">
+          <text class="prep-section-title">签到配置</text>
+        </view>
+        <view class="prep-edit-row" @click="openConfigEdit('checkin')">
+          <text class="prep-edit-label">签到方式</text>
+          <view class="prep-edit-right">
+            <text class="prep-edit-value">{{ checkInMethod }}</text>
+            <AppIcon name="stateChevronRight" size="20rpx" />
+          </view>
+        </view>
+      </view>
+
+      <view class="prep-section">
+        <view class="prep-section-header">
+          <text class="prep-section-title">分组配置</text>
+        </view>
+        <view class="prep-edit-row" @click="openConfigEdit('group')">
+          <text class="prep-edit-label">分组方式</text>
+          <view class="prep-edit-right">
+            <text class="prep-edit-value">{{ groupMethod }}</text>
+            <AppIcon name="stateChevronRight" size="20rpx" />
+          </view>
+        </view>
+      </view>
+
+      <view class="prep-section">
+        <view class="prep-section-header">
+          <text class="prep-section-title">积分配置</text>
+        </view>
+        <view class="prep-edit-row" @click="openConfigEdit('score')">
+          <text class="prep-edit-label">积分模式</text>
+          <view class="prep-edit-right">
+            <text class="prep-edit-value">{{ scoreMode }}</text>
+            <AppIcon name="stateChevronRight" size="20rpx" />
+          </view>
+        </view>
+      </view>
+
+      <view class="prep-section" v-if="selectedTemplate">
+        <view class="prep-section-header">
+          <text class="prep-section-title">工具配置</text>
+        </view>
+        <view class="prep-tools-card">
+          <view class="prep-tool-tag" v-for="(tool, idx) in filteredToolTags" :key="idx">
+            <view class="prep-tool-tag-inner">
+              <AppIcon :name="tool['iconName'] as string" size="22rpx" />
+              <text class="prep-tool-tag-text">{{ tool['name'] }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <template #footer>
+        <view class="submit-btn" @click="startLive">
+          <text class="submit-btn-text">一键开始</text>
+        </view>
+      </template>
+    </HalfSheet>
+
+    <HalfSheet :visible="showConfigEdit" :title="configEditTitle" @update:visible="showConfigEdit = $event">
+      <view class="config-option" v-for="(opt, idx) in configEditOptions" :key="idx" @click="selectConfigOption(opt)">
+        <text class="config-option-text">{{ opt }}</text>
+        <AppIcon v-if="isOptionSelected(opt)" name="stateCheck" size="20rpx" />
+      </view>
+    </HalfSheet>
   </view>
 </template>
 
@@ -543,6 +500,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 24rpx 0;
   width: 100%;
+  margin: 0 auto;
 }
 .greeting-left {
   display: flex;
@@ -587,6 +545,9 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 24rpx;
   margin-bottom: 40rpx;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .scene-card-primary {
   background: linear-gradient(135deg, #4A7CF7, #6B9BFF);
@@ -657,6 +618,9 @@ onUnmounted(() => {
 }
 .section-header {
   padding: 24rpx 0 16rpx;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .section-title {
   font-size: 30rpx;
@@ -667,6 +631,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .todo-item {
   display: flex;

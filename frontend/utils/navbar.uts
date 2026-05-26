@@ -1,3 +1,5 @@
+import { getRuntimeInfo } from './runtime'
+
 export function calcNavBarInfo() : UTSJSONObject {
   let statusBarHeight : number = 0
   let navBarHeight : number = 44
@@ -14,24 +16,26 @@ export function calcNavBarInfo() : UTSJSONObject {
   let capsuleGap : number = 8
   let isMpWeixin : boolean = false
 
+  const runtimeInfo = getRuntimeInfo()
+  isMpWeixin = (runtimeInfo['platform'] as string) === 'mp-weixin'
+
   try {
-    // 先走 getSystemInfoSync，兼容 uni-app x 当前运行环境；拿不到时再退回更细的 windowInfo。
-    const sysInfo = uni.getSystemInfoSync()
-    statusBarHeight = sysInfo.statusBarHeight || 0
-    screenWidth = sysInfo.screenWidth || 375
-    const uniPlatform = (sysInfo as UTSJSONObject)['uniPlatform'] as string | null
-    isMpWeixin = uniPlatform === 'mp-weixin'
-  } catch (e) {}
+    const windowInfo = (uni as unknown as UTSJSONObject)['getWindowInfo'] as (() => UTSJSONObject) | null
+    if (windowInfo != null) {
+      const info = windowInfo()
+      statusBarHeight = (info['statusBarHeight'] as number) || 0
+      screenWidth = (info['screenWidth'] as number) || (info['windowWidth'] as number) || screenWidth
+    }
+  } catch (_e : unknown) {}
 
   if (statusBarHeight === 0) {
     try {
-      const windowInfo = (uni as unknown as UTSJSONObject)['getWindowInfo'] as (() => UTSJSONObject) | null
-      if (windowInfo != null) {
-        const info = windowInfo()
-        statusBarHeight = (info['statusBarHeight'] as number) || 0
+      const deviceInfo = (uni as unknown as UTSJSONObject)['getDeviceInfo'] as (() => UTSJSONObject) | null
+      if (deviceInfo != null) {
+        const info = deviceInfo()
         screenWidth = (info['screenWidth'] as number) || screenWidth
       }
-    } catch (e) {}
+    } catch (_e : unknown) {}
   }
 
   try {
@@ -64,12 +68,14 @@ export function calcNavBarInfo() : UTSJSONObject {
   // 两边都参与标题布局，才能避免“视觉上看似居中、实际上被胶囊挤偏”的问题。
   const capsuleMarginRight : number = menuButtonRight > 0 ? Math.max(screenWidth - menuButtonRight, capsuleGap) : capsuleGap
   const capsuleOccupiedWidth : number = menuButtonLeft > 0 ? Math.max(screenWidth - menuButtonLeft + capsuleGap, defaultRightSafeWidth) : defaultRightSafeWidth
+  const topGap : number = menuButtonTop > statusBarHeight ? (menuButtonTop - statusBarHeight) : capsuleGap
   rightSafeWidth = capsuleOccupiedWidth
   leftSafeWidth = Math.max(88, capsuleMarginRight + menuButtonWidth)
-  const contentTopOffset : number = navBarHeight + 12
+  const contentBelowCapsuleGap : number = Math.max(12, topGap + 4)
+  const contentTopOffset : number = navBarHeight + contentBelowCapsuleGap
   const titleLeft : number = leftSafeWidth
   const titleRight : number = rightSafeWidth
-  const navHorizontalPadding : number = 16
+  const navHorizontalPadding : number = Math.max(capsuleMarginRight, 12)
 
   try {
     if (isMpWeixin) {
@@ -103,6 +109,8 @@ export function calcNavBarInfo() : UTSJSONObject {
     capsuleHeight: menuButtonHeight,
     leftSafeWidth,
     rightSafeWidth,
+    capsuleMarginRight,
+    contentBelowCapsuleGap,
     contentTopOffset,
     titleLeft,
     titleRight,

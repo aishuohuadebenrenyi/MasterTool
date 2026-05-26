@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { usePlanStore } from '../../stores/plan'
 import * as feedbackApi from '../../api/feedback'
+import NavBar from '../../components/NavBar.uvue'
 
 const userStore = useUserStore()
 const planStore = usePlanStore()
@@ -111,13 +112,7 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <view class="navbar">
-      <view class="navbar-back" @click="uni.navigateBack()">
-        <text class="navbar-back-icon">‹</text>
-      </view>
-      <text class="navbar-title">数据详情</text>
-      <view class="navbar-placeholder"></view>
-    </view>
+    <NavBar title="数据详情" @back="uni.navigateBack()" />
 
     <view class="range-toggle">
       <view

@@ -4,6 +4,8 @@ import { useActivityStore } from '../../stores/activity'
 import { usePlanStore } from '../../stores/plan'
 import { ACTIVITY_CATEGORY_LABELS } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
+import HalfSheet from '../../components/HalfSheet.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const activityStore = useActivityStore()
 const planStore = usePlanStore()
@@ -173,13 +175,22 @@ function selectPhaseForAdd(phaseIndex : number) {
               <text class="difficulty-text">{{ difficultyLabel }}</text>
             </view>
             <view class="risk-tag" v-if="riskLevel">
-              <text class="risk-tag-text">⚠️ {{ riskLevel }}风险</text>
+              <view class="detail-inline-icon">
+                <AppIcon name="stateWarning" size="20rpx" />
+                <text class="risk-tag-text">{{ riskLevel }}风险</text>
+              </view>
             </view>
           </view>
           <view class="header-meta">
-            <text class="header-meta-text">👥 {{ participants }}</text>
+            <view class="detail-inline-icon">
+              <AppIcon name="statePeople" size="20rpx" />
+              <text class="header-meta-text">{{ participants }}</text>
+            </view>
             <text class="header-meta-dot">·</text>
-            <text class="header-meta-text">⏱ {{ duration }}</text>
+            <view class="detail-inline-icon">
+              <AppIcon name="stateDuration" size="20rpx" />
+              <text class="header-meta-text">{{ duration }}</text>
+            </view>
           </view>
         </view>
 
@@ -190,8 +201,13 @@ function selectPhaseForAdd(phaseIndex : number) {
 
         <view class="card expandable-card" v-if="rules">
           <view class="expandable-header" @click="expandRules = !expandRules">
-            <text class="expandable-title">📋 规则说明</text>
-            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandRules }">›</text>
+            <view class="detail-inline-icon">
+              <AppIcon name="stateDocument" size="20rpx" />
+              <text class="expandable-title">规则说明</text>
+            </view>
+            <view :class="['expandable-arrow', { 'expandable-arrow-open': expandRules }]">
+              <AppIcon name="stateChevronRight" size="18rpx" />
+            </view>
           </view>
           <view class="expandable-body" v-if="expandRules">
             <text class="card-body">{{ rules }}</text>
@@ -200,8 +216,13 @@ function selectPhaseForAdd(phaseIndex : number) {
 
         <view class="card expandable-card" v-if="reviewQuestions">
           <view class="expandable-header" @click="expandReview = !expandReview">
-            <text class="expandable-title">🔄 复盘引导</text>
-            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandReview }">›</text>
+            <view class="detail-inline-icon">
+              <AppIcon name="phaseReflection" size="20rpx" />
+              <text class="expandable-title">复盘引导</text>
+            </view>
+            <view :class="['expandable-arrow', { 'expandable-arrow-open': expandReview }]">
+              <AppIcon name="stateChevronRight" size="18rpx" />
+            </view>
           </view>
           <view class="expandable-body" v-if="expandReview">
             <text class="card-body">{{ reviewQuestions }}</text>
@@ -210,8 +231,13 @@ function selectPhaseForAdd(phaseIndex : number) {
 
         <view class="card expandable-card" v-if="leaderTips">
           <view class="expandable-header" @click="expandTips = !expandTips">
-            <text class="expandable-title">💡 带领者Tips</text>
-            <text class="expandable-arrow" :class="{ 'expandable-arrow-open': expandTips }">›</text>
+            <view class="detail-inline-icon">
+              <AppIcon name="phaseSummary" size="20rpx" />
+              <text class="expandable-title">带领者Tips</text>
+            </view>
+            <view :class="['expandable-arrow', { 'expandable-arrow-open': expandTips }]">
+              <AppIcon name="stateChevronRight" size="18rpx" />
+            </view>
           </view>
           <view class="expandable-body" v-if="expandTips">
             <text class="card-body">{{ leaderTips }}</text>
@@ -222,52 +248,51 @@ function selectPhaseForAdd(phaseIndex : number) {
 
     <view class="bottom-bar">
       <view class="fav-btn" @click="handleToggleFavorite">
-        <text class="fav-icon">{{ isFavorite ? '❤️' : '🤍' }}</text>
+        <AppIcon :name="isFavorite ? 'stateFavorite' : 'stateFavoriteOutline'" size="28rpx" />
       </view>
       <view class="add-btn" @click="handleAddToPlan">
-        <text class="add-btn-text">📋 添加到方案</text>
+        <view class="detail-inline-icon">
+          <AppIcon name="stateDocument" size="24rpx" />
+          <text class="add-btn-text">添加到方案</text>
+        </view>
       </view>
     </view>
 
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showAddToPlan }" @click="showAddToPlan = false">
-      <view class="popup-mask"></view>
-      <view class="popup-container" :class="{ 'popup-container-visible': showAddToPlan }" @click.stop="">
-        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
-        <view class="popup-header">
-          <text class="popup-title">{{ addToPlanStep === 1 ? '选择方案' : '选择环节' }}</text>
-          <view class="popup-close" @click="showAddToPlan = false"><text class="popup-close-icon">✕</text></view>
+    <HalfSheet :visible="showAddToPlan" :title="addToPlanStep === 1 ? '选择方案' : '选择环节'" @update:visible="showAddToPlan = $event">
+      <view v-if="addToPlanStep === 1">
+        <view class="plan-select-card" v-for="plan in availablePlans" :key="plan['id']" @click="selectPlanForAdd(plan)">
+          <text class="plan-select-name">{{ plan['name'] as string }}</text>
+          <view class="plan-select-meta">
+            <text class="plan-select-meta-text">{{ plan['client'] as string || '' }}</text>
+            <text class="plan-select-meta-dot" v-if="plan['client']">·</text>
+            <text class="plan-select-meta-text">{{ plan['people'] }}人</text>
+          </view>
         </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view v-if="addToPlanStep === 1">
-            <view class="plan-select-card" v-for="plan in availablePlans" :key="plan['id']" @click="selectPlanForAdd(plan)">
-              <text class="plan-select-name">{{ plan['name'] as string }}</text>
-              <view class="plan-select-meta">
-                <text class="plan-select-meta-text">{{ plan['client'] as string || '' }}</text>
-                <text class="plan-select-meta-dot" v-if="plan['client']">·</text>
-                <text class="plan-select-meta-text">{{ plan['people'] }}人</text>
-              </view>
-            </view>
-            <view class="empty-plans" v-if="availablePlans.length === 0">
-              <text class="empty-plans-text">暂无可添加的方案</text>
-            </view>
-          </view>
-          <view v-if="addToPlanStep === 2">
-            <view class="back-to-plans" @click="backToPlanList">
-              <text class="back-to-plans-text">‹ 返回方案列表</text>
-            </view>
-            <view class="phase-select-item" v-for="(phase, idx) in selectedPlanPhases" :key="idx" @click="selectPhaseForAdd(idx)">
-              <view class="phase-select-badge" :style="{ backgroundColor: (phase['color'] as string) || '#4A7CF7' }">
-                <text class="phase-select-badge-text">{{ idx + 1 }}</text>
-              </view>
-              <view class="phase-select-info">
-                <text class="phase-select-name">{{ phase['icon'] as string || '' }} {{ phase['name'] as string }}</text>
-                <text class="phase-select-time">{{ phase['time'] as number || phase['duration'] as number || 0 }}分钟</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
+        <view class="empty-plans" v-if="availablePlans.length === 0">
+          <text class="empty-plans-text">暂无可添加的方案</text>
+        </view>
       </view>
-    </view>
+      <view v-if="addToPlanStep === 2">
+        <view class="back-to-plans" @click="backToPlanList">
+          <view class="detail-inline-icon">
+            <AppIcon name="stateBack" size="18rpx" />
+            <text class="back-to-plans-text">返回方案列表</text>
+          </view>
+        </view>
+        <view class="phase-select-item" v-for="(phase, idx) in selectedPlanPhases" :key="idx" @click="selectPhaseForAdd(idx)">
+          <view class="phase-select-badge" :style="{ backgroundColor: (phase['color'] as string) || '#4A7CF7' }">
+            <text class="phase-select-badge-text">{{ idx + 1 }}</text>
+          </view>
+          <view class="phase-select-info">
+            <view class="detail-inline-icon">
+              <AppIcon v-if="phase['iconName']" :name="phase['iconName'] as string" size="18rpx" />
+              <text class="phase-select-name">{{ phase['name'] as string }}</text>
+            </view>
+            <text class="phase-select-time">{{ phase['time'] as number || phase['duration'] as number || 0 }}分钟</text>
+          </view>
+        </view>
+      </view>
+    </HalfSheet>
   </view>
 </template>
 

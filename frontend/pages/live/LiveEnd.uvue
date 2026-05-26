@@ -1,14 +1,12 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useLiveStore } from '../../stores/live'
+import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
+import { getSafeAreaBottom } from '../../utils/viewport'
 
 const liveStore = useLiveStore()
-const safeAreaBottom = ref<number>(0)
-
-try {
-  const sysInfo = uni.getSystemInfoSync()
-  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
-} catch (e) {}
+const safeAreaBottom = ref<number>(getSafeAreaBottom())
 
 const planName = computed(() : string => liveStore.planName || '培训')
 
@@ -56,9 +54,10 @@ function goHome() {
 
 <template>
   <view class="page">
+    <NavBar title="培训结束" backgroundColor="#F5F5F7" titleColor="#1A1A2E" backIconColor="#1A1A2E" @back="goHome" />
     <view class="end-container" :style="{ paddingBottom: (safeAreaBottom + 32) + 'px' }">
       <view class="end-icon-wrap">
-        <text class="end-icon">🎉</text>
+        <AppIcon name="soundCheer" size="84rpx" />
       </view>
 
       <text class="end-title">培训已结束</text>
@@ -78,13 +77,22 @@ function goHome() {
 
       <view class="action-list">
         <view class="action-btn action-btn-primary" @click="goFeedback">
-          <text class="action-btn-text">📝 收集反馈</text>
+          <view class="action-inline-icon">
+            <AppIcon name="toolNote" size="22rpx" />
+            <text class="action-btn-text">收集反馈</text>
+          </view>
         </view>
         <view class="action-btn action-btn-secondary" @click="goReview">
-          <text class="action-btn-text">🔄 开始复盘</text>
+          <view class="action-inline-icon">
+            <AppIcon name="phaseReflection" size="22rpx" />
+            <text class="action-btn-text">开始复盘</text>
+          </view>
         </view>
         <view class="action-btn action-btn-secondary" @click="goDataDetail">
-          <text class="action-btn-text">📊 查看数据</text>
+          <view class="action-inline-icon">
+            <AppIcon name="stateChart" size="22rpx" />
+            <text class="action-btn-text">查看数据</text>
+          </view>
         </view>
         <view class="action-btn action-btn-ghost" @click="goHome">
           <text class="action-btn-text-ghost">返回首页</text>

@@ -1,0 +1,60 @@
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { getCompatibleAssetPath, getIconPath } from '../utils/icons'
+
+const props = defineProps({
+  name: {
+    type: String,
+    default: ''
+  },
+  src: {
+    type: String,
+    default: ''
+  },
+  size: {
+    type: String,
+    default: '40rpx'
+  },
+  mode: {
+    type: String,
+    default: 'aspectFit'
+  }
+})
+
+const resolvedSrc = computed<string>(() => {
+  if (props.src) {
+    return getCompatibleAssetPath(props.src)
+  }
+  return getIconPath(props.name)
+})
+
+const displaySrc = ref<string>('')
+
+watch(resolvedSrc, (value : string) => {
+  displaySrc.value = value
+}, { immediate: true })
+
+function onImageError() {
+  if (displaySrc.value.endsWith('.svg')) {
+    displaySrc.value = displaySrc.value.substring(0, displaySrc.value.length - 4) + '.png'
+  }
+}
+</script>
+
+<template>
+  <image
+    v-if="displaySrc"
+    class="app-icon"
+    :style="{ width: size, height: size }"
+    :src="displaySrc"
+    :mode="mode"
+    @error="onImageError"
+  />
+</template>
+
+<style scoped>
+.app-icon {
+  display: block;
+  flex-shrink: 0;
+}
+</style>

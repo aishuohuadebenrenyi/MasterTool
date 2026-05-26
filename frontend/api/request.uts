@@ -1,5 +1,6 @@
 import { STORAGE_KEYS, API_BASE_URL } from '../utils/constants'
 import * as storage from '../utils/storage'
+import { getRuntimeInfo, isMpWeixinRuntime } from '../utils/runtime'
 
 const BASE_URL : string = API_BASE_URL
 let lastToastMessage : string = ''
@@ -22,23 +23,6 @@ type RequestOptions = {
   loadingText ?: string
   showError ?: boolean
   requestTag ?: string
-}
-
-function getRuntimeInfo() : UTSJSONObject {
-  try {
-    const sysInfo = uni.getSystemInfoSync()
-    return {
-      platform: (sysInfo as UTSJSONObject)['uniPlatform'] || '',
-      host: (sysInfo as UTSJSONObject)['hostName'] || ''
-    } as UTSJSONObject
-  } catch {
-    return {} as UTSJSONObject
-  }
-}
-
-function isMpWeixinRuntime() : boolean {
-  const runtimeInfo = getRuntimeInfo()
-  return (runtimeInfo['platform'] as string) === 'mp-weixin'
 }
 
 function isLoopbackBaseUrl() : boolean {

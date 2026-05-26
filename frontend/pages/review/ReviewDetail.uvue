@@ -4,6 +4,7 @@ import { useReviewStore } from '../../stores/review'
 import { usePlanStore } from '../../stores/plan'
 import { PLAN_TYPE_LABELS, PLAN_STATUS } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const reviewStore = useReviewStore()
 const planStore = usePlanStore()
@@ -300,14 +301,26 @@ onMounted(async () => {
             <view class="review-summary-meta">
               <text class="meta-text">{{ planTypeLabel }}</text>
               <text class="meta-dot">·</text>
-              <text class="meta-text">👥 {{ planPeople }}人</text>
+              <view class="review-inline-icon">
+                <AppIcon name="statePeople" size="18rpx" />
+                <text class="meta-text">{{ planPeople }}人</text>
+              </view>
               <text class="meta-dot">·</text>
-              <text class="meta-text">📅 {{ planDate }}</text>
+              <view class="review-inline-icon">
+                <AppIcon name="stateCalendar" size="18rpx" />
+                <text class="meta-text">{{ planDate }}</text>
+              </view>
             </view>
             <view class="review-summary-meta" style="margin-top: 6rpx">
-              <text class="meta-text">⏱ {{ planDuration }}</text>
+              <view class="review-inline-icon">
+                <AppIcon name="stateDuration" size="18rpx" />
+                <text class="meta-text">{{ planDuration }}</text>
+              </view>
               <text class="meta-dot">·</text>
-              <text class="meta-text">📊 环节 {{ completedPhases }}/{{ phaseCount }} 完成</text>
+              <view class="review-inline-icon">
+                <AppIcon name="stateChart" size="18rpx" />
+                <text class="meta-text">环节 {{ completedPhases }}/{{ phaseCount }} 完成</text>
+              </view>
             </view>
             <view class="review-phase-progress">
               <view class="review-phase-bar" :style="{ width: progressPct + '%' }"></view>
@@ -318,8 +331,14 @@ onMounted(async () => {
         <view class="review-detail-feedback">
           <view class="review-feedback-card">
             <view class="review-feedback-header">
-              <text class="review-feedback-section-title">📊 数据回顾</text>
-              <text class="review-feedback-link" v-if="!isReviewed" @click="goFeedback">查看完整反馈 ›</text>
+              <view class="review-inline-icon">
+                <AppIcon name="stateChart" size="22rpx" />
+                <text class="review-feedback-section-title">数据回顾</text>
+              </view>
+              <view v-if="!isReviewed" class="review-inline-icon review-feedback-link" @click="goFeedback">
+                <text>查看完整反馈</text>
+                <AppIcon name="stateChevronRight" size="18rpx" />
+              </view>
             </view>
             <view class="review-feedback-row">
               <view class="review-feedback-item">
@@ -351,7 +370,10 @@ onMounted(async () => {
         </view>
 
         <view class="review-detail-guide" v-if="!isReviewed">
-          <text class="review-guide-header">🔄 结构化反思</text>
+          <view class="review-inline-icon">
+            <AppIcon name="phaseReflection" size="24rpx" />
+            <text class="review-guide-header">结构化反思</text>
+          </view>
           <view class="review-method-bar">
             <view
               v-for="(method, idx) in METHOD_OPTIONS"
@@ -377,19 +399,28 @@ onMounted(async () => {
               :class="['nav-btn', 'nav-btn-prev', { disabled: currentIndex === 0 }]"
               @click="prevQuestion"
             >
-              <text class="nav-btn-text">‹ 上一题</text>
+              <view class="review-inline-icon">
+                <AppIcon name="stateBack" size="18rpx" />
+                <text class="nav-btn-text">上一题</text>
+              </view>
             </view>
             <view
               :class="['nav-btn', 'nav-btn-next', { active: isLastQuestion }]"
               @click="nextQuestion"
             >
-              <text class="nav-btn-text-next">{{ isLastQuestion ? '完成' : '下一题 ›' }}</text>
+              <view class="review-inline-icon">
+                <text class="nav-btn-text-next">{{ isLastQuestion ? '完成' : '下一题' }}</text>
+                <AppIcon v-if="!isLastQuestion" name="stateChevronRight" size="18rpx" />
+              </view>
             </view>
           </view>
         </view>
 
         <view class="reviewed-notes-section" v-if="isReviewed">
-          <text class="reviewed-notes-title">📝 复盘记录</text>
+          <view class="review-inline-icon">
+            <AppIcon name="toolNote" size="24rpx" />
+            <text class="reviewed-notes-title">复盘记录</text>
+          </view>
           <view class="reviewed-note-item" v-for="(note, idx) in reviewNotes" :key="idx">
             <view class="reviewed-note-index">
               <text class="reviewed-note-index-text">{{ idx + 1 }}</text>
@@ -402,7 +433,10 @@ onMounted(async () => {
         </view>
 
         <view class="complete-review-btn" v-if="!isReviewed" @click="completeReview">
-          <text class="complete-review-text">✅ 完成复盘</text>
+          <view class="review-inline-icon">
+            <AppIcon name="stateCheck" size="20rpx" />
+            <text class="complete-review-text">完成复盘</text>
+          </view>
         </view>
       </view>
     </scroll-view>

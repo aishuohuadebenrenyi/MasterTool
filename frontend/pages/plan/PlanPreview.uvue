@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { PLAN_TYPE_LABELS, PLAN_STATUS_LABELS } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const planStore = usePlanStore()
 
@@ -19,13 +20,13 @@ const planType = computed<string>(() => {
 const planTypeIcon = computed<string>(() => {
   const type = plan.value?.['type'] as string
   const icons : UTSJSONObject = {
-    'improv_training': '🎭',
-    'team_building': '🤝',
-    'workshop': '🔧',
-    'lecture': '📚',
-    'custom': '⚙️'
+    'improv_training': 'typeTraining',
+    'team_building': 'typeTeam',
+    'workshop': 'phaseSkill',
+    'lecture': 'stateDocument',
+    'custom': 'phaseCustom'
   }
-  return (icons[type] as string) || '📋'
+  return (icons[type] as string) || 'stateDocument'
 })
 const planPeople = computed<string>(() => plan.value?.['people'] != null ? String(plan.value['people']) : '')
 const planClient = computed<string>(() => (plan.value?.['client'] as string) || '')
@@ -52,7 +53,7 @@ const totalDuration = computed<number>(() => {
 })
 
 const phaseColors : Array<string> = ['#4A7CF7', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA']
-const phaseIcons : Array<string> = ['🎬', '❄️', '🎯', '📝', '🔄', '💡']
+const phaseIcons : Array<string> = ['phaseOpening', 'phaseWarmup', 'phaseSummary', 'phaseReflection', 'phaseSimulation', 'phasePractice']
 
 function getPhaseColor(index : number) : string {
   return phaseColors[index % phaseColors.length]
@@ -119,22 +120,40 @@ function formatDuration(minutes : number) : string {
       </view>
 
       <view class="export-btn-disabled">
-        <text class="export-btn-text">📄 导出方案文档（即将上线）</text>
+        <view class="summary-icon-row">
+          <AppIcon name="stateExport" size="24rpx" />
+          <text class="export-btn-text">导出方案文档（即将上线）</text>
+        </view>
       </view>
 
       <view class="summary-card">
         <text class="summary-name">{{ planName }}</text>
         <view class="summary-meta-row">
-          <text class="summary-meta-text">{{ planTypeIcon }} {{ planType }}</text>
+          <view class="summary-icon-row">
+            <AppIcon :name="planTypeIcon" size="22rpx" />
+            <text class="summary-meta-text">{{ planType }}</text>
+          </view>
           <text class="summary-meta-dot" v-if="planPeople">·</text>
-          <text class="summary-meta-text" v-if="planPeople">👥 {{ planPeople }}人</text>
+          <view class="summary-icon-row" v-if="planPeople">
+            <AppIcon name="statePeople" size="22rpx" />
+            <text class="summary-meta-text">{{ planPeople }}人</text>
+          </view>
           <text class="summary-meta-dot" v-if="planDate">·</text>
-          <text class="summary-meta-text" v-if="planDate">📅 {{ planDate }}</text>
+          <view class="summary-icon-row" v-if="planDate">
+            <AppIcon name="stateCalendar" size="22rpx" />
+            <text class="summary-meta-text">{{ planDate }}</text>
+          </view>
         </view>
         <view class="summary-meta-row">
-          <text class="summary-meta-text">⏱ {{ formatDuration(totalDuration) }}</text>
+          <view class="summary-icon-row">
+            <AppIcon name="stateDuration" size="22rpx" />
+            <text class="summary-meta-text">{{ formatDuration(totalDuration) }}</text>
+          </view>
           <text class="summary-meta-dot">·</text>
-          <text class="summary-meta-text">📋 {{ phases.length }}个环节</text>
+          <view class="summary-icon-row">
+            <AppIcon name="stateDocument" size="22rpx" />
+            <text class="summary-meta-text">{{ phases.length }}个环节</text>
+          </view>
           <text class="summary-meta-dot">·</text>
           <view :class="['status-tag', planStatusClass]">
             <text class="status-tag-text">{{ planStatus }}</text>
@@ -152,7 +171,10 @@ function formatDuration(minutes : number) : string {
 
       <view class="timeline-section" v-if="phases.length > 0">
         <view class="timeline-header">
-          <text class="timeline-title">🔄 环节流程（总时长 {{ totalDuration }} 分钟）</text>
+          <view class="summary-icon-row">
+            <AppIcon name="phaseSimulation" size="24rpx" />
+            <text class="timeline-title">环节流程（总时长 {{ totalDuration }} 分钟）</text>
+          </view>
         </view>
         <view class="timeline">
           <view class="timeline-item" v-for="(phase, index) in phases" :key="index">
@@ -162,7 +184,10 @@ function formatDuration(minutes : number) : string {
             </view>
             <view class="timeline-right">
               <view class="timeline-phase-header">
-                <text class="timeline-phase-name">{{ getPhaseIcon(index) }} {{ phase['name'] }}</text>
+                <view class="summary-icon-row">
+                  <AppIcon :name="getPhaseIcon(index)" size="20rpx" />
+                  <text class="timeline-phase-name">{{ phase['name'] }}</text>
+                </view>
                 <text class="timeline-phase-duration">{{ getPhaseDuration(phase) }}分钟 · {{ getPhasePercent(getPhaseDuration(phase)) }}%</text>
               </view>
               <view class="timeline-progress-bg">

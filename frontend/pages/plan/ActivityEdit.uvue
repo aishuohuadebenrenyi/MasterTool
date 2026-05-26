@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useActivityStore } from '../../stores/activity'
 import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const activityStore = useActivityStore()
 
@@ -161,11 +162,14 @@ function goBack() {
         </view>
 
         <view class="save-btn" @click="handleSave">
-          <text class="save-btn-text">💾 保存活动</text>
+          <text class="save-btn-text">保存活动</text>
         </view>
 
         <view class="delete-btn" v-if="isEditing" @click="handleDelete">
-          <text class="delete-btn-text">🗑️ 删除活动</text>
+          <view class="action-inline-icon">
+            <AppIcon name="stateDelete" size="22rpx" />
+            <text class="delete-btn-text">删除活动</text>
+          </view>
         </view>
       </view>
     </scroll-view>

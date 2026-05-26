@@ -1,6 +1,12 @@
 <script setup>
+import AppIcon from '../../../components/AppIcon.uvue'
+
 defineProps({
-  icon: {
+  iconName: {
+    type: String,
+    default: ''
+  },
+  iconSrc: {
     type: String,
     default: ''
   },
@@ -15,7 +21,9 @@ defineEmits(['click'])
 
 <template>
   <view class="quick-action" @click="$emit('click')">
-    <view class="action-icon">{{ icon }}</view>
+    <view class="action-icon">
+      <AppIcon v-if="iconName || iconSrc" :name="iconName" :src="iconSrc" size="42rpx" />
+    </view>
     <text class="action-label">{{ label }}</text>
   </view>
 </template>

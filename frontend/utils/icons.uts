@@ -1,0 +1,91 @@
+import { isMpWeixinRuntime } from './runtime'
+
+export const ICON_PATHS : UTSJSONObject = {
+  todoPending: '/static/icons/icon-todo-pending.svg',
+  todoReview: '/static/icons/icon-todo-review.svg',
+  todoDraft: '/static/icons/icon-todo-draft.svg',
+
+  typeCorporate: '/static/icons/icon-type-corporate.svg',
+  typeTeam: '/static/icons/icon-type-team.svg',
+  typeShow: '/static/icons/icon-type-show.svg',
+  typeTraining: '/static/icons/icon-type-training.svg',
+
+  toolCheckin: '/static/icons/icon-tool-checkin.svg',
+  toolGroup: '/static/icons/icon-tool-group.svg',
+  toolScore: '/static/icons/icon-tool-score.svg',
+  toolToolbox: '/static/icons/icon-tool-toolbox.svg',
+  toolRandom: '/static/icons/icon-tool-random.svg',
+  toolSound: '/static/icons/icon-tool-sound.svg',
+  toolNote: '/static/icons/icon-tool-note.svg',
+  toolInteract: '/static/icons/icon-tool-interact.svg',
+  toolTimer: '/static/icons/icon-tool-timer.svg',
+
+  phaseOpening: '/static/icons/icon-phase-opening.svg',
+  phaseTopic: '/static/icons/icon-phase-topic.svg',
+  phaseExplore: '/static/icons/icon-phase-explore.svg',
+  phasePractice: '/static/icons/icon-phase-practice.svg',
+  phaseSummary: '/static/icons/icon-phase-summary.svg',
+  phaseWarmup: '/static/icons/icon-phase-warmup.svg',
+  phasePerformance: '/static/icons/icon-phase-performance.svg',
+  phaseAudience: '/static/icons/icon-phase-audience.svg',
+  phaseClosing: '/static/icons/icon-phase-closing.svg',
+  phaseSkill: '/static/icons/icon-phase-skill.svg',
+  phaseSimulation: '/static/icons/icon-phase-simulation.svg',
+  phaseReflection: '/static/icons/icon-phase-reflection.svg',
+  phaseCustom: '/static/icons/icon-phase-custom.svg',
+
+  stateFavorite: '/static/icons/icon-state-favorite.svg',
+  stateFavoriteOutline: '/static/icons/icon-state-favorite-outline.svg',
+  stateBack: '/static/icons/icon-state-back.svg',
+  stateBackLight: '/static/icons/icon-state-back-light.svg',
+  stateChevronRight: '/static/icons/icon-state-arrow-right.svg',
+  stateClose: '/static/icons/icon-state-close.svg',
+  stateCheck: '/static/icons/icon-state-check.svg',
+  stateCheckbox: '/static/icons/icon-state-check.svg',
+  stateEdit: '/static/icons/icon-state-edit.svg',
+  stateDelete: '/static/icons/icon-state-delete.svg',
+  stateArrowRight: '/static/icons/icon-state-arrow-right.svg',
+  stateSearch: '/static/icons/icon-state-search.svg',
+  stateCalendar: '/static/icons/icon-state-calendar.svg',
+  stateTag: '/static/icons/icon-state-tag.svg',
+  statePeople: '/static/icons/icon-state-people.svg',
+  stateDuration: '/static/icons/icon-state-duration.svg',
+  stateDocument: '/static/icons/icon-state-document.svg',
+  stateWarning: '/static/icons/icon-state-warning.svg',
+  stateQr: '/static/icons/icon-state-qr.svg',
+  stateExport: '/static/icons/icon-state-document.svg',
+  stateChart: '/static/icons/mine-stats.svg',
+  stateCloud: '/static/icons/icon-state-cloud.svg',
+  statePromise: '/static/icons/icon-state-promise.svg',
+
+  soundCheer: '/static/icons/icon-sound-cheer.svg',
+  soundClap: '/static/icons/icon-sound-clap.svg',
+  soundBell: '/static/icons/icon-sound-bell.svg',
+  soundTheme: '/static/icons/icon-sound-theme.svg',
+  soundError: '/static/icons/icon-sound-error.svg',
+
+  tabHome: '/static/icons/icon-tab-home.svg',
+  tabHomeActive: '/static/icons/icon-tab-home-active.svg',
+  tabPrepare: '/static/icons/icon-tab-prepare.svg',
+  tabPrepareActive: '/static/icons/icon-tab-prepare-active.svg',
+  tabMine: '/static/icons/icon-tab-mine.svg',
+  tabMineActive: '/static/icons/icon-tab-mine-active.svg'
+} as UTSJSONObject
+
+export function getIconPath(name : string) : string {
+  const path = (ICON_PATHS[name] as string) || ''
+  return getCompatibleAssetPath(path)
+}
+
+export function getCompatibleAssetPath(path : string) : string {
+  if (!path) {
+    return ''
+  }
+  if (!isMpWeixinRuntime()) {
+    return path
+  }
+  if (path.endsWith('.svg')) {
+    return path.substring(0, path.length - 4) + '.png'
+  }
+  return path
+}

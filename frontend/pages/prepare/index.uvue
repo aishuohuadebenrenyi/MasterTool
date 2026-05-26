@@ -2,17 +2,22 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { useActivityStore } from '../../stores/activity'
+import HalfSheet from '../../components/HalfSheet.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 import { PLAN_STATUS_LABELS, getPlanTypeLabel, ACTIVITY_SCENE_LABELS } from '../../utils/constants'
 import { calcNavBarInfo } from '../../utils/navbar'
+import { getDesktopMaxWidth } from '../../utils/viewport'
 
 const planStore = usePlanStore()
 const activityStore = useActivityStore()
 
 const navBarInfo = calcNavBarInfo()
 const statusBarHeight = navBarInfo['statusBarHeight'] as number
-const contentHeight = navBarInfo['contentHeight'] as number
+const contentTopOffset = navBarInfo['contentTopOffset'] as number
+const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const prepareHeaderHeight = statusBarHeight + Math.max(contentHeight, 56)
+const prepareHeaderHeight = contentTopOffset + 56
+const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
 const activeTab = ref<string>('plans')
 const planSearch = ref<string>('')
@@ -87,10 +92,10 @@ function goPlanDetail(plan : UTSJSONObject) {
 const showTemplateSelect = ref<boolean>(false)
 
 const templateList : Array<UTSJSONObject> = [
-  { key: 'corporate', icon: '🎯', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', tools: '✋👥🏆🧰' },
-  { key: 'teambuilding', icon: '🎉', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', tools: '👥🏆💬🧰' },
-  { key: 'improv_show', icon: '🎭', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', tools: '🎲⏱🔊🧰' },
-  { key: 'improv_training', icon: '🏋️', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', tools: '⏱🎲🧰' }
+  { key: 'corporate', iconName: 'typeCorporate', name: '企业培训', tag: '5段式', desc: '开场→活动→复盘→提炼→承诺', toolsLabel: '签到 / 计时 / 分组 / 积分' },
+  { key: 'teambuilding', iconName: 'typeTeam', name: '团建活动', tag: '三段式', desc: '破冰→团队挑战→轻松复盘', toolsLabel: '分组 / 积分 / 互动 / 工具箱' },
+  { key: 'improv_show', iconName: 'typeShow', name: '即兴演出', tag: '游戏轮', desc: '暖场→即兴表演→观众互动→谢幕', toolsLabel: '抽签 / 计时 / 音效 / 工具箱' },
+  { key: 'improv_training', iconName: 'typeTraining', name: '即兴训练', tag: '自由组合', desc: '热身→技能训练→综合练习', toolsLabel: '计时 / 抽签 / 工具箱' }
 ]
 
 function goPlanCreate() {
@@ -104,30 +109,30 @@ function closeTemplateSelect() {
 function getTemplatePhases(key : string) : Array<UTSJSONObject> {
   if (key === 'corporate') {
     return [
-      { name: '开场连接', time: 15, color: '#FF6B35', icon: '🤝' },
-      { name: '主题导入', time: 20, color: '#007AFF', icon: '⚡' },
-      { name: '深度探索', time: 40, color: '#5856D6', icon: '🔍' },
-      { name: '实践应用', time: 30, color: '#34C759', icon: '💡' },
-      { name: '总结收束', time: 15, color: '#FF9500', icon: '🎯' }
+      { name: '开场连接', time: 15, color: '#FF6B35', iconName: 'phaseOpening' },
+      { name: '主题导入', time: 20, color: '#007AFF', iconName: 'phaseTopic' },
+      { name: '深度探索', time: 40, color: '#5856D6', iconName: 'phaseExplore' },
+      { name: '实践应用', time: 30, color: '#34C759', iconName: 'phasePractice' },
+      { name: '总结收束', time: 15, color: '#FF9500', iconName: 'phaseSummary' }
     ] as Array<UTSJSONObject>
   } else if (key === 'teambuilding') {
     return [
-      { name: '破冰热身', time: 20, color: '#FF6B35', icon: '🤝' },
-      { name: '团队挑战', time: 60, color: '#007AFF', icon: '⚡' },
-      { name: '分享庆祝', time: 20, color: '#34C759', icon: '🎯' }
+      { name: '破冰热身', time: 20, color: '#FF6B35', iconName: 'phaseWarmup' },
+      { name: '团队挑战', time: 60, color: '#007AFF', iconName: 'phasePractice' },
+      { name: '分享庆祝', time: 20, color: '#34C759', iconName: 'phaseSummary' }
     ] as Array<UTSJSONObject>
   } else if (key === 'improv_show') {
     return [
-      { name: '暖场互动', time: 10, color: '#FF6B35', icon: '🤝' },
-      { name: '即兴表演', time: 40, color: '#5856D6', icon: '🎭' },
-      { name: '观众互动', time: 15, color: '#007AFF', icon: '💬' },
-      { name: '谢幕总结', time: 5, color: '#34C759', icon: '🎯' }
+      { name: '暖场互动', time: 10, color: '#FF6B35', iconName: 'phaseWarmup' },
+      { name: '即兴表演', time: 40, color: '#5856D6', iconName: 'phasePerformance' },
+      { name: '观众互动', time: 15, color: '#007AFF', iconName: 'phaseAudience' },
+      { name: '谢幕总结', time: 5, color: '#34C759', iconName: 'phaseClosing' }
     ] as Array<UTSJSONObject>
   } else if (key === 'improv_training') {
     return [
-      { name: '热身练习', time: 10, color: '#FF6B35', icon: '🤝' },
-      { name: '技能训练', time: 30, color: '#007AFF', icon: '⚡' },
-      { name: '综合练习', time: 30, color: '#5856D6', icon: '🔍' }
+      { name: '热身练习', time: 10, color: '#FF6B35', iconName: 'phaseWarmup' },
+      { name: '技能训练', time: 30, color: '#007AFF', iconName: 'phaseSkill' },
+      { name: '综合练习', time: 30, color: '#5856D6', iconName: 'phaseSimulation' }
     ] as Array<UTSJSONObject>
   }
   return [] as Array<UTSJSONObject>
@@ -287,8 +292,8 @@ onUnmounted(() => {
 
 <template>
   <view class="page">
-    <view class="nav-bar-fixed" :style="{ minHeight: prepareHeaderHeight + 'px', paddingTop: statusBarHeight + 'px', paddingLeft: '32rpx', paddingRight: (rightSafeWidth + 12) + 'px' }">
-      <view class="sub-tab-bar">
+    <view class="nav-bar-fixed" :style="{ minHeight: prepareHeaderHeight + 'px', paddingTop: contentTopOffset + 'px', paddingLeft: navHorizontalPadding + 'px', paddingRight: rightSafeWidth + 'px' }">
+      <view class="sub-tab-bar" :style="{ maxWidth: pageMaxWidth > 0 ? Math.min(pageMaxWidth, 720) + 'px' : '560rpx' }">
         <view class="sub-tab" :class="{ 'sub-tab-active': activeTab === 'plans' }" @click="switchTab('plans')">
           <text class="sub-tab-text" :class="{ 'sub-tab-text-active': activeTab === 'plans' }">我的方案</text>
         </view>
@@ -299,12 +304,13 @@ onUnmounted(() => {
     </view>
     <view :style="{ height: prepareHeaderHeight + 'px' }"></view>
 
-    <view class="content" v-if="activeTab === 'plans'">
+    <view class="content" v-if="activeTab === 'plans'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="section-header-row">
         <text></text>
         <text class="section-action" @click="goPlanCreate">+ 新建方案</text>
       </view>
       <view class="search-bar">
+        <AppIcon name="stateSearch" size="28rpx" />
         <input class="search-input" type="text" placeholder="搜索方案名称或客户名" v-model="planSearch" />
       </view>
       <scroll-view class="filter-scroll" scroll-x>
@@ -345,7 +351,7 @@ onUnmounted(() => {
         </view>
       </view>
       <view class="empty" v-if="filteredPlans.length === 0 && !planStore.loading">
-        <image class="empty-icon-image" src="/static/icons/empty-plan.svg" mode="aspectFit" />
+        <AppIcon class="empty-icon-image" src="/static/icons/empty-plan.svg" size="144rpx" />
         <text class="empty-text">暂无方案</text>
         <view class="btn-create" @click="goPlanCreate">
           <text class="btn-create-text">+ 新建方案</text>
@@ -353,12 +359,13 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <view class="content" v-if="activeTab === 'activities'">
+    <view class="content" v-if="activeTab === 'activities'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="section-header-row">
         <text></text>
         <text class="section-action" @click="uni.navigateTo({ url: '/pages/plan/ActivityEdit' })">+ 新增活动</text>
       </view>
       <view class="search-bar">
+        <AppIcon name="stateSearch" size="28rpx" />
         <input class="search-input" type="text" placeholder="搜索活动名称或关键词" v-model="activitySearch" />
       </view>
       <scroll-view class="filter-scroll" scroll-x>
@@ -372,18 +379,18 @@ onUnmounted(() => {
         <view class="swipe-container" v-for="activity in filteredActivities" :key="activity['id']">
           <view class="swipe-actions" v-if="(activity['isCustom'] as boolean)">
             <view class="swipe-btn swipe-btn-edit" @click="handleSwipeAction('edit', activity)">
-              <text class="swipe-btn-icon">✏️</text>
+              <AppIcon name="stateEdit" size="28rpx" />
             </view>
             <view class="swipe-btn swipe-btn-pin" @click="handleSwipeAction('pin', activity)">
-              <text class="swipe-btn-icon">📌</text>
+              <AppIcon name="stateTag" size="28rpx" />
             </view>
             <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
-              <text class="swipe-btn-icon">{{ (activity['isFavorite'] as boolean) ? '❤️' : '🤍' }}</text>
+              <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" size="28rpx" />
             </view>
           </view>
           <view class="swipe-actions swipe-actions-single" v-else>
             <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
-              <text class="swipe-btn-icon">{{ (activity['isFavorite'] as boolean) ? '❤️' : '🤍' }}</text>
+              <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" size="28rpx" />
             </view>
           </view>
           <view class="swipe-content"
@@ -416,38 +423,28 @@ onUnmounted(() => {
         </view>
       </view>
       <view class="empty" v-if="filteredActivities.length === 0 && !activityStore.loading">
-        <text class="empty-icon">🎭</text>
+        <AppIcon name="typeShow" size="64rpx" />
         <text class="empty-text">暂无活动</text>
       </view>
     </view>
 
-    <view class="popup-overlay" :class="{ 'popup-overlay-visible': showTemplateSelect }" @click="closeTemplateSelect">
-      <view class="popup-mask"></view>
-      <view class="popup-container" :class="{ 'popup-container-visible': showTemplateSelect }" @click.stop="">
-        <view class="popup-handle-bar"><view class="popup-handle"></view></view>
-        <view class="popup-header">
-          <text class="popup-title">选择模板</text>
-          <view class="popup-close" @click="closeTemplateSelect"><text class="popup-close-icon">✕</text></view>
+    <HalfSheet :visible="showTemplateSelect" title="选择模板" @update:visible="showTemplateSelect = $event">
+      <view class="template-modal-item" v-for="(tpl, idx) in templateList" :key="idx" @click="createFromTemplate(tpl)">
+        <view class="template-modal-icon-box">
+          <AppIcon :name="tpl['iconName'] as string" size="44rpx" />
         </view>
-        <scroll-view class="popup-body" scroll-y>
-          <view class="template-modal-item" v-for="(tpl, idx) in templateList" :key="idx" @click="createFromTemplate(tpl)">
-            <view class="template-modal-icon-box">
-              <text class="template-modal-icon">{{ tpl['icon'] }}</text>
-            </view>
-            <view class="template-modal-info">
-              <view class="template-modal-name-row">
-                <text class="template-modal-name">{{ tpl['name'] }}</text>
-                <view class="template-modal-tag">
-                  <text class="template-modal-tag-text">{{ tpl['tag'] }}</text>
-                </view>
-              </view>
-              <text class="template-modal-desc">{{ tpl['desc'] }}</text>
-              <text class="template-modal-tools">工具：{{ tpl['tools'] }}</text>
+        <view class="template-modal-info">
+          <view class="template-modal-name-row">
+            <text class="template-modal-name">{{ tpl['name'] }}</text>
+            <view class="template-modal-tag">
+              <text class="template-modal-tag-text">{{ tpl['tag'] }}</text>
             </view>
           </view>
-        </scroll-view>
+          <text class="template-modal-desc">{{ tpl['desc'] }}</text>
+          <text class="template-modal-tools">工具：{{ tpl['toolsLabel'] }}</text>
+        </view>
       </view>
-    </view>
+    </HalfSheet>
   </view>
 </template>
 
@@ -481,6 +478,8 @@ onUnmounted(() => {
   margin: 0;
   width: 100%;
   max-width: 560rpx;
+  margin-left: auto;
+  margin-right: auto;
 }
 .sub-tab {
   flex: 1;
@@ -505,6 +504,9 @@ onUnmounted(() => {
 }
 .content {
   padding: 0 32rpx 40rpx;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 .section-header-row {
   display: flex;
@@ -519,18 +521,28 @@ onUnmounted(() => {
   font-weight: 500;
 }
 .search-bar {
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
   width: 100%;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 0 28rpx;
+  border-radius: 44rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 6rpx 28rpx rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
 }
 .search-input {
+  flex: 1;
   width: 100%;
   display: block;
-  padding: 10rpx 32rpx;
+  height: 88rpx;
+  padding: 0;
   border: none;
-  border-radius: 40rpx;
-  background-color: #FFFFFF;
-  font-size: 28rpx;
-  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  background-color: transparent;
+  font-size: 30rpx;
+  line-height: 88rpx;
   box-sizing: border-box;
 }
 .filter-scroll {

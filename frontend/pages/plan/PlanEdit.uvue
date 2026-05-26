@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { PLAN_STATUS } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
+import HalfSheet from '../../components/HalfSheet.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const planStore = usePlanStore()
 
@@ -21,11 +23,11 @@ const saving = ref(false)
 const typeOptions = ['企业培训', '团建活动', '即兴演出', '即兴训练', '自定义']
 
 const phaseTypeList = [
-  { name: '计时练习', icon: '⏱' },
-  { name: '随机抽取', icon: '🎲' },
-  { name: '场景模拟', icon: '🎭' },
-  { name: '反思分享', icon: '📝' },
-  { name: '自定义环节', icon: '✏️' }
+  { name: '计时练习', iconName: 'toolTimer' },
+  { name: '随机抽取', iconName: 'toolRandom' },
+  { name: '场景模拟', iconName: 'phaseSimulation' },
+  { name: '反思分享', iconName: 'phaseReflection' },
+  { name: '自定义环节', iconName: 'phaseCustom' }
 ] as Array<UTSJSONObject>
 
 const badgeColors = ['#4A7CF7', '#34C759', '#FF9500', '#AF52DE', '#FF3B30', '#5AC8FA', '#FFCC00', '#8E8E93']
@@ -267,13 +269,17 @@ function startTraining() {
             </view>
             <view class="phase-actions" v-if="!isReadonly">
               <view class="phase-action-btn" @click="moveUp(index)" v-if="index > 0">
-                <text class="phase-action-icon">↑</text>
+                <view class="phase-action-icon rotate-up">
+                  <AppIcon name="stateChevronRight" size="18rpx" />
+                </view>
               </view>
               <view class="phase-action-btn" @click="moveDown(index)" v-if="index < phases.length - 1">
-                <text class="phase-action-icon">↓</text>
+                <view class="phase-action-icon rotate-down">
+                  <AppIcon name="stateChevronRight" size="18rpx" />
+                </view>
               </view>
               <view class="phase-action-btn phase-action-delete" @click="removePhase(index)">
-                <text class="phase-action-icon-delete">×</text>
+                <AppIcon name="stateClose" size="18rpx" />
               </view>
             </view>
           </view>
@@ -289,48 +295,42 @@ function startTraining() {
 
     <view class="bottom-bar" v-if="!isReadonly">
       <view class="btn-confirm" @click="confirmPlanAction" v-if="isDraft">
-        <text class="btn-confirm-text">✅ 确认方案</text>
+        <text class="btn-confirm-text">确认方案</text>
       </view>
       <view class="btn-start" @click="startTraining" v-if="isDraft || isConfirmed">
-        <text class="btn-start-text">🚀 开始培训</text>
+        <text class="btn-start-text">开始培训</text>
       </view>
     </view>
 
-    <view class="popup-mask" v-if="addPhaseVisible" @click="hideAddPhase">
-      <view class="popup-content" @click.stop="">
-        <view class="popup-header">
-          <text class="popup-title">添加环节</text>
-          <view class="popup-close" @click="hideAddPhase">
-            <text class="popup-close-icon">×</text>
-          </view>
+    <HalfSheet :visible="addPhaseVisible" title="添加环节" @update:visible="addPhaseVisible = $event">
+      <view class="popup-grid">
+        <view
+          class="popup-grid-item"
+          :class="{ 'popup-grid-item-active': newPhaseName === (item['name'] as string) }"
+          v-for="(item, idx) in phaseTypeList"
+          :key="idx"
+          @click="selectPhaseType(item)"
+        >
+          <AppIcon :name="item['iconName'] as string" size="36rpx" />
+          <text class="popup-grid-label" :class="{ 'popup-grid-label-active': newPhaseName === (item['name'] as string) }">{{ item['name'] }}</text>
         </view>
-        <view class="popup-grid">
-          <view
-            class="popup-grid-item"
-            :class="{ 'popup-grid-item-active': newPhaseName === (item['name'] as string) }"
-            v-for="(item, idx) in phaseTypeList"
-            :key="idx"
-            @click="selectPhaseType(item)"
-          >
-            <text class="popup-grid-icon">{{ item['icon'] }}</text>
-            <text class="popup-grid-label" :class="{ 'popup-grid-label-active': newPhaseName === (item['name'] as string) }">{{ item['name'] }}</text>
-          </view>
+      </view>
+      <view class="popup-form">
+        <view class="popup-form-item">
+          <text class="popup-form-label">环节名称</text>
+          <input class="popup-form-input" v-model="newPhaseName" placeholder="请输入或选择环节类型" />
         </view>
-        <view class="popup-form">
-          <view class="popup-form-item">
-            <text class="popup-form-label">环节名称</text>
-            <input class="popup-form-input" v-model="newPhaseName" placeholder="请输入或选择环节类型" />
-          </view>
-          <view class="popup-form-item">
-            <text class="popup-form-label">时长(分钟)</text>
-            <input class="popup-form-input" type="number" v-model="newPhaseDuration" placeholder="10" />
-          </view>
+        <view class="popup-form-item">
+          <text class="popup-form-label">时长(分钟)</text>
+          <input class="popup-form-input" type="number" v-model="newPhaseDuration" placeholder="10" />
         </view>
+      </view>
+      <template #footer>
         <view class="popup-btn" @click="confirmAddPhase">
           <text class="popup-btn-text">确认添加</text>
         </view>
-      </view>
-    </view>
+      </template>
+    </HalfSheet>
   </view>
 </template>
 

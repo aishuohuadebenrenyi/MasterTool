@@ -5,10 +5,13 @@ import { usePlanStore } from '../../stores/plan'
 import { useConfigStore } from '../../stores/config'
 import NavBar from '../../components/NavBar.uvue'
 import ConfirmDialog from '../../components/ConfirmDialog.uvue'
+import HalfSheet from '../../components/HalfSheet.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 import TimerDisplay from './components/TimerDisplay.uvue'
 import ToolButton from './components/ToolButton.uvue'
 import * as noteApi from '../../api/note'
 import { calcNavBarInfo } from '../../utils/navbar'
+import { getDesktopMaxWidth, getSafeAreaBottom, getViewportHeight } from '../../utils/viewport'
 
 const liveStore = useLiveStore()
 const planStore = usePlanStore()
@@ -21,11 +24,18 @@ const peopleCount = ref<number>(30)
 
 const showExitDialog = ref<boolean>(false)
 
-const safeAreaBottom = ref<number>(0)
-try {
-  const sysInfo = uni.getSystemInfoSync()
-  safeAreaBottom.value = sysInfo.safeAreaInsets ? (sysInfo.safeAreaInsets as unknown as UTSJSONObject)['bottom'] as number : 0
-} catch (e) {}
+const safeAreaBottom = ref<number>(getSafeAreaBottom())
+const viewportHeight = ref<number>(getViewportHeight())
+const pageMaxWidth = ref<number>(getDesktopMaxWidth())
+
+const toolboxSheetHeight = computed<number>(() => {
+  return Math.max(viewportHeight.value - navBarHeight - 20, 480)
+})
+
+const standardSheetHeight = computed<string>(() => {
+  const preferred = Math.round(viewportHeight.value * 0.72)
+  return Math.max(Math.min(preferred, viewportHeight.value - 36), 480) + 'px'
+})
 
 const timerSeconds = ref<number>(0)
 const timerRunning = ref<boolean>(false)
@@ -105,31 +115,31 @@ const quickTools = computed<Array<UTSJSONObject>>(() => {
   const tid = templateId.value || 'corporate'
   if (tid === 'teambuilding') {
     return [
-      { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
-      { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
-      { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
-      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+      { key: 'checkin', iconName: 'toolCheckin', name: '签到' } as UTSJSONObject,
+      { key: 'group', iconName: 'toolGroup', name: '分组' } as UTSJSONObject,
+      { key: 'score', iconName: 'toolScore', name: '积分' } as UTSJSONObject,
+      { key: 'toolbox', iconName: 'toolToolbox', name: '工具箱' } as UTSJSONObject
     ]
   } else if (tid === 'improv_show') {
     return [
-      { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
-      { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
-      { key: 'sound', icon: '🔊', name: '音效' } as UTSJSONObject,
-      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+      { key: 'pick', iconName: 'toolRandom', name: '随机' } as UTSJSONObject,
+      { key: 'timer', iconName: 'toolTimer', name: '计时' } as UTSJSONObject,
+      { key: 'sound', iconName: 'toolSound', name: '音效' } as UTSJSONObject,
+      { key: 'toolbox', iconName: 'toolToolbox', name: '工具箱' } as UTSJSONObject
     ]
   } else if (tid === 'improv_training') {
     return [
-      { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
-      { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
-      { key: 'note', icon: '📝', name: '笔记' } as UTSJSONObject,
-      { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+      { key: 'pick', iconName: 'toolRandom', name: '随机' } as UTSJSONObject,
+      { key: 'timer', iconName: 'toolTimer', name: '计时' } as UTSJSONObject,
+      { key: 'note', iconName: 'toolNote', name: '笔记' } as UTSJSONObject,
+      { key: 'toolbox', iconName: 'toolToolbox', name: '工具箱' } as UTSJSONObject
     ]
   }
   return [
-    { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
-    { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
-    { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
-    { key: 'toolbox', icon: '🧰', name: '工具箱' } as UTSJSONObject
+    { key: 'checkin', iconName: 'toolCheckin', name: '签到' } as UTSJSONObject,
+    { key: 'group', iconName: 'toolGroup', name: '分组' } as UTSJSONObject,
+    { key: 'score', iconName: 'toolScore', name: '积分' } as UTSJSONObject,
+    { key: 'toolbox', iconName: 'toolToolbox', name: '工具箱' } as UTSJSONObject
   ]
 })
 
@@ -144,14 +154,14 @@ const noteSheet = ref<boolean>(false)
 const showToolbox = ref<boolean>(false)
 
 const allTools : Array<UTSJSONObject> = [
-  { key: 'checkin', icon: '📋', name: '签到' } as UTSJSONObject,
-  { key: 'group', icon: '👥', name: '分组' } as UTSJSONObject,
-  { key: 'score', icon: '🏆', name: '积分' } as UTSJSONObject,
-  { key: 'pick', icon: '🎲', name: '随机' } as UTSJSONObject,
-  { key: 'interact', icon: '🤝', name: '互动' } as UTSJSONObject,
-  { key: 'sound', icon: '🔊', name: '音效' } as UTSJSONObject,
-  { key: 'timer', icon: '⏱', name: '计时' } as UTSJSONObject,
-  { key: 'note', icon: '📝', name: '笔记' } as UTSJSONObject
+  { key: 'checkin', iconName: 'toolCheckin', name: '签到' } as UTSJSONObject,
+  { key: 'group', iconName: 'toolGroup', name: '分组' } as UTSJSONObject,
+  { key: 'score', iconName: 'toolScore', name: '积分' } as UTSJSONObject,
+  { key: 'pick', iconName: 'toolRandom', name: '随机' } as UTSJSONObject,
+  { key: 'interact', iconName: 'toolInteract', name: '互动' } as UTSJSONObject,
+  { key: 'sound', iconName: 'toolSound', name: '音效' } as UTSJSONObject,
+  { key: 'timer', iconName: 'toolTimer', name: '计时' } as UTSJSONObject,
+  { key: 'note', iconName: 'toolNote', name: '笔记' } as UTSJSONObject
 ]
 
 function closeToolbox() {
@@ -194,12 +204,12 @@ const interactType = ref<string>('')
 
 const activeSound = ref<string>('')
 const soundList : Array<UTSJSONObject> = [
-  { key: 'cheer', icon: '🎉', name: '欢呼' } as UTSJSONObject,
-  { key: 'clap', icon: '👏', name: '鼓掌' } as UTSJSONObject,
-  { key: 'bell', icon: '🔔', name: '铃声' } as UTSJSONObject,
-  { key: 'countdown', icon: '⏰', name: '倒计时' } as UTSJSONObject,
-  { key: 'theme', icon: '🎵', name: '主题' } as UTSJSONObject,
-  { key: 'error', icon: '❌', name: '错误音' } as UTSJSONObject
+  { key: 'cheer', iconName: 'soundCheer', name: '欢呼' } as UTSJSONObject,
+  { key: 'clap', iconName: 'soundClap', name: '鼓掌' } as UTSJSONObject,
+  { key: 'bell', iconName: 'soundBell', name: '铃声' } as UTSJSONObject,
+  { key: 'countdown', iconName: 'toolTimer', name: '倒计时' } as UTSJSONObject,
+  { key: 'theme', iconName: 'soundTheme', name: '主题' } as UTSJSONObject,
+  { key: 'error', iconName: 'soundError', name: '错误音' } as UTSJSONObject
 ]
 
 const standaloneTimerMode = ref<string>('countup')
@@ -489,6 +499,9 @@ watch(currentPhaseIndex, () => {
 })
 
 onMounted(async () => {
+  safeAreaBottom.value = getSafeAreaBottom()
+  viewportHeight.value = getViewportHeight()
+  pageMaxWidth.value = getDesktopMaxWidth()
   configStore.restoreConfig()
   const instance = getCurrentInstance()
   if (instance && instance.proxy) {
@@ -559,8 +572,8 @@ onUnmounted(() => {
     <NavBar :title="planName" backgroundColor="#1A1A2E" @back="handleBack"></NavBar>
 
     <view
-      class="live-body"
-      :style="{ minHeight: 'calc(100vh - ' + navBarHeight + 'px)', paddingBottom: (safeAreaBottom + 24) + 'px' }"
+      :class="['live-body', { 'sheet-open': hasOpenSheet }]"
+      :style="{ '--nav-bar-height': navBarHeight + 'px', '--safe-area-bottom': safeAreaBottom + 'px', maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }"
     >
       <view class="phase-progress-wrap">
         <view class="phase-progress">
@@ -582,7 +595,10 @@ onUnmounted(() => {
 
       <view class="reminders-section">
         <view class="reminders-header">
-          <text class="reminders-title">💡 关键提醒</text>
+          <view class="section-title-row">
+            <AppIcon name="phaseSummary" size="28rpx" />
+            <text class="reminders-title">关键提醒</text>
+          </view>
         </view>
         <view class="reminder-item" v-for="(item, idx) in reminders" :key="idx">
           <text class="reminder-bullet">•</text>
@@ -596,7 +612,7 @@ onUnmounted(() => {
             <ToolButton
               v-for="(tool, idx) in quickTools"
               :key="idx"
-              :icon="tool['icon'] as string"
+              :iconName="tool['iconName'] as string"
               :label="tool['name'] as string"
               @click="handleToolClick(idx)"
             ></ToolButton>
@@ -614,82 +630,65 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <view v-if="checkinSheet" class="sheet-overlay" @click="checkinSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">📋 签到管理</text>
-          <view class="sheet-close" @click="checkinSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
+    <HalfSheet :visible="checkinSheet" title="签到管理" :height="standardSheetHeight" @update:visible="checkinSheet = $event">
+      <view class="checkin-stats">
+        <text class="checkin-stats-text">已签到 {{ checkinCount }} / 预计 {{ peopleCount }} 人</text>
+      </view>
+      <view class="checkin-qr">
+        <view class="checkin-qr-icon-wrap">
+          <AppIcon name="stateQr" size="56rpx" />
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view class="checkin-stats">
-            <text class="checkin-stats-text">已签到 {{ checkinCount }} / 预计 {{ peopleCount }} 人</text>
-          </view>
-          <view class="checkin-qr">
-            <text class="checkin-qr-hint">📱 参与者扫码签到</text>
-            <text class="checkin-qr-text">参与者扫码签到</text>
-          </view>
-          <view class="checkin-list-header">
-            <text class="checkin-list-title">最近签到</text>
-          </view>
-          <view class="checkin-item" v-for="(item, idx) in recentCheckins" :key="idx">
-            <view class="checkin-avatar">
-              <text class="checkin-avatar-text">{{ (item['name'] as string).charAt(0) }}</text>
-            </view>
-            <text class="checkin-name">{{ item['name'] as string }}</text>
-            <text class="checkin-time">{{ item['time'] as string }}</text>
-          </view>
-        </scroll-view>
-        <view class="sheet-footer">
-          <view class="sheet-footer-btn sheet-footer-btn-danger" @click="checkinSheet = false">
-            <text class="sheet-footer-btn-text">结束签到</text>
-          </view>
+        <text class="checkin-qr-hint">参与者扫码签到</text>
+        <text class="checkin-qr-text">参与者扫码后自动进入签到列表</text>
+      </view>
+      <view class="checkin-list-header">
+        <text class="checkin-list-title">最近签到</text>
+      </view>
+      <view class="checkin-item" v-for="(item, idx) in recentCheckins" :key="idx">
+        <view class="checkin-avatar">
+          <text class="checkin-avatar-text">{{ (item['name'] as string).charAt(0) }}</text>
+        </view>
+        <text class="checkin-name">{{ item['name'] as string }}</text>
+        <text class="checkin-time">{{ item['time'] as string }}</text>
+      </view>
+      <template #footer>
+        <view class="sheet-footer-btn sheet-footer-btn-danger" @click="checkinSheet = false">
+          <text class="sheet-footer-btn-text">结束签到</text>
+        </view>
+      </template>
+    </HalfSheet>
+
+    <HalfSheet :visible="groupSheet" title="分组管理" :height="standardSheetHeight" @update:visible="groupSheet = $event">
+      <text class="sheet-label">分组方式</text>
+      <view class="group-method-row">
+        <view :class="['group-method-btn', { active: groupMethod === 'average' }]" @click="groupMethod = 'average'">
+          <text class="group-method-text">按人数均分</text>
+        </view>
+        <view :class="['group-method-btn', { active: groupMethod === 'free' }]" @click="groupMethod = 'free'">
+          <text class="group-method-text">自由分组</text>
+        </view>
+        <view :class="['group-method-btn', { active: groupMethod === 'random' }]" @click="groupMethod = 'random'">
+          <text class="group-method-text">随机分组</text>
         </view>
       </view>
-    </view>
-
-    <view v-if="groupSheet" class="sheet-overlay" @click="groupSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">👥 分组管理</text>
-          <view class="sheet-close" @click="groupSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
+      <text class="sheet-label">队伍数量</text>
+      <view class="group-count-row">
+        <view class="group-count-btn" @click="adjustGroupCount(-1)">
+          <text class="group-count-btn-text">−</text>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <text class="sheet-label">分组方式</text>
-          <view class="group-method-row">
-            <view :class="['group-method-btn', { active: groupMethod === 'average' }]" @click="groupMethod = 'average'">
-              <text class="group-method-text">按人数均分</text>
-            </view>
-            <view :class="['group-method-btn', { active: groupMethod === 'free' }]" @click="groupMethod = 'free'">
-              <text class="group-method-text">自由分组</text>
-            </view>
-            <view :class="['group-method-btn', { active: groupMethod === 'random' }]" @click="groupMethod = 'random'">
-              <text class="group-method-text">随机分组</text>
-            </view>
-          </view>
-          <text class="sheet-label">队伍数量</text>
-          <view class="group-count-row">
-            <view class="group-count-btn" @click="adjustGroupCount(-1)">
-              <text class="group-count-btn-text">−</text>
-            </view>
-            <text class="group-count-value">{{ groupCount }}</text>
-            <view class="group-count-btn" @click="adjustGroupCount(1)">
-              <text class="group-count-btn-text">+</text>
-            </view>
-          </view>
-          <text class="sheet-label">分组结果</text>
-          <view class="group-result-item" v-for="(item, idx) in groupResults" :key="idx">
-            <view class="group-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
-            <text class="group-result-name">{{ item['name'] as string }}</text>
-            <text class="group-result-count">{{ item['count'] as number }}人</text>
-          </view>
-        </scroll-view>
-        <view class="sheet-footer sheet-footer-row">
+        <text class="group-count-value">{{ groupCount }}</text>
+        <view class="group-count-btn" @click="adjustGroupCount(1)">
+          <text class="group-count-btn-text">+</text>
+        </view>
+      </view>
+      <text class="sheet-label">分组结果</text>
+      <view class="group-result-item" v-for="(item, idx) in groupResults" :key="idx">
+        <view class="group-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
+        <text class="group-result-name">{{ item['name'] as string }}</text>
+        <text class="group-result-count">{{ item['count'] as number }}人</text>
+      </view>
+      <template #footer>
+        <view class="sheet-footer-row">
           <view class="sheet-footer-btn sheet-footer-btn-secondary" @click="doGrouping()">
             <text class="sheet-footer-btn-text-secondary">重新分组</text>
           </view>
@@ -697,277 +696,211 @@ onUnmounted(() => {
             <text class="sheet-footer-btn-text">确认分组</text>
           </view>
         </view>
-      </view>
-    </view>
+      </template>
+    </HalfSheet>
 
-    <view v-if="scoreSheet" class="sheet-overlay" @click="scoreSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">🏆 积分管理</text>
-          <view class="sheet-close" @click="scoreSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
+    <HalfSheet :visible="scoreSheet" title="积分管理" :height="standardSheetHeight" @update:visible="scoreSheet = $event">
+      <text class="sheet-label">积分模式</text>
+      <view class="score-mode-row">
+        <view :class="['score-mode-btn', { active: scoreMode === 'simple' }]" @click="scoreMode = 'simple'">
+          <text class="score-mode-text">简化模式</text>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <text class="sheet-label">积分模式</text>
-          <view class="score-mode-row">
-            <view :class="['score-mode-btn', { active: scoreMode === 'simple' }]" @click="scoreMode = 'simple'">
-              <text class="score-mode-text">简化模式</text>
-            </view>
-            <view :class="['score-mode-btn', { active: scoreMode === 'detailed' }]" @click="scoreMode = 'detailed'">
-              <text class="score-mode-text">详细模式</text>
-            </view>
-          </view>
-          <text class="sheet-label">队伍积分</text>
-          <view v-if="!isGrouped" class="score-not-grouped">
-            <text class="score-not-grouped-text">请先完成分组</text>
-          </view>
-          <view v-if="isGrouped" class="score-item" v-for="(item, idx) in teamScores" :key="idx">
-            <view class="score-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
-            <text class="score-name">{{ item['name'] as string }}</text>
-            <text class="score-value">{{ item['score'] as number }}</text>
-            <view class="score-btn-minus" @click="changeScore(idx, -1)">
-              <text class="score-btn-text">−</text>
-            </view>
-            <view class="score-btn-plus" @click="changeScore(idx, 1)">
-              <text class="score-btn-text">+</text>
-            </view>
-          </view>
-        </scroll-view>
-        <view class="sheet-footer">
-          <view class="sheet-footer-btn sheet-footer-btn-danger" @click="resetScores">
-            <text class="sheet-footer-btn-text">重置积分</text>
-          </view>
+        <view :class="['score-mode-btn', { active: scoreMode === 'detailed' }]" @click="scoreMode = 'detailed'">
+          <text class="score-mode-text">详细模式</text>
         </view>
       </view>
-    </view>
+      <text class="sheet-label">队伍积分</text>
+      <view v-if="!isGrouped" class="score-not-grouped">
+        <text class="score-not-grouped-text">请先完成分组</text>
+      </view>
+      <view v-if="isGrouped" class="score-item" v-for="(item, idx) in teamScores" :key="idx">
+        <view class="score-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
+        <text class="score-name">{{ item['name'] as string }}</text>
+        <text class="score-value">{{ item['score'] as number }}</text>
+        <view class="score-btn-minus" @click="changeScore(idx, -1)">
+          <text class="score-btn-text">−</text>
+        </view>
+        <view class="score-btn-plus" @click="changeScore(idx, 1)">
+          <text class="score-btn-text">+</text>
+        </view>
+      </view>
+      <template #footer>
+        <view class="sheet-footer-btn sheet-footer-btn-danger" @click="resetScores">
+          <text class="sheet-footer-btn-text">重置积分</text>
+        </view>
+      </template>
+    </HalfSheet>
 
-    <view v-if="pickSheet" class="sheet-overlay" @click="pickSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">🎲 随机抽取</text>
-          <view class="sheet-close" @click="pickSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
+    <HalfSheet :visible="pickSheet" title="随机抽取" :height="standardSheetHeight" @update:visible="pickSheet = $event">
+      <view class="pick-tabs">
+        <view :class="['pick-tab', { active: pickTab === 'actor' }]" @click="pickTab = 'actor'">
+          <text class="pick-tab-text">抽演员</text>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view class="pick-tabs">
-            <view :class="['pick-tab', { active: pickTab === 'actor' }]" @click="pickTab = 'actor'">
-              <text class="pick-tab-text">抽演员</text>
-            </view>
-            <view :class="['pick-tab', { active: pickTab === 'audience' }]" @click="pickTab = 'audience'">
-              <text class="pick-tab-text">抽观众</text>
-            </view>
-            <view :class="['pick-tab', { active: pickTab === 'topic' }]" @click="pickTab = 'topic'">
-              <text class="pick-tab-text">抽题目</text>
-            </view>
-          </view>
-          <view class="pick-action-area">
-            <view v-if="!isPicking && !pickResult" class="pick-start-btn" @click="startPick">
-              <text class="pick-start-text">开始抽取</text>
-            </view>
-            <view v-if="isPicking" class="pick-animating">
-              <text class="pick-animating-text">抽取中...</text>
-            </view>
-            <view v-if="!isPicking && pickResult" class="pick-result-area">
-              <text class="pick-result-text">{{ pickResult }}</text>
-            </view>
-          </view>
-          <view v-if="!isPicking && pickResult" class="pick-retry">
-            <view class="pick-retry-btn" @click="startPick">
-              <text class="pick-retry-text">再抽一次</text>
-            </view>
-          </view>
-        </scroll-view>
+        <view :class="['pick-tab', { active: pickTab === 'audience' }]" @click="pickTab = 'audience'">
+          <text class="pick-tab-text">抽观众</text>
+        </view>
+        <view :class="['pick-tab', { active: pickTab === 'topic' }]" @click="pickTab = 'topic'">
+          <text class="pick-tab-text">抽题目</text>
+        </view>
       </view>
-    </view>
+      <view class="pick-action-area">
+        <view v-if="!isPicking && !pickResult" class="pick-start-btn" @click="startPick">
+          <text class="pick-start-text">开始抽取</text>
+        </view>
+        <view v-if="isPicking" class="pick-animating">
+          <text class="pick-animating-text">抽取中...</text>
+        </view>
+        <view v-if="!isPicking && pickResult" class="pick-result-area">
+          <text class="pick-result-text">{{ pickResult }}</text>
+        </view>
+      </view>
+      <view v-if="!isPicking && pickResult" class="pick-retry">
+        <view class="pick-retry-btn" @click="startPick">
+          <text class="pick-retry-text">再抽一次</text>
+        </view>
+      </view>
+    </HalfSheet>
 
-    <view v-if="interactSheet" class="sheet-overlay" @click="interactSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">🤝 互动工具</text>
-          <view class="sheet-close" @click="interactSheet = false">
-            <text class="sheet-close-icon">✕</text>
+    <HalfSheet :visible="interactSheet" title="互动工具" :height="standardSheetHeight" @update:visible="interactSheet = $event">
+      <view v-if="!interactType" class="interact-options">
+        <view class="interact-card" @click="interactType = 'wordcloud'">
+          <AppIcon name="stateCloud" size="36rpx" />
+          <text class="interact-card-name">词云</text>
+          <text class="interact-card-desc">参与者提交关键词，实时生成词云</text>
+        </view>
+        <view class="interact-card" @click="interactType = 'vote'">
+          <AppIcon name="stateChart" size="36rpx" />
+          <text class="interact-card-name">投票</text>
+          <text class="interact-card-desc">发起实时投票，收集参与者意见</text>
+        </view>
+        <view class="interact-card" @click="interactType = 'promise'">
+          <AppIcon name="statePromise" size="36rpx" />
+          <text class="interact-card-name">承诺</text>
+          <text class="interact-card-desc">参与者做出承诺，增强行动意愿</text>
+        </view>
+      </view>
+      <view v-if="interactType === 'wordcloud'" class="interact-detail">
+        <view class="interact-detail-header">
+          <view class="section-title-row">
+            <AppIcon name="stateCloud" size="28rpx" />
+            <text class="interact-detail-title">词云互动</text>
+          </view>
+          <view class="interact-back" @click="interactType = ''">
+            <text class="interact-back-text">返回</text>
           </view>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view v-if="!interactType" class="interact-options">
-            <view class="interact-card" @click="interactType = 'wordcloud'">
-              <text class="interact-card-icon">☁️</text>
-              <text class="interact-card-name">词云</text>
-              <text class="interact-card-desc">参与者提交关键词，实时生成词云</text>
-            </view>
-            <view class="interact-card" @click="interactType = 'vote'">
-              <text class="interact-card-icon">📊</text>
-              <text class="interact-card-name">投票</text>
-              <text class="interact-card-desc">发起实时投票，收集参与者意见</text>
-            </view>
-            <view class="interact-card" @click="interactType = 'promise'">
-              <text class="interact-card-icon">🤙</text>
-              <text class="interact-card-name">承诺</text>
-              <text class="interact-card-desc">参与者做出承诺，增强行动意愿</text>
-            </view>
-          </view>
-          <view v-if="interactType === 'wordcloud'" class="interact-detail">
-            <view class="interact-detail-header">
-              <text class="interact-detail-title">☁️ 词云互动</text>
-              <view class="interact-back" @click="interactType = ''">
-                <text class="interact-back-text">返回</text>
-              </view>
-            </view>
-            <view class="interact-placeholder">
-              <text class="interact-placeholder-text">参与者扫码参与词云互动</text>
-            </view>
-          </view>
-          <view v-if="interactType === 'vote'" class="interact-detail">
-            <view class="interact-detail-header">
-              <text class="interact-detail-title">📊 投票互动</text>
-              <view class="interact-back" @click="interactType = ''">
-                <text class="interact-back-text">返回</text>
-              </view>
-            </view>
-            <view class="interact-placeholder">
-              <text class="interact-placeholder-text">参与者扫码参与投票</text>
-            </view>
-          </view>
-          <view v-if="interactType === 'promise'" class="interact-detail">
-            <view class="interact-detail-header">
-              <text class="interact-detail-title">🤙 承诺互动</text>
-              <view class="interact-back" @click="interactType = ''">
-                <text class="interact-back-text">返回</text>
-              </view>
-            </view>
-            <view class="interact-placeholder">
-              <text class="interact-placeholder-text">参与者扫码提交承诺</text>
-            </view>
-          </view>
-        </scroll-view>
+        <view class="interact-placeholder">
+          <text class="interact-placeholder-text">参与者扫码参与词云互动</text>
+        </view>
       </view>
-    </view>
+      <view v-if="interactType === 'vote'" class="interact-detail">
+        <view class="interact-detail-header">
+          <view class="section-title-row">
+            <AppIcon name="stateChart" size="28rpx" />
+            <text class="interact-detail-title">投票互动</text>
+          </view>
+          <view class="interact-back" @click="interactType = ''">
+            <text class="interact-back-text">返回</text>
+          </view>
+        </view>
+        <view class="interact-placeholder">
+          <text class="interact-placeholder-text">参与者扫码参与投票</text>
+        </view>
+      </view>
+      <view v-if="interactType === 'promise'" class="interact-detail">
+        <view class="interact-detail-header">
+          <view class="section-title-row">
+            <AppIcon name="statePromise" size="28rpx" />
+            <text class="interact-detail-title">承诺互动</text>
+          </view>
+          <view class="interact-back" @click="interactType = ''">
+            <text class="interact-back-text">返回</text>
+          </view>
+        </view>
+        <view class="interact-placeholder">
+          <text class="interact-placeholder-text">参与者扫码提交承诺</text>
+        </view>
+      </view>
+    </HalfSheet>
 
-    <view v-if="soundSheet" class="sheet-overlay" @click="soundSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">🔊 音效面板</text>
-          <view class="sheet-close" @click="soundSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
+    <HalfSheet :visible="soundSheet" title="音效面板" :height="standardSheetHeight" @update:visible="soundSheet = $event">
+      <view class="sound-grid">
+        <view
+          v-for="(sound, idx) in soundList"
+          :key="idx"
+          :class="['sound-btn', { active: activeSound === (sound['key'] as string) }]"
+          @click="playSound(sound['key'] as string)"
+        >
+          <AppIcon :name="sound['iconName'] as string" size="34rpx" />
+          <text class="sound-btn-name">{{ sound['name'] as string }}</text>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view class="sound-grid">
-            <view
-              v-for="(sound, idx) in soundList"
-              :key="idx"
-              :class="['sound-btn', { active: activeSound === (sound['key'] as string) }]"
-              @click="playSound(sound['key'] as string)"
-            >
-              <text class="sound-btn-icon">{{ sound['icon'] as string }}</text>
-              <text class="sound-btn-name">{{ sound['name'] as string }}</text>
-            </view>
-          </view>
-        </scroll-view>
       </view>
-    </view>
+    </HalfSheet>
 
-    <view v-if="standaloneTimerSheet" class="sheet-overlay" @click="standaloneTimerSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">⏱ 独立计时</text>
-          <view class="sheet-close" @click="standaloneTimerSheet = false">
-            <text class="sheet-close-icon">✕</text>
+    <HalfSheet :visible="standaloneTimerSheet" title="独立计时" :height="standardSheetHeight" @update:visible="standaloneTimerSheet = $event">
+      <text class="sheet-label">计时模式</text>
+      <view class="stimer-mode-row">
+        <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countup' }]" @click="standaloneTimerMode = 'countup'">
+          <text class="stimer-mode-text">正计时</text>
+        </view>
+        <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countdown' }]" @click="standaloneTimerMode = 'countdown'">
+          <text class="stimer-mode-text">倒计时</text>
+        </view>
+      </view>
+      <view v-if="standaloneTimerMode === 'countdown'" class="stimer-duration-row">
+        <view
+          v-for="(m, idx) in ([1, 3, 5, 10] as Array<number>)"
+          :key="idx"
+          :class="['stimer-duration-btn', { active: countdownMinutes === m }]"
+          @click="countdownMinutes = m"
+        >
+          <text class="stimer-duration-text">{{ m }}分钟</text>
+        </view>
+      </view>
+      <view class="stimer-display">
+        <text class="stimer-time">{{ standaloneTimerDisplay }}</text>
+      </view>
+      <template #footer>
+        <view class="stimer-controls">
+          <view class="stimer-ctrl-btn" @click="resetStandaloneTimer">
+            <text class="stimer-ctrl-text">重置</text>
+          </view>
+          <view :class="['stimer-ctrl-btn', 'stimer-ctrl-primary', { paused: standaloneRunning }]" @click="toggleStandaloneTimer">
+            <text class="stimer-ctrl-text">{{ standaloneRunning ? '暂停' : '开始' }}</text>
           </view>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <text class="sheet-label">计时模式</text>
-          <view class="stimer-mode-row">
-            <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countup' }]" @click="standaloneTimerMode = 'countup'">
-              <text class="stimer-mode-text">正计时</text>
-            </view>
-            <view :class="['stimer-mode-btn', { active: standaloneTimerMode === 'countdown' }]" @click="standaloneTimerMode = 'countdown'">
-              <text class="stimer-mode-text">倒计时</text>
-            </view>
-          </view>
-          <view v-if="standaloneTimerMode === 'countdown'" class="stimer-duration-row">
-            <view
-              v-for="(m, idx) in ([1, 3, 5, 10] as Array<number>)"
-              :key="idx"
-              :class="['stimer-duration-btn', { active: countdownMinutes === m }]"
-              @click="countdownMinutes = m"
-            >
-              <text class="stimer-duration-text">{{ m }}分钟</text>
-            </view>
-          </view>
-          <view class="stimer-display">
-            <text class="stimer-time">{{ standaloneTimerDisplay }}</text>
-          </view>
-          <view class="stimer-controls">
-            <view class="stimer-ctrl-btn" @click="resetStandaloneTimer">
-              <text class="stimer-ctrl-text">重置</text>
-            </view>
-            <view :class="['stimer-ctrl-btn', 'stimer-ctrl-primary', { paused: standaloneRunning }]" @click="toggleStandaloneTimer">
-              <text class="stimer-ctrl-text">{{ standaloneRunning ? '暂停' : '开始' }}</text>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
+      </template>
+    </HalfSheet>
 
-    <view v-if="noteSheet" class="sheet-overlay" @click="noteSheet = false">
-      <view class="sheet-container" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">📝 培训笔记</text>
-          <view class="sheet-close" @click="noteSheet = false">
-            <text class="sheet-close-icon">✕</text>
-          </view>
-        </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view class="note-phase-tag">
-            <text class="note-phase-tag-text">{{ currentPhaseName }}</text>
-          </view>
-          <textarea v-model="noteContent" class="note-input" placeholder="记录本环节要点..."></textarea>
-          <view class="note-saved-list">
-            <view class="note-saved-item" v-for="(note, idx) in liveStore.notes" :key="idx">
-              <text class="note-saved-phase">{{ note['phaseName'] as string }}</text>
-              <text class="note-saved-content">{{ note['content'] as string }}</text>
-              <text class="note-saved-time">{{ note['createdAt'] as string }}</text>
-            </view>
-          </view>
-        </scroll-view>
-        <view class="sheet-footer">
-          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="saveNote">
-            <text class="sheet-footer-btn-text">保存笔记</text>
-          </view>
+    <HalfSheet :visible="noteSheet" title="培训笔记" :height="standardSheetHeight" @update:visible="noteSheet = $event">
+      <view class="note-phase-tag">
+        <text class="note-phase-tag-text">{{ currentPhaseName }}</text>
+      </view>
+      <textarea v-model="noteContent" class="note-input" placeholder="记录本环节要点..."></textarea>
+      <view class="note-saved-list">
+        <view class="note-saved-item" v-for="(note, idx) in liveStore.notes" :key="idx">
+          <text class="note-saved-phase">{{ note['phaseName'] as string }}</text>
+          <text class="note-saved-content">{{ note['content'] as string }}</text>
+          <text class="note-saved-time">{{ note['createdAt'] as string }}</text>
         </view>
       </view>
-    </view>
+      <template #footer>
+        <view class="sheet-footer-btn sheet-footer-btn-primary" @click="saveNote">
+          <text class="sheet-footer-btn-text">保存笔记</text>
+        </view>
+      </template>
+    </HalfSheet>
 
-    <view v-if="showToolbox" class="sheet-overlay" @click="closeToolbox">
-      <view class="sheet-container sheet-container-toolbox" @click.stop>
-        <view class="sheet-handle"></view>
-        <view class="sheet-header">
-          <text class="sheet-title">🧰 工具箱</text>
-          <view class="sheet-close" @click="closeToolbox">
-            <text class="sheet-close-icon">✕</text>
+    <HalfSheet :visible="showToolbox" title="工具箱" :height="toolboxSheetHeight + 'px'" @update:visible="showToolbox = $event">
+      <view class="toolbox-grid">
+        <view class="toolbox-item" v-for="(tool, idx) in allTools" :key="idx" @click="openToolFromToolbox(tool)">
+          <view class="toolbox-item-icon-box">
+            <AppIcon :name="tool['iconName'] as string" size="40rpx" />
           </view>
+          <text class="toolbox-item-name">{{ tool['name'] }}</text>
         </view>
-        <scroll-view class="sheet-scroll" scroll-y>
-          <view class="toolbox-grid">
-            <view class="toolbox-item" v-for="(tool, idx) in allTools" :key="idx" @click="openToolFromToolbox(tool)">
-              <view class="toolbox-item-icon-box">
-                <text class="toolbox-item-icon">{{ tool['icon'] }}</text>
-              </view>
-              <text class="toolbox-item-name">{{ tool['name'] }}</text>
-            </view>
-          </view>
-        </scroll-view>
       </view>
-    </view>
+    </HalfSheet>
 
     <ConfirmDialog
       :visible="showExitDialog"
@@ -984,14 +917,24 @@ onUnmounted(() => {
 <style scoped>
 .page {
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: #1A1A2E;
 }
 .live-body {
+  width: 100%;
+  max-width: 820rpx;
+  min-height: calc(100vh - var(--nav-bar-height));
+  min-height: calc(100dvh - var(--nav-bar-height));
+  margin: 0 auto;
   padding: 0 32rpx;
   padding-top: 32rpx;
+  padding-bottom: calc(300rpx + var(--safe-area-bottom));
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+.live-body.sheet-open {
+  padding-bottom: calc(48rpx + var(--safe-area-bottom));
 }
 .phase-progress-wrap {
   margin-bottom: 32rpx;
@@ -1069,24 +1012,31 @@ onUnmounted(() => {
   flex: 1;
 }
 .bottom-action-section {
-  margin-top: auto;
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: calc(100% - 64rpx);
+  max-width: 756rpx;
+  transform: translateX(-50%);
   padding-top: 24rpx;
+  padding-bottom: calc(20rpx + var(--safe-area-bottom));
+  background: linear-gradient(180deg, rgba(26, 26, 46, 0) 0%, rgba(26, 26, 46, 0.86) 20%, #1A1A2E 45%);
+  box-sizing: border-box;
 }
 .toolbar-section {
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
 }
 .toolbar-grid {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 20rpx;
-  justify-content: center;
+  justify-content: space-between;
 }
 .nav-buttons {
   display: flex;
   flex-direction: row;
   gap: 24rpx;
-  padding-bottom: 60rpx;
 }
 .nav-btn {
   flex: 1;
@@ -1125,15 +1075,19 @@ onUnmounted(() => {
 }
 .sheet-container {
   width: 100%;
+  max-width: 820rpx;
   max-height: 70vh;
+  max-height: 70dvh;
   background-color: #FFFFFF;
   border-radius: 32rpx 32rpx 0 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
   animation: sheetSlideUp 0.3s ease;
 }
 .sheet-container-toolbox {
-  max-height: 84vh;
+  max-height: none;
 }
 .sheet-handle {
   width: 64rpx;
@@ -1172,7 +1126,19 @@ onUnmounted(() => {
 }
 .sheet-scroll {
   flex: 1;
+  min-height: 0;
+  height: 0;
   padding: 24rpx 32rpx;
+  background-color: #FFFFFF;
+  box-sizing: border-box;
+}
+.sheet-container-toolbox .sheet-scroll {
+  padding-bottom: calc(40rpx + var(--safe-area-bottom));
+}
+.sheet-toolbox-fill {
+  flex-shrink: 0;
+  height: calc(32rpx + var(--safe-area-bottom));
+  background-color: #FFFFFF;
 }
 .sheet-label {
   font-size: 26rpx;
@@ -1194,7 +1160,7 @@ onUnmounted(() => {
   gap: 20rpx;
 }
 .sheet-footer-btn {
-  height: 80rpx;
+  height: 92rpx;
   border-radius: 16rpx;
   display: flex;
   align-items: center;
@@ -1229,15 +1195,31 @@ onUnmounted(() => {
   color: #1A1A2E;
 }
 .checkin-qr {
-  height: 280rpx;
+  min-height: 340rpx;
   border-width: 2rpx;
   border-style: dashed;
   border-color: #CCCCCC;
   border-radius: 16rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16rpx;
   margin-bottom: 24rpx;
+  background: linear-gradient(180deg, #FAFBFF 0%, #F3F6FF 100%);
+}
+.checkin-qr-icon-wrap {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 32rpx;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 30rpx rgba(74, 124, 247, 0.12);
+}
+.checkin-qr-icon {
+  font-size: 48rpx;
 }
 .checkin-qr-hint {
   font-size: 30rpx;
@@ -1246,7 +1228,7 @@ onUnmounted(() => {
   margin-bottom: 16rpx;
 }
 .checkin-qr-text {
-  font-size: 28rpx;
+  font-size: 24rpx;
   color: #999999;
 }
 .checkin-list-header {
@@ -1804,12 +1786,15 @@ onUnmounted(() => {
 }
 .toolbox-item {
   width: calc(50% - 12rpx);
+  min-height: 220rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 28rpx 0;
   background-color: #F8F9FE;
   border-radius: 16rpx;
+  box-sizing: border-box;
 }
 .toolbox-item-icon-box {
   width: 80rpx;

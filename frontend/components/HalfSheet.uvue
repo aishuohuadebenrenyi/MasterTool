@@ -1,5 +1,7 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed, useSlots } from 'vue'
+import { getDesktopMaxWidth, getSafeAreaBottom, getViewportHeight } from '../utils/viewport'
+import AppIcon from './AppIcon.uvue'
 
 const props = defineProps({
   visible: {
@@ -12,17 +14,54 @@ const props = defineProps({
   },
   height: {
     type: String,
-    default: '60vh'
+    default: ''
+  },
+  showClose: {
+    type: Boolean,
+    default: true
+  },
+  showHandle: {
+    type: Boolean,
+    default: true
+  },
+  closeOnOverlay: {
+    type: Boolean,
+    default: true
+  },
+  bodyPadding: {
+    type: String,
+    default: '24rpx 32rpx'
+  },
+  footerPadding: {
+    type: String,
+    default: '20rpx 32rpx'
   }
 })
 
 const emit = defineEmits(['update:visible', 'close'])
+const slots = useSlots()
 
 const showOverlay = ref<boolean>(false)
 const showContent = ref<boolean>(false)
+const safeAreaBottom = ref<number>(getSafeAreaBottom())
+const viewportHeight = ref<number>(getViewportHeight())
+const maxWidth = getDesktopMaxWidth()
+
+const resolvedHeight = computed<string>(() => {
+  if (props.height) {
+    return props.height
+  }
+  const preferred = Math.round(viewportHeight.value * 0.76)
+  const limited = Math.min(preferred, viewportHeight.value - 32)
+  return Math.max(limited, 480) + 'px'
+})
+
+const hasFooter = computed<boolean>(() => slots.footer != null)
 
 watch(() => props.visible, (val) => {
   if (val) {
+    safeAreaBottom.value = getSafeAreaBottom()
+    viewportHeight.value = getViewportHeight()
     showOverlay.value = true
     setTimeout(() => { showContent.value = true }, 50)
   } else {
@@ -35,23 +74,43 @@ function close() {
   emit('update:visible', false)
   emit('close')
 }
+
+function handleOverlayClick() {
+  if (!props.closeOnOverlay) return
+  close()
+}
 </script>
 
 <template>
-  <view v-if="showOverlay" class="half-sheet-overlay" @click="close">
-    <view :class="['half-sheet-content', { active: showContent }]" :style="{ height }" @click.stop>
-      <view class="sheet-handle"></view>
-      <view v-if="title" class="sheet-header">
-        <text class="sheet-title">{{ title }}</text>
+  <view v-if="showOverlay" class="half-sheet-overlay" @click="handleOverlayClick">
+    <view
+      :class="['half-sheet-content', { active: showContent }]"
+      :style="{ height: resolvedHeight, maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }"
+      @click.stop
+    >
+      <view v-if="showHandle" class="sheet-handle"></view>
+      <view v-if="title || showClose || slots.headerRight" class="sheet-header">
+        <text v-if="title" class="sheet-title">{{ title }}</text>
+        <view v-else class="sheet-title-placeholder"></view>
+        <view class="sheet-header-right">
+          <slot name="headerRight"></slot>
+          <view v-if="showClose" class="sheet-close" @click="close">
+            <AppIcon name="stateClose" size="24rpx" />
+          </view>
+        </view>
       </view>
-      <view class="sheet-body">
+      <scroll-view class="sheet-body" scroll-y :style="{ padding: bodyPadding }">
         <slot></slot>
+      </scroll-view>
+      <view v-if="hasFooter" class="sheet-footer" :style="{ padding: footerPadding, paddingBottom: 'calc(' + safeAreaBottom + 'px + 20rpx)' }">
+        <slot name="footer"></slot>
       </view>
+      <view class="sheet-bottom-fill" :style="{ height: safeAreaBottom + 'px' }"></view>
     </view>
   </view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped>
 .half-sheet-overlay {
   position: fixed;
   top: 0;
@@ -62,36 +121,77 @@ function close() {
   z-index: 1000;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
 }
 .half-sheet-content {
   width: 100%;
-  background: $bg-primary;
-  border-radius: $radius-xl $radius-xl 0 0;
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
   transform: translateY(100%);
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 
-  &.active {
-    transform: translateY(0);
-  }
+}
+.half-sheet-content.active {
+  transform: translateY(0);
 }
 .sheet-handle {
   width: 64rpx;
   height: 8rpx;
-  background: $bg-tertiary;
-  border-radius: $radius-round;
-  margin: $spacing-sm auto;
+  background: #E0E0E0;
+  border-radius: 4rpx;
+  margin: 16rpx auto 0;
 }
 .sheet-header {
-  padding: $spacing-sm $spacing-md;
-  border-bottom: 1rpx solid $divider-color;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #F0F0F0;
 }
 .sheet-title {
-  font-size: $font-size-lg;
+  flex: 1;
+  font-size: 32rpx;
   font-weight: 600;
-  color: $text-primary;
+  color: #1A1A2E;
+}
+.sheet-title-placeholder {
+  flex: 1;
+}
+.sheet-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
+}
+.sheet-close {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .sheet-body {
-  padding: $spacing-md;
-  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  height: 0;
+  box-sizing: border-box;
+  background-color: #FFFFFF;
+}
+.sheet-footer {
+  flex-shrink: 0;
+  background-color: #FFFFFF;
+  border-top: 1rpx solid #F0F0F0;
+  box-sizing: border-box;
+}
+.sheet-bottom-fill {
+  flex-shrink: 0;
+  background-color: #FFFFFF;
 }
 </style>

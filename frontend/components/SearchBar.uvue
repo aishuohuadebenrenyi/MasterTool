@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import AppIcon from './AppIcon.uvue'
 
 const props = defineProps({
   placeholder: {
@@ -35,7 +36,7 @@ function onClear() {
 <template>
   <view class="search-bar">
     <view class="search-input-wrap">
-      <text class="search-icon">🔍</text>
+      <AppIcon name="stateSearch" size="28rpx" />
       <input
         class="search-input"
         :value="keyword"
@@ -45,7 +46,9 @@ function onClear() {
         @input="onInput"
         @confirm="onSearch"
       />
-      <text v-if="keyword" class="clear-icon" @click="onClear">✕</text>
+      <view v-if="keyword" class="clear-icon" @click="onClear">
+        <AppIcon name="stateClose" size="20rpx" />
+      </view>
     </view>
   </view>
 </template>
@@ -58,26 +61,29 @@ function onClear() {
   display: flex;
   align-items: center;
   background: $bg-tertiary;
-  border-radius: $radius-round;
-  padding: 0 $spacing-md;
-  height: 72rpx;
+  border-radius: 44rpx;
+  padding: 0 28rpx;
+  min-height: 88rpx;
+  box-shadow: 0 6rpx 28rpx rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
 }
 .search-icon {
-  font-size: 28rpx;
   margin-right: $spacing-xs;
 }
 .search-input {
   flex: 1;
-  height: 72rpx;
-  font-size: $font-size-md;
+  height: 88rpx;
+  font-size: 30rpx;
   color: $text-primary;
 }
 .search-placeholder {
   color: $text-tertiary;
 }
 .clear-icon {
-  font-size: $font-size-sm;
-  color: $text-tertiary;
-  padding: 8rpx;
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

@@ -1,6 +1,12 @@
 <script setup>
+import AppIcon from '../../../components/AppIcon.uvue'
+
 defineProps({
-  icon: {
+  iconName: {
+    type: String,
+    default: ''
+  },
+  iconSrc: {
     type: String,
     default: ''
   },
@@ -19,7 +25,9 @@ defineEmits(['click'])
 
 <template>
   <view :class="['tool-button', { active }]" @click="$emit('click')">
-    <text class="tool-icon">{{ icon }}</text>
+    <view class="tool-icon">
+      <AppIcon v-if="iconName || iconSrc" :name="iconName" :src="iconSrc" size="40rpx" />
+    </view>
     <text class="tool-label">{{ label }}</text>
   </view>
 </template>
@@ -41,8 +49,10 @@ defineEmits(['click'])
   }
 }
 .tool-icon {
-  font-size: 40rpx;
   margin-bottom: 4rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .tool-label {
   font-size: $font-size-xs;

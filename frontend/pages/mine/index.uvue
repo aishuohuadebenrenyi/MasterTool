@@ -2,14 +2,18 @@
 import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { calcNavBarInfo } from '../../utils/navbar'
+import { getDesktopMaxWidth } from '../../utils/viewport'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const userStore = useUserStore()
 
 const navBarInfo = calcNavBarInfo()
 const statusBarHeight = navBarInfo['statusBarHeight'] as number
-const contentHeight = navBarInfo['contentHeight'] as number
+const contentTopOffset = navBarInfo['contentTopOffset'] as number
+const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const profileHeaderHeight = statusBarHeight + Math.max(contentHeight, 132)
+const profileHeaderHeight = contentTopOffset + 132
+const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
 const nickname = computed(() : string => userStore.displayName)
 const totalSessions = computed(() : number => userStore.stats?.['totalSessions'] || 0)
@@ -25,8 +29,8 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <view class="nav-bar-fixed" :style="{ minHeight: profileHeaderHeight + 'px', paddingTop: statusBarHeight + 'px', paddingLeft: '32rpx', paddingRight: (rightSafeWidth + 12) + 'px' }">
-      <view class="mine-profile-row">
+    <view class="nav-bar-fixed" :style="{ minHeight: profileHeaderHeight + 'px', paddingTop: contentTopOffset + 'px', paddingLeft: navHorizontalPadding + 'px', paddingRight: rightSafeWidth + 'px' }">
+      <view class="mine-profile-row" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : '620rpx' }">
         <view class="mine-avatar">
           <text class="mine-avatar-text">{{ nickname.charAt(0) }}</text>
         </view>
@@ -34,11 +38,14 @@ onMounted(() => {
           <text class="mine-user-name">{{ nickname }}</text>
           <text class="mine-user-role">认证培训师</text>
         </view>
-        <text class="mine-edit-btn">编辑 ›</text>
+        <view class="mine-edit-btn">
+          <text>编辑</text>
+          <AppIcon name="stateChevronRight" size="16rpx" />
+        </view>
       </view>
     </view>
     <view :style="{ height: profileHeaderHeight + 'px' }"></view>
-    <view class="mine-profile-card">
+    <view class="mine-profile-card" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="mine-profile-stats">
         <view class="mine-stat-item">
           <text class="mine-stat-num">{{ totalSessions }}</text>
@@ -57,34 +64,34 @@ onMounted(() => {
       </view>
     </view>
 
-    <view class="mine-menu-card">
+    <view class="mine-menu-card" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="mine-menu-item" @click="uni.navigateTo({ url: '/pages/mine/TrainingRecords' })">
-        <image class="mine-menu-icon-image" src="/static/icons/mine-records.svg" mode="aspectFit" />
+        <AppIcon class="mine-menu-icon-image" src="/static/icons/mine-records.svg" size="40rpx" />
         <text class="mine-menu-label">培训记录</text>
-        <text class="mine-menu-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="18rpx" />
       </view>
       <view class="mine-menu-item mine-menu-last" @click="uni.navigateTo({ url: '/pages/mine/DataDetail' })">
-        <image class="mine-menu-icon-image" src="/static/icons/mine-stats.svg" mode="aspectFit" />
+        <AppIcon class="mine-menu-icon-image" src="/static/icons/mine-stats.svg" size="40rpx" />
         <text class="mine-menu-label">数据详情</text>
-        <text class="mine-menu-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="18rpx" />
       </view>
     </view>
 
-    <view class="mine-menu-card">
+    <view class="mine-menu-card" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="mine-menu-item" @click="uni.navigateTo({ url: '/pages/mine/Settings' })">
-        <image class="mine-menu-icon-image" src="/static/icons/mine-settings.svg" mode="aspectFit" />
+        <AppIcon class="mine-menu-icon-image" src="/static/icons/mine-settings.svg" size="40rpx" />
         <text class="mine-menu-label">设置</text>
-        <text class="mine-menu-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="18rpx" />
       </view>
       <view class="mine-menu-item" @click="uni.navigateTo({ url: '/pages/mine/HelpFeedback' })">
-        <image class="mine-menu-icon-image" src="/static/icons/mine-feedback.svg" mode="aspectFit" />
+        <AppIcon class="mine-menu-icon-image" src="/static/icons/mine-feedback.svg" size="40rpx" />
         <text class="mine-menu-label">帮助与反馈</text>
-        <text class="mine-menu-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="18rpx" />
       </view>
       <view class="mine-menu-item mine-menu-last" @click="uni.navigateTo({ url: '/pages/mine/About' })">
-        <image class="mine-menu-icon-image" src="/static/icons/mine-about.svg" mode="aspectFit" />
+        <AppIcon class="mine-menu-icon-image" src="/static/icons/mine-about.svg" size="40rpx" />
         <text class="mine-menu-label">关于</text>
-        <text class="mine-menu-arrow">›</text>
+        <AppIcon name="stateChevronRight" size="18rpx" />
       </view>
     </view>
   </view>
@@ -117,6 +124,9 @@ onMounted(() => {
   border-radius: 24rpx;
   margin-top: 0;
   margin-bottom: 24rpx;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -129,6 +139,8 @@ onMounted(() => {
   max-width: 620rpx;
   min-height: 132rpx;
   margin-top: 8rpx;
+  margin-left: auto;
+  margin-right: auto;
   padding: 8rpx 0 8rpx;
 }
 .mine-avatar {
@@ -202,6 +214,9 @@ onMounted(() => {
   background-color: #FFFFFF;
   border-radius: 24rpx;
   margin-bottom: 24rpx;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }

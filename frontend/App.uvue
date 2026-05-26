@@ -1,15 +1,7 @@
 <script>
 import { useUserStore } from './stores/user'
 import { API_BASE_URL } from './utils/constants'
-
-function isMpWeixinRuntime() {
-  try {
-    const sysInfo = uni.getSystemInfoSync()
-    return ((sysInfo || {})['uniPlatform']) === 'mp-weixin'
-  } catch (e) {
-    return false
-  }
-}
+import { isMpWeixinRuntime } from './utils/runtime'
 
 function shouldSkipDevAutoLogin() {
   if (!API_BASE_URL) {

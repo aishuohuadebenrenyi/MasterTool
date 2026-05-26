@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useConfigStore } from '../../stores/config'
+import NavBar from '../../components/NavBar.uvue'
 
 const configStore = useConfigStore()
 
@@ -33,13 +34,7 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <view class="navbar">
-      <view class="navbar-back" @click="uni.navigateBack()">
-        <text class="navbar-back-icon">‹</text>
-      </view>
-      <text class="navbar-title">设置</text>
-      <view class="navbar-placeholder"></view>
-    </view>
+    <NavBar title="设置" @back="uni.navigateBack()" />
 
     <scroll-view class="content" scroll-y>
       <view class="section-card">

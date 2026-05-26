@@ -59,7 +59,8 @@
     {
       "path": "pages/live/LiveEnd",
       "style": {
-        "navigationBarTitleText": "培训结束"
+        "navigationBarTitleText": "培训结束",
+        "navigationStyle": "custom"
       }
     },
     {
@@ -86,31 +87,36 @@
     {
       "path": "pages/mine/TrainingRecords",
       "style": {
-        "navigationBarTitleText": "培训记录"
+        "navigationBarTitleText": "培训记录",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/mine/DataDetail",
       "style": {
-        "navigationBarTitleText": "数据详情"
+        "navigationBarTitleText": "数据详情",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/mine/Settings",
       "style": {
-        "navigationBarTitleText": "设置"
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/mine/HelpFeedback",
       "style": {
-        "navigationBarTitleText": "帮助与反馈"
+        "navigationBarTitleText": "帮助与反馈",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/mine/About",
       "style": {
-        "navigationBarTitleText": "关于"
+        "navigationBarTitleText": "关于",
+        "navigationStyle": "custom"
       }
     }
   ],

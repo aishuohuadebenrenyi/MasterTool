@@ -1,8 +1,10 @@
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { calcNavBarInfo } from '../utils/navbar'
+import { getDesktopMaxWidth } from '../utils/viewport'
+import AppIcon from './AppIcon.uvue'
 
-defineProps({
+const props = defineProps({
   title: { type: String, default: '' },
   showBack: { type: Boolean, default: true },
   backgroundColor: { type: String, default: '#1A1A2E' },
@@ -18,24 +20,36 @@ const navBarHeight = navBarInfo['navBarHeight'] as number
 const contentHeight = navBarInfo['contentHeight'] as number
 const leftSafeWidth = navBarInfo['leftSafeWidth'] as number
 const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
+const capsuleMarginRight = navBarInfo['capsuleMarginRight'] as number
+const contentTopOffset = navBarInfo['contentTopOffset'] as number
+const maxWidth = getDesktopMaxWidth()
+
+const backIconName = computed<string>(() => {
+  return props.backIconColor === '#FFFFFF' ? 'stateBackLight' : 'stateBack'
+})
 </script>
 
 <template>
   <view class="navbar" :style="{ backgroundColor }">
     <view class="navbar-statusbar" :style="{ height: statusBarHeight + 'px' }"></view>
-    <view class="navbar-content" :style="{ height: contentHeight + 'px' }">
+    <view class="navbar-content-outer">
+      <view class="navbar-content" :style="{ height: contentHeight + 'px', maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }">
       <view v-if="showBack" class="navbar-back" :style="{ minWidth: leftSafeWidth + 'px' }" @click="$emit('back')">
-        <text class="back-icon" :style="{ color: backIconColor }">&lt;</text>
-        <text class="back-text" :style="{ color: backIconColor }">返回</text>
+        <view class="back-icon-box" :style="{ marginLeft: capsuleMarginRight + 'px' }">
+          <AppIcon :name="backIconName" size="36rpx" />
+        </view>
       </view>
       <view v-else class="navbar-back-placeholder" :style="{ minWidth: leftSafeWidth + 'px' }"></view>
-      <text class="navbar-title" :style="{ color: titleColor, left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">{{ title }}</text>
-      <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px' }">
+      <view class="navbar-title-wrap" :style="{ left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">
+        <text class="navbar-title" :style="{ color: titleColor }">{{ title }}</text>
+      </view>
+      <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px', paddingRight: capsuleMarginRight + 'px' }">
         <slot name="right"></slot>
+      </view>
       </view>
     </view>
   </view>
-  <view :style="{ height: navBarHeight + 'px' }"></view>
+  <view :style="{ height: contentTopOffset + 'px' }"></view>
 </template>
 
 <style scoped>
@@ -48,45 +62,54 @@ const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
 }
 .navbar-statusbar {
 }
-.navbar-content { display: flex; align-items: center; padding: 0 32rpx; position: relative; }
-.navbar-back {
-  width: 88rpx;
-  height: 88rpx;
+.navbar-content-outer {
+  width: 100%;
   display: flex;
-  flex-direction: row;
+  justify-content: center;
+}
+.navbar-content { width: 100%; display: flex; align-items: center; justify-content: space-between; position: relative; box-sizing: border-box; }
+.navbar-back {
+  display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8rpx;
+  height: 100%;
   flex-shrink: 0;
   z-index: 1;
 }
+.back-icon-box {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background-color: rgba(255, 255, 255, 0.18);
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
 .navbar-back-placeholder {
-  width: 88rpx;
-  height: 88rpx;
+  height: 100%;
   flex-shrink: 0;
 }
-.back-icon {
-  font-size: 48rpx;
-  font-weight: 600;
-  line-height: 1;
-}
-.back-text {
-  font-size: 26rpx;
-  font-weight: 500;
-  line-height: 1;
-}
-.navbar-title {
+.navbar-title-wrap {
   position: absolute;
   top: 0;
   bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+.navbar-title {
   font-size: 32rpx;
-  font-weight: 500;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
+  text-align: center;
 }
 .navbar-right {
   flex-shrink: 0;
