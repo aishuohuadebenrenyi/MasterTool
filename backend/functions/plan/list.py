@@ -24,7 +24,7 @@ def main(event, context):
     if status:
         filter_query['status'] = status
     if plan_type:
-        filter_query['type'] = plan_type
+        filter_query['type'] = Plan.normalize_type(plan_type)
 
     db = get_db()
 

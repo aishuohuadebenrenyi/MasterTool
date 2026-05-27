@@ -65,7 +65,12 @@ function stripUTSSyntax(code) {
       line = line.replace(/<\w+>/g, '')
     }
 
+    line = line.replace(/\s+as\s+\w+(\s+as\s+\w+)*/g, '')
+    line = line.replace(/\s+as\s+\(\([^)]*\)\s*=>\s*[^)]*\)\s*(\|\s*\w+)*/g, '')
+    line = line.replace(/\s+as\s+\w+(\[\])?\s*(\|\s*\w+)*/g, '')
     line = line.replace(/\b(as)\s+\w+(\[\])?/g, '')
+    line = line.replace(/\s+\|\s*null\b/g, '')
+    line = line.replace(/catch\s*\((\w+)\s*:\s*[^)]+\)/g, 'catch ($1)')
 
     result.push(line)
   }

@@ -33,6 +33,29 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function loginWithWechat() {
+    const loginFn = (uni as unknown as UTSJSONObject)['login'] as ((options : UTSJSONObject) => void) | null
+    if (loginFn == null) {
+      return login({ code: 'dev_test', nickname: '培训师' } as UTSJSONObject)
+    }
+    return new Promise<UTSJSONObject>((resolve, reject) => {
+      loginFn({
+        provider: 'weixin',
+        success: (res : UTSJSONObject) => {
+          const code = (res['code'] as string) || ''
+          if (!code) {
+            reject(new Error('微信登录失败，请稍后重试'))
+            return
+          }
+          login({ code, nickname: '培训师' } as UTSJSONObject).then(resolve).catch(reject)
+        },
+        fail: () => {
+          reject(new Error('微信登录失败，请稍后重试'))
+        }
+      } as UTSJSONObject)
+    })
+  }
+
   async function fetchProfile() {
     try {
       loading.value = true
@@ -55,6 +78,7 @@ export const useUserStore = defineStore('user', () => {
       loading.value = true
       const data = await userApi.updateUserProfile(profileData)
       userInfo.value = { ...userInfo.value, ...data }
+      storage.set(STORAGE_KEYS['USER_INFO'] as string, userInfo.value)
       error.value = ''
       return data
     } catch (e : unknown) {
@@ -123,6 +147,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     displayName,
     login,
+    loginWithWechat,
     fetchProfile,
     updateProfile,
     fetchStats,

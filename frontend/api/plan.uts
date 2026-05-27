@@ -23,3 +23,7 @@ export function deletePlan(planId : string) : Promise<UTSJSONObject> {
 export function confirmPlan(planId : string) : Promise<UTSJSONObject> {
   return post(`/plan/confirm/${planId}`)
 }
+
+export function savePlanAsTemplate(planId : string) : Promise<UTSJSONObject> {
+  return post(`/plan/save-template/${planId}`, {} as UTSJSONObject, { showLoading: true, loadingText: '正在保存模板...' })
+}

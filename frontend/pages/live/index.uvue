@@ -10,6 +10,7 @@ import AppIcon from '../../components/AppIcon.uvue'
 import TimerDisplay from './components/TimerDisplay.uvue'
 import ToolButton from './components/ToolButton.uvue'
 import * as noteApi from '../../api/note'
+import * as interactionApi from '../../api/interaction'
 import { calcNavBarInfo } from '../../utils/navbar'
 import { getDesktopMaxWidth, getSafeAreaBottom, getViewportHeight } from '../../utils/viewport'
 
@@ -161,23 +162,27 @@ function closeToolbox() {
 
 function openToolFromToolbox(tool : UTSJSONObject) {
   showToolbox.value = false
-  const key = tool['key'] as string
-  if (key === 'checkin') checkinSheet.value = true
-  else if (key === 'group') groupSheet.value = true
-  else if (key === 'score') scoreSheet.value = true
-  else if (key === 'pick') pickSheet.value = true
-  else if (key === 'interact') interactSheet.value = true
-  else if (key === 'sound') soundSheet.value = true
-  else if (key === 'timer') standaloneTimerSheet.value = true
-  else if (key === 'note') noteSheet.value = true
+  openTool(tool['key'] as string)
 }
 
-const checkinCount = ref<number>(12)
-const recentCheckins = ref<Array<UTSJSONObject>>([
-  { name: '张三', time: '14:32' } as UTSJSONObject,
-  { name: '李四', time: '14:30' } as UTSJSONObject,
-  { name: '王五', time: '14:28' } as UTSJSONObject
-])
+const manualCheckinName = ref<string>('')
+const isLiveActionBusy = ref<boolean>(false)
+
+const checkinCount = computed<number>(() => liveStore.participants.length)
+const checkinEntryPath = computed<string>(() => liveStore.sessionId ? `/pages/participant/Checkin?sessionId=${liveStore.sessionId}` : '')
+const recentCheckins = computed<Array<UTSJSONObject>>(() => {
+  const items : Array<UTSJSONObject> = []
+  const list = liveStore.participants
+  const max = Math.min(list.length, 6)
+  for (let i = 0; i < max; i++) {
+    const item = list[i]
+    items.push({
+      name: (item['name'] as string) || '匿名参与者',
+      time: formatCheckinTime((item['checkinTime'] as string) || (item['createdAt'] as string) || '')
+    } as UTSJSONObject)
+  }
+  return items
+})
 
 const groupMethod = ref<string>('average')
 const groupCount = ref<number>(4)
@@ -190,18 +195,41 @@ const teamScores = ref<Array<UTSJSONObject>>([])
 const pickTab = ref<string>('actor')
 const pickResult = ref<string>('')
 const isPicking = ref<boolean>(false)
+const allowRepeatPick = ref<boolean>(false)
+const pickedParticipantIds = ref<Array<string>>([])
 
 const interactType = ref<string>('')
+const interactionSessions = ref<UTSJSONObject>({} as UTSJSONObject)
+const interactionLoading = ref<boolean>(false)
+const wordcloudInput = ref<string>('')
+const wordcloudItems = ref<Array<UTSJSONObject>>([])
+const voteOptionInput = ref<string>('')
+const voteOptions = ref<Array<UTSJSONObject>>([
+  { label: '选项 A', count: 0 } as UTSJSONObject,
+  { label: '选项 B', count: 0 } as UTSJSONObject
+])
+const promiseInput = ref<string>('')
+const promiseItems = ref<Array<string>>([])
+let interactionStatsTimer : number | null = null
+
+const activeInteraction = computed<UTSJSONObject | null>(() => getInteractionSession(interactType.value))
+const interactionJoinCode = computed<string>(() => (activeInteraction.value?.['joinCode'] as string) || '')
+const interactionPath = computed<string>(() => (activeInteraction.value?.['path'] as string) || '')
+const pickedCountText = computed<string>(() => {
+  if (allowRepeatPick.value || pickedParticipantIds.value.length === 0) return ''
+  return '本轮已抽 ' + pickedParticipantIds.value.length + ' 人'
+})
 
 const activeSound = ref<string>('')
 const soundList : Array<UTSJSONObject> = [
-  { key: 'cheer', iconName: 'soundCheer', name: '欢呼' } as UTSJSONObject,
-  { key: 'clap', iconName: 'soundClap', name: '鼓掌' } as UTSJSONObject,
-  { key: 'bell', iconName: 'soundBell', name: '铃声' } as UTSJSONObject,
-  { key: 'countdown', iconName: 'toolTimer', name: '倒计时' } as UTSJSONObject,
-  { key: 'theme', iconName: 'soundTheme', name: '主题' } as UTSJSONObject,
-  { key: 'error', iconName: 'soundError', name: '错误音' } as UTSJSONObject
+  { key: 'cheer', iconName: 'soundCheer', name: '欢呼', src: '/static/sounds/cheer.wav' } as UTSJSONObject,
+  { key: 'clap', iconName: 'soundClap', name: '鼓掌', src: '/static/sounds/clap.wav' } as UTSJSONObject,
+  { key: 'bell', iconName: 'soundBell', name: '铃声', src: '/static/sounds/bell.wav' } as UTSJSONObject,
+  { key: 'countdown', iconName: 'toolTimer', name: '倒计时', src: '/static/sounds/countdown.wav' } as UTSJSONObject,
+  { key: 'theme', iconName: 'soundTheme', name: '主题', src: '/static/sounds/theme.wav' } as UTSJSONObject,
+  { key: 'error', iconName: 'soundError', name: '错误音', src: '/static/sounds/error.wav' } as UTSJSONObject
 ]
+let activeSoundAudio : any = null
 
 const standaloneTimerMode = ref<string>('countup')
 const countdownMinutes = ref<number>(1)
@@ -278,14 +306,19 @@ function handleBack() {
   showExitDialog.value = true
 }
 
-function confirmExit() {
+async function confirmExit() {
   if (timerInterval) {
     clearInterval(timerInterval)
     timerInterval = null
   }
   timerRunning.value = false
-  liveStore.endSession()
-  uni.navigateBack({})
+  try {
+    await liveStore.endSession()
+  } catch (_e : unknown) {
+    uni.showToast({ title: '结束会话失败，请稍后重试', icon: 'none' })
+  } finally {
+    uni.navigateBack({})
+  }
 }
 
 function cancelExit() {
@@ -298,7 +331,7 @@ function handlePrev() {
   }
 }
 
-function handleNext() {
+async function handleNext() {
   if (canNext.value) {
     liveStore.nextPhase()
   } else {
@@ -307,21 +340,28 @@ function handleNext() {
       timerInterval = null
     }
     timerRunning.value = false
-    liveStore.endSession()
-    uni.redirectTo({ url: '/pages/live/LiveEnd' })
+    try {
+      await liveStore.endSession()
+      uni.redirectTo({ url: '/pages/live/LiveEnd' })
+    } catch (_e : unknown) {
+      uni.showToast({ title: '结束会话失败，请稍后重试', icon: 'none' })
+    }
   }
 }
 
 function handleToolClick(idx : number) {
   const tool = quickTools.value[idx]
-  const key = tool['key'] as string
+  openTool(tool['key'] as string)
+}
+
+function openTool(key : string) {
   if (key === 'toolbox') {
     showToolbox.value = true
     return
   }
-  if (key === 'checkin') checkinSheet.value = true
-  else if (key === 'group') groupSheet.value = true
-  else if (key === 'score') scoreSheet.value = true
+  if (key === 'checkin') openCheckinSheet()
+  else if (key === 'group') openGroupSheet()
+  else if (key === 'score') openScoreSheet()
   else if (key === 'pick') pickSheet.value = true
   else if (key === 'interact') interactSheet.value = true
   else if (key === 'sound') soundSheet.value = true
@@ -331,27 +371,146 @@ function handleToolClick(idx : number) {
 
 const groupColors : Array<string> = ['#4A7CF7', '#FF6B6B', '#51CF66', '#FFD43B', '#CC5DE8', '#FF922B', '#20C997', '#F06595', '#A9E34B', '#748FFC']
 
-function doGrouping() {
-  const total = peopleCount.value
-  const count = groupCount.value
-  const base = Math.floor(total / count)
-  const remainder = total % count
+function formatCheckinTime(raw : string) : string {
+  if (!raw) return '--:--'
+  const date = new Date(raw)
+  if (isNaN(date.getTime())) {
+    return raw.length >= 16 ? raw.slice(11, 16) : raw
+  }
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const h = hours < 10 ? '0' + hours : '' + hours
+  const m = minutes < 10 ? '0' + minutes : '' + minutes
+  return h + ':' + m
+}
+
+async function refreshCheckins(showError : boolean = false) {
+  if (!liveStore.sessionId) return
+  try {
+    await liveStore.loadCheckins()
+  } catch (_e : unknown) {
+    if (showError) {
+      uni.showToast({ title: '获取签到列表失败', icon: 'none' })
+    }
+  }
+}
+
+async function openCheckinSheet() {
+  checkinSheet.value = true
+  await refreshCheckins(false)
+}
+
+async function openGroupSheet() {
+  groupSheet.value = true
+  await refreshCheckins(false)
+  syncGroupResultsFromStore()
+}
+
+function openScoreSheet() {
+  syncGroupResultsFromStore()
+  syncScoresFromGroups()
+  scoreSheet.value = true
+}
+
+async function addManualCheckin() {
+  const name = manualCheckinName.value.trim()
+  if (!name) {
+    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    return
+  }
+  if (!liveStore.sessionId) {
+    uni.showToast({ title: '会话未开始', icon: 'none' })
+    return
+  }
+  try {
+    isLiveActionBusy.value = true
+    await liveStore.checkin({
+      name,
+      openid: 'manual_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
+    } as UTSJSONObject)
+    manualCheckinName.value = ''
+    await refreshCheckins(false)
+    uni.showToast({ title: '已签到', icon: 'success' })
+  } catch (e : unknown) {
+    uni.showToast({ title: e instanceof Error ? e.message : '签到失败', icon: 'none' })
+  } finally {
+    isLiveActionBusy.value = false
+  }
+}
+
+function syncGroupResultsFromStore() {
   const results : Array<UTSJSONObject> = []
-  for (let i = 0; i < count; i++) {
-    const c = i < remainder ? base + 1 : base
-    results.push({ name: '第' + (i + 1) + '队', count: c, color: groupColors[i % groupColors.length] } as UTSJSONObject)
+  const groups = liveStore.groups
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i]
+    const members = (group['members'] as Array<string>) || [] as Array<string>
+    const groupId = (group['groupId'] as string) || 'group_' + (i + 1)
+    const savedScore = (liveStore.scores[groupId] as number) || (group['score'] as number) || 0
+    results.push({
+      groupId,
+      name: (group['groupName'] as string) || (group['name'] as string) || '第' + (i + 1) + '组',
+      count: members.length || ((group['count'] as number) || 0),
+      color: groupColors[i % groupColors.length],
+      score: savedScore
+    } as UTSJSONObject)
   }
   groupResults.value = results
-  isGrouped.value = false
+  isGrouped.value = results.length > 0
+}
+
+async function doGrouping() {
+  if (!liveStore.sessionId) {
+    uni.showToast({ title: '会话未开始', icon: 'none' })
+    return
+  }
+  if (groupMethod.value === 'free') {
+    uni.showToast({ title: '当前不支持参与者自选队伍', icon: 'none' })
+    return
+  }
+  if (liveStore.participants.length < groupCount.value) {
+    uni.showToast({ title: '签到人数不足以分组', icon: 'none' })
+    return
+  }
+  try {
+    isLiveActionBusy.value = true
+    await liveStore.createGroup({
+      action: 'create',
+      groupCount: groupCount.value,
+      method: groupMethod.value
+    } as UTSJSONObject)
+    syncGroupResultsFromStore()
+    syncScoresFromGroups()
+    uni.showToast({ title: '已生成分组', icon: 'success' })
+  } catch (e : unknown) {
+    uni.showToast({ title: e instanceof Error ? e.message : '分组失败', icon: 'none' })
+  } finally {
+    isLiveActionBusy.value = false
+  }
 }
 
 function syncScoresFromGroups() {
   const scores : Array<UTSJSONObject> = []
   for (let i = 0; i < groupResults.value.length; i++) {
     const g = groupResults.value[i]
-    scores.push({ name: g['name'] as string, score: 0, color: g['color'] as string } as UTSJSONObject)
+    const groupId = (g['groupId'] as string) || 'group_' + (i + 1)
+    scores.push({
+      groupId,
+      name: g['name'] as string,
+      score: (g['score'] as number) || ((liveStore.scores[groupId] as number) || 0),
+      color: g['color'] as string
+    } as UTSJSONObject)
   }
   teamScores.value = scores
+}
+
+function confirmGrouping() {
+  if (groupResults.value.length === 0) {
+    uni.showToast({ title: '请先生成分组', icon: 'none' })
+    return
+  }
+  isGrouped.value = true
+  syncScoresFromGroups()
+  groupSheet.value = false
 }
 
 function adjustGroupCount(delta : number) {
@@ -361,33 +520,287 @@ function adjustGroupCount(delta : number) {
   }
 }
 
-function changeScore(idx : number, delta : number) {
+async function changeScore(idx : number, delta : number) {
+  if (idx < 0 || idx >= teamScores.value.length) return
   const currentScore = (teamScores.value[idx]['score'] as number) || 0
-  teamScores.value[idx]['score'] = Math.max(0, currentScore + delta)
-}
-
-function resetScores() {
-  for (let i = 0; i < teamScores.value.length; i++) {
-    teamScores.value[i]['score'] = 0
+  const nextScore = Math.max(0, currentScore + delta)
+  const groupId = teamScores.value[idx]['groupId'] as string
+  teamScores.value[idx]['score'] = nextScore
+  try {
+    await liveStore.updateScore({ groupId, score: nextScore } as UTSJSONObject)
+    syncGroupResultsFromStore()
+    syncScoresFromGroups()
+  } catch (e : unknown) {
+    teamScores.value[idx]['score'] = currentScore
+    uni.showToast({ title: e instanceof Error ? e.message : '更新积分失败', icon: 'none' })
   }
 }
 
-function startPick() {
+async function resetScores() {
+  for (let i = 0; i < teamScores.value.length; i++) {
+    teamScores.value[i]['score'] = 0
+    const groupId = teamScores.value[i]['groupId'] as string
+    try {
+      await liveStore.updateScore({ groupId, score: 0 } as UTSJSONObject)
+    } catch (_e : unknown) {
+      uni.showToast({ title: '重置积分失败', icon: 'none' })
+      return
+    }
+  }
+  syncGroupResultsFromStore()
+  syncScoresFromGroups()
+}
+
+function resetPickHistory() {
+  pickedParticipantIds.value = []
+  pickResult.value = ''
+  uni.showToast({ title: '已重置抽取记录', icon: 'none' })
+}
+
+async function startPick() {
   isPicking.value = true
   pickResult.value = ''
-  setTimeout(() => {
-    const names : Array<string> = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十']
-    const idx = Math.floor(Math.random() * names.length)
-    pickResult.value = names[idx]
+  if (pickTab.value === 'topic') {
+    setTimeout(() => {
+      const topics : Array<string> = ['客户沟通', '团队协作', '临场反应', '角色互换', '复盘提问']
+      const idx = Math.floor(Math.random() * topics.length)
+      pickResult.value = topics[idx]
+      isPicking.value = false
+    }, 500)
+    return
+  }
+  try {
+    if (liveStore.participants.length === 0) {
+      await refreshCheckins(false)
+    }
+    const payload = {} as UTSJSONObject
+    if (!allowRepeatPick.value && pickedParticipantIds.value.length > 0) {
+      payload['excludeIds'] = pickedParticipantIds.value
+    }
+    const result = await liveStore.randomPick(payload)
+    pickResult.value = (result['name'] as string) || '匿名参与者'
+    const pickedId = (result['id'] as string) || ''
+    if (pickedId && !allowRepeatPick.value && pickedParticipantIds.value.indexOf(pickedId) === -1) {
+      pickedParticipantIds.value.push(pickedId)
+    }
+  } catch (_e : unknown) {
+    const message = !allowRepeatPick.value && pickedParticipantIds.value.length > 0 ? '本轮已抽完，可开启重复抽取' : '没有可抽取的已签到参与者'
+    uni.showToast({ title: message, icon: 'none' })
+  } finally {
     isPicking.value = false
-  }, 1500)
+  }
+}
+
+function getInteractionSession(type : string) : UTSJSONObject | null {
+  if (!type) return null
+  const session = interactionSessions.value[type] as UTSJSONObject | null
+  return session || null
+}
+
+function getInteractionTitle(type : string) : string {
+  if (type === 'vote') return '投票互动'
+  if (type === 'promise') return '承诺互动'
+  return '词云互动'
+}
+
+function setInteractionSession(type : string, session : UTSJSONObject) {
+  const next = { ...interactionSessions.value }
+  next[type] = session
+  interactionSessions.value = next
+}
+
+function applyInteractionStats(data : UTSJSONObject) {
+  const type = (data['type'] as string) || interactType.value
+  if (type === 'wordcloud') {
+    wordcloudItems.value = (data['wordcloud'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>
+  } else if (type === 'vote') {
+    voteOptions.value = (data['options'] as Array<UTSJSONObject>) || voteOptions.value
+  } else if (type === 'promise') {
+    const submissions = (data['submissions'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>
+    const nextItems : Array<string> = []
+    for (let i = submissions.length - 1; i >= 0; i--) {
+      const content = submissions[i]['content'] as string
+      if (content) nextItems.push(content)
+    }
+    promiseItems.value = nextItems
+  }
+}
+
+async function ensureInteraction(type : string) : Promise<UTSJSONObject | null> {
+  const current = getInteractionSession(type)
+  if (current) return current
+  if (!liveStore.sessionId) {
+    uni.showToast({ title: '请先开始培训', icon: 'none' })
+    return null
+  }
+  interactionLoading.value = true
+  try {
+    const payload = {
+      sessionId: liveStore.sessionId,
+      type,
+      title: getInteractionTitle(type),
+      options: type === 'vote' ? voteOptions.value : [] as Array<UTSJSONObject>
+    } as UTSJSONObject
+    const result = await interactionApi.createInteraction(payload)
+    setInteractionSession(type, result)
+    applyInteractionStats(result)
+    return result
+  } catch (_e : unknown) {
+    return null
+  } finally {
+    interactionLoading.value = false
+  }
+}
+
+async function openInteractType(type : string) {
+  interactType.value = type
+  const result = await ensureInteraction(type)
+  if (result) {
+    startInteractionPolling()
+  }
+}
+
+function leaveInteractDetail() {
+  interactType.value = ''
+  stopInteractionPolling()
+}
+
+async function pollInteractionStats() {
+  const session = activeInteraction.value
+  const interactionId = (session?.['interactionId'] as string) || (session?.['id'] as string) || ''
+  if (!interactionId) return
+  try {
+    const result = await interactionApi.getInteractionStats(interactionId)
+    applyInteractionStats(result)
+  } catch (e : unknown) {
+    console.log('[live.interaction.stats]', e)
+  }
+}
+
+function startInteractionPolling() {
+  stopInteractionPolling()
+  pollInteractionStats()
+  interactionStatsTimer = setInterval(() => {
+    pollInteractionStats()
+  }, 3000)
+}
+
+function stopInteractionPolling() {
+  if (interactionStatsTimer) {
+    clearInterval(interactionStatsTimer)
+    interactionStatsTimer = null
+  }
 }
 
 function playSound(key : string) {
   activeSound.value = key
+  const item = soundList.find((sound : UTSJSONObject) : boolean => (sound['key'] as string) === key)
+  const name = (item?.['name'] as string) || '音效'
+  const src = (item?.['src'] as string) || ''
+  let played = false
+  try {
+    if (activeSoundAudio) {
+      activeSoundAudio.stop()
+      activeSoundAudio.destroy()
+      activeSoundAudio = null
+    }
+    if (src && typeof uni.createInnerAudioContext === 'function') {
+      const audio = uni.createInnerAudioContext()
+      activeSoundAudio = audio
+      audio.src = src
+      audio.onError(() => {
+        try {
+          uni.vibrateShort({ type: 'light' })
+        } catch (_e : unknown) {}
+      })
+      audio.onEnded(() => {
+        if (activeSoundAudio === audio) {
+          activeSoundAudio.destroy()
+          activeSoundAudio = null
+        }
+      })
+      audio.play()
+      played = true
+    }
+  } catch (_e : unknown) {
+    played = false
+  }
+  if (!played) {
+    try {
+      uni.vibrateShort({ type: 'light' })
+    } catch (_e : unknown) {}
+  }
+  uni.showToast({ title: (played ? '已播放' : '已触发') + name, icon: 'none' })
   setTimeout(() => {
     activeSound.value = ''
   }, 500)
+}
+
+async function addWordcloudItem() {
+  const word = wordcloudInput.value.trim()
+  if (!word) return
+  const session = await ensureInteraction('wordcloud')
+  if (!session) return
+  try {
+    await interactionApi.submitInteraction({
+      interactionId: (session['interactionId'] as string) || (session['id'] as string),
+      code: session['joinCode'] as string,
+      content: word,
+      name: '培训师',
+      anonymous: false
+    } as UTSJSONObject)
+    wordcloudInput.value = ''
+    await pollInteractionStats()
+  } catch (_e : unknown) {
+  }
+}
+
+async function addVoteOption() {
+  const label = voteOptionInput.value.trim()
+  if (!label) return
+  voteOptions.value.push({ label, count: 0 } as UTSJSONObject)
+  voteOptionInput.value = ''
+  await saveVoteOptions()
+}
+
+async function changeVote(index : number, delta : number) {
+  if (index < 0 || index >= voteOptions.value.length) return
+  const current = (voteOptions.value[index]['count'] as number) || 0
+  voteOptions.value[index]['count'] = Math.max(0, current + delta)
+  await saveVoteOptions()
+}
+
+async function saveVoteOptions() {
+  const session = await ensureInteraction('vote')
+  if (!session) return
+  try {
+    const result = await interactionApi.updateInteraction({
+      interactionId: (session['interactionId'] as string) || (session['id'] as string),
+      options: voteOptions.value
+    } as UTSJSONObject)
+    setInteractionSession('vote', result)
+    applyInteractionStats(result)
+  } catch (_e : unknown) {
+  }
+}
+
+async function addPromiseItem() {
+  const content = promiseInput.value.trim()
+  if (!content) return
+  const session = await ensureInteraction('promise')
+  if (!session) return
+  try {
+    await interactionApi.submitInteraction({
+      interactionId: (session['interactionId'] as string) || (session['id'] as string),
+      code: session['joinCode'] as string,
+      content,
+      name: '培训师',
+      anonymous: false
+    } as UTSJSONObject)
+    promiseInput.value = ''
+    await pollInteractionStats()
+  } catch (_e : unknown) {
+  }
 }
 
 function toggleStandaloneTimer() {
@@ -486,7 +899,19 @@ watch(currentPhaseIndex, () => {
     timerInterval = null
   }
   timerSeconds.value = phaseDurationSeconds.value
-  doGrouping()
+})
+
+watch(interactSheet, (visible : boolean) => {
+  if (!visible) {
+    interactType.value = ''
+    stopInteractionPolling()
+  }
+})
+
+watch(interactType, (type : string) => {
+  if (!type) {
+    stopInteractionPolling()
+  }
 })
 
 onMounted(async () => {
@@ -527,6 +952,9 @@ onMounted(async () => {
     }
   }
   if (liveStore.sessionId) {
+    await refreshCheckins(false)
+    syncGroupResultsFromStore()
+    syncScoresFromGroups()
     try {
       const savedNotes = await noteApi.getNoteList(liveStore.sessionId)
       for (let i = savedNotes.length - 1; i >= 0; i--) {
@@ -555,6 +983,11 @@ onUnmounted(() => {
     clearInterval(standaloneInterval)
     standaloneInterval = null
   }
+  if (activeSoundAudio) {
+    activeSoundAudio.destroy()
+    activeSoundAudio = null
+  }
+  stopInteractionPolling()
 })
 </script>
 
@@ -627,13 +1060,22 @@ onUnmounted(() => {
       </view>
       <view class="checkin-qr">
         <view class="checkin-qr-icon-wrap">
-          <AppIcon name="stateQr" size="56rpx" />
+        <AppIcon name="stateQr" size="56rpx" />
+      </view>
+      <text class="checkin-qr-hint">参与者扫码签到</text>
+        <text class="checkin-qr-text">{{ checkinEntryPath || '请先开始培训' }}</text>
+      </view>
+      <view class="manual-checkin">
+        <input class="manual-checkin-input" v-model="manualCheckinName" placeholder="手动补录姓名" placeholder-class="input-placeholder" />
+        <view :class="['manual-checkin-btn', isLiveActionBusy ? 'manual-checkin-btn-disabled' : '']" @click="addManualCheckin">
+          <text class="manual-checkin-btn-text">{{ isLiveActionBusy ? '处理中' : '签到' }}</text>
         </view>
-        <text class="checkin-qr-hint">参与者扫码签到</text>
-        <text class="checkin-qr-text">参与者扫码后自动进入签到列表</text>
       </view>
       <view class="checkin-list-header">
         <text class="checkin-list-title">最近签到</text>
+      </view>
+      <view v-if="recentCheckins.length === 0" class="checkin-empty">
+        <text class="checkin-empty-text">暂无签到，扫码或手动补录后会显示在这里</text>
       </view>
       <view class="checkin-item" v-for="(item, idx) in recentCheckins" :key="idx">
         <view class="checkin-avatar">
@@ -655,9 +1097,6 @@ onUnmounted(() => {
         <view :class="['group-method-btn', { active: groupMethod === 'average' }]" @click="groupMethod = 'average'">
           <text class="group-method-text">按人数均分</text>
         </view>
-        <view :class="['group-method-btn', { active: groupMethod === 'free' }]" @click="groupMethod = 'free'">
-          <text class="group-method-text">自由分组</text>
-        </view>
         <view :class="['group-method-btn', { active: groupMethod === 'random' }]" @click="groupMethod = 'random'">
           <text class="group-method-text">随机分组</text>
         </view>
@@ -673,6 +1112,9 @@ onUnmounted(() => {
         </view>
       </view>
       <text class="sheet-label">分组结果</text>
+      <view v-if="groupResults.length === 0" class="group-empty">
+        <text class="group-empty-text">已签到 {{ checkinCount }} 人，点击生成分组后显示结果</text>
+      </view>
       <view class="group-result-item" v-for="(item, idx) in groupResults" :key="idx">
         <view class="group-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
         <text class="group-result-name">{{ item['name'] as string }}</text>
@@ -681,9 +1123,9 @@ onUnmounted(() => {
       <template #footer>
         <view class="sheet-footer-row">
           <view class="sheet-footer-btn sheet-footer-btn-secondary" @click="doGrouping()">
-            <text class="sheet-footer-btn-text-secondary">重新分组</text>
+            <text class="sheet-footer-btn-text-secondary">生成分组</text>
           </view>
-          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="isGrouped = true; syncScoresFromGroups(); groupSheet = false">
+          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="confirmGrouping">
             <text class="sheet-footer-btn-text">确认分组</text>
           </view>
         </view>
@@ -716,7 +1158,7 @@ onUnmounted(() => {
         </view>
       </view>
       <template #footer>
-        <view class="sheet-footer-btn sheet-footer-btn-danger" @click="resetScores">
+        <view v-if="isGrouped" class="sheet-footer-btn sheet-footer-btn-danger sheet-footer-btn-contained" @click="resetScores">
           <text class="sheet-footer-btn-text">重置积分</text>
         </view>
       </template>
@@ -733,6 +1175,19 @@ onUnmounted(() => {
         <view :class="['pick-tab', { active: pickTab === 'topic' }]" @click="pickTab = 'topic'">
           <text class="pick-tab-text">抽题目</text>
         </view>
+      </view>
+      <view v-if="pickTab !== 'topic'" class="pick-repeat-row" @click="allowRepeatPick = !allowRepeatPick">
+        <view :class="['pick-switch', { active: allowRepeatPick }]">
+          <view class="pick-switch-dot"></view>
+        </view>
+        <view class="pick-repeat-copy">
+          <text class="pick-repeat-title">允许重复抽取</text>
+          <text class="pick-repeat-desc">{{ allowRepeatPick ? '每次都从全部已签到参与者中抽取' : '默认排除本轮已经抽中过的人' }}</text>
+        </view>
+      </view>
+      <view v-if="pickedCountText" class="pick-history-row">
+        <text class="pick-history-text">{{ pickedCountText }}</text>
+        <text class="pick-history-reset" @click.stop="resetPickHistory">重置</text>
       </view>
       <view class="pick-action-area">
         <view v-if="!isPicking && !pickResult" class="pick-start-btn" @click="startPick">
@@ -754,17 +1209,17 @@ onUnmounted(() => {
 
     <HalfSheet :visible="interactSheet" size="large" title="互动工具" @update:visible="interactSheet = $event">
       <view v-if="!interactType" class="interact-options">
-        <view class="interact-card" @click="interactType = 'wordcloud'">
+        <view class="interact-card" @click="openInteractType('wordcloud')">
           <AppIcon name="stateCloud" size="36rpx" />
           <text class="interact-card-name">词云</text>
           <text class="interact-card-desc">参与者提交关键词，实时生成词云</text>
         </view>
-        <view class="interact-card" @click="interactType = 'vote'">
+        <view class="interact-card" @click="openInteractType('vote')">
           <AppIcon name="stateChart" size="36rpx" />
           <text class="interact-card-name">投票</text>
           <text class="interact-card-desc">发起实时投票，收集参与者意见</text>
         </view>
-        <view class="interact-card" @click="interactType = 'promise'">
+        <view class="interact-card" @click="openInteractType('promise')">
           <AppIcon name="statePromise" size="36rpx" />
           <text class="interact-card-name">承诺</text>
           <text class="interact-card-desc">参与者做出承诺，增强行动意愿</text>
@@ -776,12 +1231,36 @@ onUnmounted(() => {
             <AppIcon name="stateCloud" size="28rpx" />
             <text class="interact-detail-title">词云互动</text>
           </view>
-          <view class="interact-back" @click="interactType = ''">
+          <view class="interact-back" @click="leaveInteractDetail">
             <text class="interact-back-text">返回</text>
           </view>
         </view>
-        <view class="interact-placeholder">
-          <text class="interact-placeholder-text">参与者扫码参与词云互动</text>
+        <view class="interact-entry">
+          <view class="interact-entry-icon">
+            <AppIcon name="stateQr" size="34rpx" />
+          </view>
+          <view class="interact-entry-info">
+            <text class="interact-entry-title">参与者扫码或打开入口提交</text>
+            <text class="interact-entry-path">{{ interactionLoading ? '正在生成入口...' : interactionPath }}</text>
+          </view>
+          <view class="interact-entry-code">
+            <text class="interact-entry-code-text">{{ interactionJoinCode }}</text>
+          </view>
+        </view>
+        <view class="interact-input-row">
+          <input class="interact-input" v-model="wordcloudInput" placeholder="输入参与者关键词" placeholder-class="input-placeholder" />
+          <view class="interact-add-btn" @click="addWordcloudItem">
+            <text class="interact-add-text">添加</text>
+          </view>
+        </view>
+        <view v-if="wordcloudItems.length === 0" class="interact-placeholder">
+          <text class="interact-placeholder-text">等待参与者提交，也可由培训师手动补录</text>
+        </view>
+        <view v-else class="wordcloud-list">
+          <view class="wordcloud-chip" v-for="(item, idx) in wordcloudItems" :key="idx">
+            <text class="wordcloud-word">{{ item['word'] as string }}</text>
+            <text class="wordcloud-count">{{ item['count'] as number }}</text>
+          </view>
         </view>
       </view>
       <view v-if="interactType === 'vote'" class="interact-detail">
@@ -790,12 +1269,41 @@ onUnmounted(() => {
             <AppIcon name="stateChart" size="28rpx" />
             <text class="interact-detail-title">投票互动</text>
           </view>
-          <view class="interact-back" @click="interactType = ''">
+          <view class="interact-back" @click="leaveInteractDetail">
             <text class="interact-back-text">返回</text>
           </view>
         </view>
-        <view class="interact-placeholder">
-          <text class="interact-placeholder-text">参与者扫码参与投票</text>
+        <view class="interact-entry">
+          <view class="interact-entry-icon">
+            <AppIcon name="stateQr" size="34rpx" />
+          </view>
+          <view class="interact-entry-info">
+            <text class="interact-entry-title">参与者扫码或打开入口投票</text>
+            <text class="interact-entry-path">{{ interactionLoading ? '正在生成入口...' : interactionPath }}</text>
+          </view>
+          <view class="interact-entry-code">
+            <text class="interact-entry-code-text">{{ interactionJoinCode }}</text>
+          </view>
+        </view>
+        <view class="interact-input-row">
+          <input class="interact-input" v-model="voteOptionInput" placeholder="新增投票选项" placeholder-class="input-placeholder" />
+          <view class="interact-add-btn" @click="addVoteOption">
+            <text class="interact-add-text">添加</text>
+          </view>
+        </view>
+        <view class="vote-list">
+          <view class="vote-item" v-for="(item, idx) in voteOptions" :key="idx">
+            <text class="vote-label">{{ item['label'] as string }}</text>
+            <view class="vote-controls">
+              <view class="vote-btn" @click="changeVote(idx, -1)">
+                <text class="vote-btn-text">−</text>
+              </view>
+              <text class="vote-count">{{ item['count'] as number }}</text>
+              <view class="vote-btn vote-btn-plus" @click="changeVote(idx, 1)">
+                <text class="vote-btn-text">+</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
       <view v-if="interactType === 'promise'" class="interact-detail">
@@ -804,12 +1312,36 @@ onUnmounted(() => {
             <AppIcon name="statePromise" size="28rpx" />
             <text class="interact-detail-title">承诺互动</text>
           </view>
-          <view class="interact-back" @click="interactType = ''">
+          <view class="interact-back" @click="leaveInteractDetail">
             <text class="interact-back-text">返回</text>
           </view>
         </view>
-        <view class="interact-placeholder">
-          <text class="interact-placeholder-text">参与者扫码提交承诺</text>
+        <view class="interact-entry">
+          <view class="interact-entry-icon">
+            <AppIcon name="stateQr" size="34rpx" />
+          </view>
+          <view class="interact-entry-info">
+            <text class="interact-entry-title">参与者扫码或打开入口填写承诺</text>
+            <text class="interact-entry-path">{{ interactionLoading ? '正在生成入口...' : interactionPath }}</text>
+          </view>
+          <view class="interact-entry-code">
+            <text class="interact-entry-code-text">{{ interactionJoinCode }}</text>
+          </view>
+        </view>
+        <view class="interact-input-row">
+          <input class="interact-input" v-model="promiseInput" placeholder="记录一个行动承诺" placeholder-class="input-placeholder" />
+          <view class="interact-add-btn" @click="addPromiseItem">
+            <text class="interact-add-text">添加</text>
+          </view>
+        </view>
+        <view v-if="promiseItems.length === 0" class="interact-placeholder">
+          <text class="interact-placeholder-text">等待参与者提交，也可由培训师手动补录</text>
+        </view>
+        <view v-else class="promise-list">
+          <view class="promise-item" v-for="(item, idx) in promiseItems" :key="idx">
+            <text class="promise-index">{{ idx + 1 }}</text>
+            <text class="promise-text">{{ item }}</text>
+          </view>
         </view>
       </view>
     </HalfSheet>
@@ -1151,12 +1683,19 @@ onUnmounted(() => {
   gap: 20rpx;
 }
 .sheet-footer-btn {
-  height: 92rpx;
-  border-radius: 16rpx;
+  height: 84rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
+}
+.sheet-footer-btn-contained {
+  width: 100%;
+  max-width: 560rpx;
+  margin-left: auto;
+  margin-right: auto;
+  flex: none;
 }
 .sheet-footer-btn-primary {
   background-color: #4A7CF7;
@@ -1165,7 +1704,7 @@ onUnmounted(() => {
   background-color: #F5F5F5;
 }
 .sheet-footer-btn-danger {
-  background-color: #FF4D4F;
+  background-color: #FF5A5F;
 }
 .sheet-footer-btn-text {
   font-size: 28rpx;
@@ -1221,6 +1760,44 @@ onUnmounted(() => {
 .checkin-qr-text {
   font-size: 24rpx;
   color: #999999;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-all;
+}
+.manual-checkin {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.manual-checkin-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  background-color: #F6F7FB;
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.manual-checkin-btn {
+  width: 132rpx;
+  height: 80rpx;
+  border-radius: 18rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.manual-checkin-btn-disabled {
+  opacity: 0.6;
+}
+.manual-checkin-btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 .checkin-list-header {
   margin-bottom: 12rpx;
@@ -1229,6 +1806,24 @@ onUnmounted(() => {
   font-size: 26rpx;
   font-weight: 600;
   color: #666666;
+}
+.checkin-empty,
+.group-empty {
+  min-height: 112rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+.checkin-empty-text,
+.group-empty-text {
+  font-size: 26rpx;
+  color: #999999;
+  text-align: center;
+  line-height: 1.45;
 }
 .checkin-item {
   display: flex;
@@ -1467,6 +2062,68 @@ onUnmounted(() => {
   color: #4A7CF7;
   font-weight: 600;
 }
+.pick-repeat-row {
+  min-height: 92rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FE;
+  padding: 16rpx 18rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.pick-switch {
+  width: 76rpx;
+  height: 42rpx;
+  border-radius: 21rpx;
+  background-color: #D8DDE8;
+  padding: 4rpx;
+  margin-right: 18rpx;
+  box-sizing: border-box;
+}
+.pick-switch.active {
+  background-color: #4A7CF7;
+}
+.pick-switch-dot {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 17rpx;
+  background-color: #FFFFFF;
+}
+.pick-switch.active .pick-switch-dot {
+  margin-left: 34rpx;
+}
+.pick-repeat-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.pick-repeat-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.pick-repeat-desc {
+  font-size: 22rpx;
+  color: #8E8E93;
+}
+.pick-history-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+.pick-history-text {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.pick-history-reset {
+  font-size: 24rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
 .pick-action-area {
   display: flex;
   align-items: center;
@@ -1575,6 +2232,60 @@ onUnmounted(() => {
   font-size: 24rpx;
   color: #666666;
 }
+.interact-entry {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  background-color: #F6F8FF;
+  margin-bottom: 22rpx;
+}
+.interact-entry-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+.interact-entry-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.interact-entry-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.interact-entry-path {
+  font-size: 21rpx;
+  color: #8E8E93;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+.interact-entry-code {
+  min-width: 96rpx;
+  height: 54rpx;
+  border-radius: 14rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14rpx;
+  margin-left: 12rpx;
+}
+.interact-entry-code-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
 .interact-placeholder {
   height: 280rpx;
   border-width: 2rpx;
@@ -1588,6 +2299,132 @@ onUnmounted(() => {
 .interact-placeholder-text {
   font-size: 28rpx;
   color: #999999;
+}
+.interact-input-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+.interact-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 20rpx;
+  border-radius: 16rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #E5E5EA;
+  background-color: #FAFAFC;
+  font-size: 26rpx;
+  color: #1A1A2E;
+}
+.interact-add-btn {
+  height: 72rpx;
+  padding: 0 28rpx;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.interact-add-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.wordcloud-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.wordcloud-chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  background-color: #EEF2FF;
+}
+.wordcloud-word {
+  font-size: 26rpx;
+  color: #1A1A2E;
+  font-weight: 500;
+}
+.wordcloud-count {
+  min-width: 32rpx;
+  height: 32rpx;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 20rpx;
+  text-align: center;
+  line-height: 32rpx;
+}
+.vote-list,
+.promise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.vote-item,
+.promise-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx;
+  border-radius: 16rpx;
+  background-color: #F8F9FA;
+}
+.vote-label,
+.promise-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: #1A1A2E;
+}
+.vote-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14rpx;
+}
+.vote-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  background-color: #FFF0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vote-btn-plus {
+  background-color: #EEF2FF;
+}
+.vote-btn-text {
+  font-size: 30rpx;
+  color: #4A7CF7;
+  font-weight: 700;
+}
+.vote-count {
+  width: 48rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #1A1A2E;
+  font-weight: 700;
+}
+.promise-index {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  background-color: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  text-align: center;
+  line-height: 44rpx;
+  margin-right: 16rpx;
 }
 .sound-grid {
   display: flex;

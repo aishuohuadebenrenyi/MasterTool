@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from common import success, error, require_auth, get_db
 from common.errors import ErrorCode
-from common.validators import validate_object_id
+from common.validators import validate_object_id, validate_range
 from datetime import datetime
 import random
 
@@ -39,6 +39,10 @@ def main(event, context):
 
     if action == 'create':
         group_count = data.get('groupCount', 2)
+        valid, msg = validate_range(group_count, 2, 20, '分组数量')
+        if not valid:
+            return error(msg, ErrorCode.PARAM_ERROR, 400)
+        group_count = int(float(group_count))
         if group_count < 2:
             return error('分组数量至少为2', ErrorCode.PARAM_ERROR, 400)
 
@@ -52,7 +56,8 @@ def main(event, context):
             groups.append({
                 'groupId': f'group_{i + 1}',
                 'groupName': f'第{i + 1}组',
-                'members': []
+                'members': [],
+                'score': 0
             })
 
         for idx, p in enumerate(participants):
@@ -68,7 +73,7 @@ def main(event, context):
                 {'_id': ObjectId(session_id)},
                 {'$set': {'groups': groups, 'updatedAt': datetime.utcnow()}}
             )
-            return success(groups)
+            return success({'groups': groups})
         except Exception as e:
             return error(f'分组失败: {str(e)}', ErrorCode.DB_ERROR, 500)
 
@@ -82,7 +87,7 @@ def main(event, context):
                 {'_id': ObjectId(session_id)},
                 {'$set': {'groups': groups, 'updatedAt': datetime.utcnow()}}
             )
-            return success(groups)
+            return success({'groups': groups})
         except Exception as e:
             return error(f'更新分组失败: {str(e)}', ErrorCode.DB_ERROR, 500)
 

@@ -10,7 +10,9 @@ import {
   REVIEW_METHOD_LABELS,
   LIVE_PHASES,
   TODO_TYPES,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  normalizePlanType,
+  getPlanTypeLabel
 } from '../../__uts_mirror__/utils/constants'
 
 describe('PLAN_STATUS', () => {
@@ -126,6 +128,12 @@ describe('PLAN_TYPE_LABELS completeness', () => {
   it('LECTURE type has correct label', () => {
     expect(PLAN_TYPES.LECTURE).toBe('lecture')
     expect(PLAN_TYPE_LABELS[PLAN_TYPES.LECTURE]).toBe('讲座/授课')
+  })
+
+  it('normalizes Chinese labels to canonical type codes', () => {
+    expect(normalizePlanType('即兴训练')).toBe('improv_training')
+    expect(normalizePlanType('团队建设')).toBe('teambuilding')
+    expect(getPlanTypeLabel('improv_training')).toBe('即兴培训')
   })
 })
 

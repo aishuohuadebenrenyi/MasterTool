@@ -2,22 +2,21 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePlanStore } from '../../stores/plan'
 import { useActivityStore } from '../../stores/activity'
+import { useUserStore } from '../../stores/user'
 import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import SearchBar from '../../components/SearchBar.uvue'
 import { PLAN_STATUS_LABELS, getPlanTypeLabel, ACTIVITY_SCENE_LABELS } from '../../utils/constants'
 import { calcNavBarInfo } from '../../utils/navbar'
-import { getDesktopMaxWidth } from '../../utils/viewport'
+import { getDesktopMaxWidth, rpxToPx } from '../../utils/viewport'
 
 const planStore = usePlanStore()
 const activityStore = useActivityStore()
+const userStore = useUserStore()
 
 const navBarInfo = calcNavBarInfo()
-const statusBarHeight = navBarInfo['statusBarHeight'] as number
 const tabContentTopOffset = navBarInfo['tabContentTopOffset'] as number
-const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
-const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const prepareHeaderHeight = tabContentTopOffset + 88
+const prepareHeaderHeight = tabContentTopOffset + rpxToPx(84)
 const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
 const activeTab = ref<string>('plans')
@@ -71,8 +70,13 @@ const filteredActivities = computed(() => {
   return list
 })
 
+const personalTemplateList = computed<Array<UTSJSONObject>>(() => {
+  return planStore.plans.filter((plan : UTSJSONObject) : boolean => (plan['isPersonalTemplate'] as boolean) === true)
+})
+
 function switchTab(tab : string) {
   activeTab.value = tab
+  if (!userStore.isLoggedIn) return
   if (tab === 'plans' && planStore.plans.length === 0) {
     planStore.fetchPlans()
   } else if (tab === 'activities' && activityStore.activities.length === 0) {
@@ -90,6 +94,14 @@ function goPlanDetail(plan : UTSJSONObject) {
   }
 }
 
+function getPlanSourceLabel(plan : UTSJSONObject) : string {
+  const source = (plan['source'] as string) || ''
+  if ((plan['isPersonalTemplate'] as boolean) || source === 'personal_template') return '个人模板'
+  if (source === 'quick_start') return '快速开课'
+  if (plan['isTemplateInstance'] as boolean) return '模板生成'
+  return ''
+}
+
 const showTemplateSelect = ref<boolean>(false)
 
 const templateList : Array<UTSJSONObject> = [
@@ -100,6 +112,10 @@ const templateList : Array<UTSJSONObject> = [
 ]
 
 function goPlanCreate() {
+  if (!userStore.isLoggedIn) {
+    uni.showToast({ title: '请先登录后创建方案', icon: 'none' })
+    return
+  }
   showTemplateSelect.value = true
 }
 
@@ -140,16 +156,26 @@ function getTemplatePhases(key : string) : Array<UTSJSONObject> {
 }
 
 async function createFromTemplate(tpl : UTSJSONObject) {
+  if (!userStore.isLoggedIn) {
+    uni.showToast({ title: '请先登录后创建方案', icon: 'none' })
+    return
+  }
   showTemplateSelect.value = false
-  const key = tpl['key'] as string
-  const name = '新' + (tpl['name'] as string) + '方案'
+  const key = (tpl['key'] as string) || (tpl['type'] as string)
+  const sourceName = (tpl['name'] as string) || '个人模板'
+  const name = sourceName.endsWith('模板') ? sourceName.substring(0, sourceName.length - 2) + '方案' : '新' + sourceName + '方案'
+  const templatePhases = (tpl['phases'] as Array<UTSJSONObject>) || getTemplatePhases(key)
   try {
     const result = await planStore.createPlan({
       name: name,
       type: key,
       status: 'draft',
+      source: (tpl['isPersonalTemplate'] as boolean) ? 'personal_template_instance' : 'template',
+      templateId: (tpl['id'] as string) || key,
+      templateName: sourceName,
+      isTemplateInstance: true,
       people: 20,
-      phases: getTemplatePhases(key)
+      phases: templatePhases
     } as UTSJSONObject)
     const planId = (result as UTSJSONObject)['id'] as string
     uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${planId}` })
@@ -192,7 +218,7 @@ async function ensureActivitiesLoaded() {
   const list = await activityStore.fetchActivities()
   // 微信端联调阶段接口可能因为鉴权或域名校验拿不到数据；
   // 这里保留一份本地兜底，优先保证“活动库结构可用、交互可验证”。
-  if (list.length === 0) {
+  if (list.length === 0 && activityStore.error) {
     activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
     console.log('[prepare.ensureActivitiesLoaded]', 'use_mock_activities')
   }
@@ -271,11 +297,35 @@ function handleSwipeAction(action : string, activity : UTSJSONObject) {
   }
 }
 
-onMounted(() => {
-  planStore.fetchPlans()
-  ensureActivitiesLoaded().catch(() => {
-    activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
+async function handleLogin() {
+  try {
+    await userStore.loginWithWechat()
+    await loadPrepareData()
+    uni.showToast({ title: '登录成功', icon: 'success' })
+  } catch (e : unknown) {
+    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+  }
+}
+
+function loadPrepareData() : Promise<void> {
+  if (!userStore.isLoggedIn) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    planStore.fetchPlans().finally(() => {
+      ensureActivitiesLoaded().catch(() => {
+        activityStore.activities = [...mockActivities] as Array<UTSJSONObject>
+      }).finally(() => resolve())
+    })
   })
+}
+
+onMounted(() => {
+  loadPrepareData()
+})
+
+watch(() => userStore.isLoggedIn, (loggedIn : boolean) => {
+  if (loggedIn) {
+    loadPrepareData()
+  }
 })
 
 watch(() => showTemplateSelect.value, (visible : boolean) => {
@@ -294,7 +344,7 @@ onUnmounted(() => {
 <template>
   <view class="page app-page">
     <view class="nav-bar-fixed" :style="{ minHeight: prepareHeaderHeight + 'px' }">
-      <view class="nav-bar-shell" :style="{ paddingTop: tabContentTopOffset + 'px', paddingLeft: navHorizontalPadding + 'px', paddingRight: rightSafeWidth + 'px', maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+      <view class="nav-bar-shell" :style="{ paddingTop: tabContentTopOffset + 'px', maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
         <view class="sub-tab-bar app-pill-track" :style="{ maxWidth: pageMaxWidth > 0 ? Math.min(pageMaxWidth, 760) + 'px' : 'none' }">
           <view class="sub-tab app-pill-item" :class="{ 'sub-tab-active app-pill-item-active': activeTab === 'plans' }" @click="switchTab('plans')">
             <text class="sub-tab-text" :class="{ 'sub-tab-text-active': activeTab === 'plans' }">我的方案</text>
@@ -307,7 +357,20 @@ onUnmounted(() => {
     </view>
     <view :style="{ height: prepareHeaderHeight + 'px' }"></view>
 
-    <view class="content app-page-content" v-if="activeTab === 'plans'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+    <view class="content app-page-content" v-if="!userStore.isLoggedIn" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+      <view class="login-empty app-card-surface">
+        <view class="app-empty-icon-wrap">
+          <AppIcon name="stateDocument" preset="hero" />
+        </view>
+        <text class="app-empty-title">登录后查看备课内容</text>
+        <text class="app-empty-subtitle">方案、活动收藏和开课记录会跟随账号同步</text>
+        <view class="login-empty-btn app-action-button" @click="handleLogin">
+          <text class="app-action-button-text">微信登录</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="content app-page-content" v-if="userStore.isLoggedIn && activeTab === 'plans'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="section-header-row app-section-action-row">
         <text></text>
         <text class="section-action app-section-action-text" @click="goPlanCreate">+ 新建方案</text>
@@ -333,6 +396,9 @@ onUnmounted(() => {
         <view class="plan-card app-card-surface" v-for="plan in filteredPlans" :key="plan['id']" @click="goPlanDetail(plan)">
           <view class="plan-card-row">
             <text class="plan-name">{{ plan['name'] as string }}</text>
+            <view v-if="getPlanSourceLabel(plan)" class="plan-source-badge">
+              <text class="plan-source-badge-text">{{ getPlanSourceLabel(plan) }}</text>
+            </view>
             <view class="plan-type-badge">
               <text class="plan-type-badge-text">{{ getPlanTypeLabel(plan['type'] as string) }}</text>
             </view>
@@ -363,7 +429,7 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <view class="content app-page-content" v-if="activeTab === 'activities'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+    <view class="content app-page-content" v-if="userStore.isLoggedIn && activeTab === 'activities'" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="section-header-row app-section-action-row">
         <text></text>
         <text class="section-action app-section-action-text" @click="uni.navigateTo({ url: '/pages/plan/ActivityEdit' })">+ 新增活动</text>
@@ -450,6 +516,24 @@ onUnmounted(() => {
           <text class="template-modal-tools">工具：{{ tpl['toolsLabel'] }}</text>
         </view>
       </view>
+      <view v-if="personalTemplateList.length > 0" class="template-modal-section">
+        <text class="template-modal-section-title">个人模板</text>
+      </view>
+      <view class="template-modal-item" v-for="tpl in personalTemplateList" :key="tpl['id'] as string" @click="createFromTemplate(tpl)">
+        <view class="template-modal-icon-box">
+          <AppIcon name="stateFavorite" size="36rpx" />
+        </view>
+        <view class="template-modal-info">
+          <view class="template-modal-name-row">
+            <text class="template-modal-name">{{ tpl['name'] as string }}</text>
+            <view class="template-modal-tag">
+              <text class="template-modal-tag-text">个人</text>
+            </view>
+          </view>
+          <text class="template-modal-desc">{{ getPlanTypeLabel(tpl['type'] as string) }} · {{ ((tpl['phases'] as Array<UTSJSONObject>) || []).length }} 个环节</text>
+          <text class="template-modal-tools">由历史方案另存生成</text>
+        </view>
+      </view>
     </HalfSheet>
   </view>
 </template>
@@ -466,6 +550,13 @@ onUnmounted(() => {
   right: 0;
   z-index: 999;
   background-color: #F5F5F7;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  box-sizing: border-box;
 }
 .nav-bar-shell {
   width: 100%;
@@ -519,6 +610,19 @@ onUnmounted(() => {
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
+}
+.login-empty {
+  min-height: 420rpx;
+  padding: 64rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+.login-empty-btn {
+  margin-top: 32rpx;
 }
 .search-block {
   margin-bottom: 20rpx;
@@ -596,6 +700,18 @@ onUnmounted(() => {
   border-radius: 16rpx;
   background-color: rgba(74, 124, 247, 0.1);
   flex-shrink: 0;
+}
+.plan-source-badge {
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+  background-color: #F0FFF4;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+.plan-source-badge-text {
+  font-size: 21rpx;
+  color: #25A244;
+  font-weight: 600;
 }
 .plan-type-badge-text {
   font-size: 22rpx;
@@ -799,6 +915,8 @@ onUnmounted(() => {
 .popup-body { flex: 1; padding: 24rpx 40rpx 40rpx; padding-bottom: calc(40rpx + env(safe-area-inset-bottom) + 24rpx); overflow-y: auto; }
 .template-modal-item { display: flex; flex-direction: row; align-items: flex-start; padding: 24rpx; background-color: #F8F9FE; border-radius: 16rpx; margin-bottom: 16rpx; }
 .template-modal-item:last-child { margin-bottom: 0; }
+.template-modal-section { padding: 16rpx 4rpx 12rpx; }
+.template-modal-section-title { font-size: 24rpx; color: #8E8E93; font-weight: 600; }
 .template-modal-icon-box { width: 72rpx; height: 72rpx; border-radius: 16rpx; background-color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-right: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); flex-shrink: 0; }
 .template-modal-icon { font-size: 36rpx; }
 .template-modal-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }

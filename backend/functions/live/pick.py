@@ -44,6 +44,13 @@ def main(event, context):
         if not participants:
             return error('该分组没有已签到的参与者', ErrorCode.NOT_FOUND, 404)
 
+    exclude_ids = data.get('excludeIds', [])
+    if isinstance(exclude_ids, list) and exclude_ids:
+        exclude_set = set([str(item) for item in exclude_ids])
+        participants = [p for p in participants if str(p.get('_id')) not in exclude_set]
+        if not participants:
+            return error('没有可抽取的参与者', ErrorCode.NOT_FOUND, 404)
+
     picked = random.choice(participants)
 
     from models.participant import Participant

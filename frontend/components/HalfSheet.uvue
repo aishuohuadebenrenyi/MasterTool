@@ -51,7 +51,7 @@ const safeAreaBottom = ref<number>(getSafeAreaBottom())
 const viewportHeight = ref<number>(getViewportHeight())
 const maxWidth = getDesktopMaxWidth()
 
-const resolvedMaxHeight = computed<string>(() => {
+const resolvedHeight = computed<string>(() => {
   if (props.height) {
     return props.height
   }
@@ -67,8 +67,9 @@ const resolvedMaxHeight = computed<string>(() => {
   }
 
   const preferred = Math.round(viewportHeight.value * ratio)
-  const limited = Math.min(preferred, viewportHeight.value - 24)
-  return Math.max(limited, minHeight) + 'px'
+  const targetHeight = Math.max(preferred, minHeight)
+  const limited = Math.min(targetHeight, viewportHeight.value - 24)
+  return Math.max(limited, 240) + 'px'
 })
 
 const hasFooter = computed<boolean>(() => slots.footer != null)
@@ -100,7 +101,7 @@ function handleOverlayClick() {
   <view v-if="showOverlay" class="half-sheet-overlay" @click="handleOverlayClick">
     <view
       :class="['half-sheet-content', { active: showContent }]"
-      :style="{ maxHeight: resolvedMaxHeight, maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }"
+      :style="{ height: resolvedHeight, maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }"
       @click.stop
     >
       <view v-if="showHandle" class="sheet-handle"></view>
@@ -137,8 +138,9 @@ function handleOverlayClick() {
   background: rgba(15, 23, 42, 0.38);
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
 }
 .half-sheet-content {
   width: 100%;
@@ -164,6 +166,7 @@ function handleOverlayClick() {
 }
 .sheet-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
@@ -172,6 +175,7 @@ function handleOverlayClick() {
 }
 .sheet-title {
   flex: 1;
+  min-width: 0;
   font-size: 32rpx;
   font-weight: 600;
   color: #1A1A2E;
@@ -181,6 +185,7 @@ function handleOverlayClick() {
 }
 .sheet-header-right {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: flex-end;
   gap: 12rpx;

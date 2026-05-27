@@ -15,6 +15,7 @@ const npsScore = ref<number>(0)
 const responseRate = ref<string>('0%')
 const allowAnonymous = ref<boolean>(true)
 const loading = ref<boolean>(false)
+const feedbackEntryPath = computed<string>(() => sessionId.value ? `/pages/participant/FeedbackSubmit?sessionId=${sessionId.value}` : '')
 
 const satisfactionData = ref<Array<UTSJSONObject>>([
   { star: 1, count: 1, color: '#FF3B30' },
@@ -128,7 +129,7 @@ onMounted(() => {
             <AppIcon name="phaseSummary" size="24rpx" />
             <text class="feedback-guide-title">如何收集参与者反馈</text>
           </view>
-          <text class="feedback-guide-step">1. 点击下方二维码，参与者扫码即可填写反馈</text>
+          <text class="feedback-guide-step">1. 展示下方入口，参与者扫码或打开入口即可填写反馈</text>
           <text class="feedback-guide-step">2. 参与者可自主选择是否匿名提交</text>
           <text class="feedback-guide-step">3. 反馈数据实时汇总，自动生成统计</text>
         </view>
@@ -139,9 +140,9 @@ onMounted(() => {
             <text class="feedback-qr-title">参与者反馈入口</text>
           </view>
           <view class="feedback-qr-placeholder">
-            <text class="feedback-qr-text">扫码反馈</text>
+            <text class="feedback-qr-text">{{ feedbackEntryPath || '暂无场次' }}</text>
           </view>
-          <text class="feedback-qr-hint">点击放大二维码 · 参与者扫码即可填写</text>
+          <text class="feedback-qr-hint">正式二维码图片接入后，此处展示小程序码</text>
           <view class="feedback-qr-stats-row">
             <text class="feedback-qr-stats">已收集 </text>
             <text class="feedback-qr-stats-bold">{{ feedbackCount }}</text>
@@ -277,6 +278,13 @@ onMounted(() => {
   color: $text-primary;
   margin-bottom: 12rpx;
 }
+.feedback-inline-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12rpx;
+}
 .feedback-guide-step {
   font-size: $font-size-sm;
   color: $text-secondary;
@@ -299,11 +307,11 @@ onMounted(() => {
   margin-bottom: 16rpx;
 }
 .feedback-qr-placeholder {
-  width: 240rpx;
-  height: 240rpx;
+  width: 100%;
+  min-height: 132rpx;
   background-color: $bg-secondary;
   border-radius: $radius-md;
-  border-width: 4rpx;
+  border-width: 2rpx;
   border-style: dashed;
   border-color: #D1D1D6;
   display: flex;
@@ -312,7 +320,11 @@ onMounted(() => {
   margin-bottom: 16rpx;
 }
 .feedback-qr-text {
-  font-size: 56rpx;
+  font-size: 23rpx;
+  color: $text-secondary;
+  text-align: center;
+  padding: 0 20rpx;
+  line-height: 1.45;
 }
 .feedback-qr-hint {
   font-size: $font-size-sm;

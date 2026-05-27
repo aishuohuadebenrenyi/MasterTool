@@ -47,6 +47,9 @@ functions:
       - apigw:
           path: /plan/confirm/{planId}
           method: post
+      - apigw:
+          path: /plan/save-template/{planId}
+          method: post
 
       - apigw:
           path: /activity/create
@@ -114,6 +117,22 @@ functions:
       - apigw:
           path: /feedback/list
           method: get
+
+      - apigw:
+          path: /interaction/create
+          method: post
+      - apigw:
+          path: /interaction/detail
+          method: get
+      - apigw:
+          path: /interaction/submit
+          method: post
+      - apigw:
+          path: /interaction/stats
+          method: get
+      - apigw:
+          path: /interaction/update
+          method: post
 
       - apigw:
           path: /note/list

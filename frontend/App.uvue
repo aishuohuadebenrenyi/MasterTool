@@ -23,6 +23,14 @@ export default {
         console.log('Skip dev auto-login:', API_BASE_URL || 'empty_base_url')
         return
       }
+      if (isMpWeixinRuntime()) {
+        userStore.loginWithWechat().then(() => {
+          console.log('WeChat silent login success')
+        }).catch((e) => {
+          console.log('WeChat silent login failed:', e)
+        })
+        return
+      }
       userStore.login({ code: 'dev_test', nickname: '张培训' } as UTSJSONObject).then(() => {
         console.log('Dev auto-login success')
       }).catch((e) => {

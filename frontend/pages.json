@@ -85,6 +85,27 @@
       }
     },
     {
+      "path": "pages/participant/InteractionSubmit",
+      "style": {
+        "navigationBarTitleText": "互动提交",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/participant/Checkin",
+      "style": {
+        "navigationBarTitleText": "签到",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/participant/FeedbackSubmit",
+      "style": {
+        "navigationBarTitleText": "提交反馈",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/mine/TrainingRecords",
       "style": {
         "navigationBarTitleText": "培训记录",
@@ -135,20 +156,20 @@
       {
         "pagePath": "pages/home/index",
         "text": "首页",
-        "iconPath": "static/tab-home.png",
-        "selectedIconPath": "static/tab-home-active.png"
+        "iconPath": "static/icons/icon-tab-home.png",
+        "selectedIconPath": "static/icons/icon-tab-home-active.png"
       },
       {
         "pagePath": "pages/prepare/index",
         "text": "备课",
-        "iconPath": "static/tab-prepare.png",
-        "selectedIconPath": "static/tab-prepare-active.png"
+        "iconPath": "static/icons/icon-tab-prepare.png",
+        "selectedIconPath": "static/icons/icon-tab-prepare-active.png"
       },
       {
         "pagePath": "pages/mine/index",
         "text": "我的",
-        "iconPath": "static/tab-mine.png",
-        "selectedIconPath": "static/tab-mine-active.png"
+        "iconPath": "static/icons/icon-tab-mine.png",
+        "selectedIconPath": "static/icons/icon-tab-mine-active.png"
       }
     ]
   }

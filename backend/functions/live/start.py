@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from common import success, error, require_auth, get_db
 from common.errors import ErrorCode
+from common.validators import validate_object_id
 from models.live_session import LiveSession
 from models.plan import Plan
 from datetime import datetime
@@ -24,6 +25,9 @@ def main(event, context):
     plan_id = data.get('planId', '')
     if not plan_id:
         return error('缺少方案ID', ErrorCode.PARAM_ERROR, 400)
+    valid, msg = validate_object_id(plan_id, '方案ID')
+    if not valid:
+        return error(msg, ErrorCode.PARAM_ERROR, 400)
 
     db = get_db()
     from bson import ObjectId

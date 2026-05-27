@@ -7,6 +7,7 @@ from functions.plan.delete import main as plan_delete
 from functions.plan.list import main as plan_list
 from functions.plan.detail import main as plan_detail
 from functions.plan.confirm import main as plan_confirm
+from functions.plan.save_template import main as plan_save_template
 
 from functions.activity.create import main as activity_create
 from functions.activity.update import main as activity_update
@@ -32,6 +33,12 @@ from functions.feedback.submit import main as feedback_submit
 from functions.feedback.stats import main as feedback_stats
 from functions.feedback.list import main as feedback_list
 
+from functions.interaction.create import main as interaction_create
+from functions.interaction.detail import main as interaction_detail
+from functions.interaction.submit import main as interaction_submit
+from functions.interaction.stats import main as interaction_stats
+from functions.interaction.update import main as interaction_update
+
 from functions.user.login import main as user_login
 from functions.user.profile import main as user_profile
 from functions.user.feedback import main as user_feedback
@@ -54,6 +61,7 @@ ROUTES = [
     (r'^/plan/list$', 'GET', plan_list),
     (r'^/plan/detail/([^/]+)$', 'GET', plan_detail),
     (r'^/plan/confirm/([^/]+)$', 'POST', plan_confirm),
+    (r'^/plan/save-template/([^/]+)$', 'POST', plan_save_template),
 
     (r'^/activity/create$', 'POST', activity_create),
     (r'^/activity/update/([^/]+)$', 'PUT', activity_update),
@@ -79,6 +87,12 @@ ROUTES = [
     (r'^/feedback/submit$', 'POST', feedback_submit),
     (r'^/feedback/stats$', 'GET', feedback_stats),
     (r'^/feedback/list$', 'GET', feedback_list),
+
+    (r'^/interaction/create$', 'POST', interaction_create),
+    (r'^/interaction/detail$', 'GET', interaction_detail),
+    (r'^/interaction/submit$', 'POST', interaction_submit),
+    (r'^/interaction/stats$', 'GET', interaction_stats),
+    (r'^/interaction/update$', 'POST', interaction_update),
 
     (r'^/note/list$', 'GET', note_list),
     (r'^/note/save$', 'POST', note_save),

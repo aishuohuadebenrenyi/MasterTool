@@ -6,21 +6,18 @@ import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import { PLAN_TYPES } from '../../utils/constants'
 import { calcNavBarInfo } from '../../utils/navbar'
-import { getDesktopMaxWidth, getSafeAreaBottom } from '../../utils/viewport'
+import { getDesktopMaxWidth, rpxToPx } from '../../utils/viewport'
 
 const planStore = usePlanStore()
 const userStore = useUserStore()
 
 const navBarInfo = calcNavBarInfo()
-const statusBarHeight = navBarInfo['statusBarHeight'] as number
-const contentTopOffset = navBarInfo['contentTopOffset'] as number
-const navHorizontalPadding = navBarInfo['navHorizontalPadding'] as number
-const rightSafeWidth = navBarInfo['rightSafeWidth'] as number
-const homeHeaderHeight = contentTopOffset + 120
-const safeAreaBottom = ref<number>(getSafeAreaBottom())
+const tabContentTopOffset = navBarInfo['tabContentTopOffset'] as number
+const homeHeaderHeight = tabContentTopOffset + rpxToPx(120)
 const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 
 const displayName = computed(() => userStore.displayName)
+const needsLogin = computed<boolean>(() => !userStore.isLoggedIn && !userStore.loading)
 
 const greetingText = computed(() => {
   const hour = new Date().getHours()
@@ -100,7 +97,24 @@ const filteredToolTags = computed(() => {
   })
 })
 
+async function handleLogin() {
+  try {
+    await userStore.loginWithWechat()
+    await planStore.fetchPlans()
+    uni.showToast({ title: '登录成功', icon: 'success' })
+  } catch (e : unknown) {
+    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+  }
+}
+
+function ensureLoggedIn() : boolean {
+  if (userStore.isLoggedIn) return true
+  uni.showToast({ title: '请先登录后使用', icon: 'none' })
+  return false
+}
+
 function openPlanSelect() {
+  if (!ensureLoggedIn()) return
   showPlanSelect.value = true
 }
 
@@ -109,6 +123,7 @@ function closePlanSelect() {
 }
 
 function selectFromMyPlans() {
+  if (!ensureLoggedIn()) return
   showPlanSelect.value = false
   uni.switchTab({ url: '/pages/prepare/index' })
 }
@@ -152,7 +167,7 @@ function openConfigEdit(key : string) {
     configEditOptions.splice(0, configEditOptions.length, '扫码签到', '手动签到', '混合签到')
   } else if (key === 'group') {
     configEditTitle.value = '分组方式'
-    configEditOptions.splice(0, configEditOptions.length, '按人数均分', '自由分组', '随机分组')
+    configEditOptions.splice(0, configEditOptions.length, '按人数均分', '随机分组')
   } else if (key === 'score') {
     configEditTitle.value = '积分模式'
     configEditOptions.splice(0, configEditOptions.length, '简化模式', '详细模式', '无积分')
@@ -211,6 +226,7 @@ function getTemplatePhases(key : string) : Array<UTSJSONObject> {
 }
 
 async function startLive() {
+  if (!ensureLoggedIn()) return
   showPrepConfirm.value = false
   try {
     let planId = selectedPlanId.value
@@ -218,6 +234,10 @@ async function startLive() {
       const draft = await planStore.createPlan({
         name: trainingName.value,
         type: selectedTemplate.value['id'] as string,
+        source: 'quick_start',
+        templateId: selectedTemplate.value['id'] as string,
+        templateName: selectedTemplate.value['name'] as string,
+        isTemplateInstance: true,
         people: Number(prepPeopleCount.value || peopleCount.value || '0'),
         phases: getTemplatePhases(selectedTemplate.value['id'] as string),
         prepConfig: {
@@ -242,10 +262,12 @@ async function startLive() {
 }
 
 function goReviewCenter() {
+  if (!ensureLoggedIn()) return
   uni.navigateTo({ url: '/pages/review/ReviewCenter' })
 }
 
 function handleTodoClick(action : string) {
+  if (!ensureLoggedIn()) return
   if (action === 'confirmed') {
     const confirmedPlan = planStore.confirmedPlans.length > 0 ? planStore.confirmedPlans[0] : null
     if (confirmedPlan) {
@@ -255,7 +277,8 @@ function handleTodoClick(action : string) {
       prepPeopleCount.value = String(confirmedPlan['people'] || 0)
       const prepConfig = (confirmedPlan['prepConfig'] as UTSJSONObject) || {} as UTSJSONObject
       checkInMethod.value = (prepConfig['checkinMode'] as string) || '扫码签到'
-      groupMethod.value = (prepConfig['groupMode'] as string) || '按人数均分'
+      const savedGroupMode = (prepConfig['groupMode'] as string) || '按人数均分'
+      groupMethod.value = savedGroupMode === '自由分组' ? '按人数均分' : savedGroupMode
       teamCount.value = String(prepConfig['groupCount'] || '待分组')
       scoreMode.value = (prepConfig['scoreMode'] as string) || '简化模式'
       showPrepConfirm.value = true
@@ -272,8 +295,20 @@ function handleTodoClick(action : string) {
   }
 }
 
+function loadHomeData() {
+  if (userStore.isLoggedIn) {
+    planStore.fetchPlans()
+  }
+}
+
 onMounted(() => {
-  planStore.fetchPlans()
+  loadHomeData()
+})
+
+watch(() => userStore.isLoggedIn, (loggedIn : boolean) => {
+  if (loggedIn) {
+    loadHomeData()
+  }
 })
 
 watch(() => showPlanSelect.value || showQuickCreate.value || showPrepConfirm.value || showConfigEdit.value, (visible : boolean) => {
@@ -291,7 +326,7 @@ onUnmounted(() => {
 
 <template>
   <view class="page">
-    <view class="nav-bar-fixed" :style="{ minHeight: homeHeaderHeight + 'px', paddingTop: contentTopOffset + 'px', paddingLeft: navHorizontalPadding + 'px', paddingRight: rightSafeWidth + 'px' }">
+    <view class="nav-bar-fixed" :style="{ minHeight: homeHeaderHeight + 'px', paddingTop: tabContentTopOffset + 'px' }">
       <view class="greeting-bar" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
         <view class="greeting-left">
           <view class="avatar-small">
@@ -303,6 +338,16 @@ onUnmounted(() => {
       </view>
     </view>
     <view :style="{ height: homeHeaderHeight + 'px' }"></view>
+
+    <view v-if="needsLogin" class="login-card" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+      <view class="login-card-copy">
+        <text class="login-card-title">登录后开始管理培训</text>
+        <text class="login-card-desc">同步方案、现场记录、反馈和复盘数据</text>
+      </view>
+      <view class="login-card-btn" @click="handleLogin">
+        <text class="login-card-btn-text">微信登录</text>
+      </view>
+    </view>
 
     <view class="scene-cards" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="scene-card-primary" @click="openPlanSelect">
@@ -497,6 +542,9 @@ onUnmounted(() => {
   right: 0;
   z-index: 999;
   background-color: #F5F5F7;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  box-sizing: border-box;
 }
 .nav-bar-content {
   display: flex;
@@ -549,6 +597,51 @@ onUnmounted(() => {
   color: #8E8E93;
   flex-shrink: 0;
   margin-left: 20rpx;
+}
+.login-card {
+  width: 100%;
+  margin: 0 auto 24rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 24rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  box-sizing: border-box;
+}
+.login-card-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.login-card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.login-card-desc {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+.login-card-btn {
+  height: 64rpx;
+  padding: 0 28rpx;
+  border-radius: 32rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.login-card-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 600;
 }
 .scene-cards {
   display: flex;

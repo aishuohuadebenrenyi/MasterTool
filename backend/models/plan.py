@@ -31,12 +31,32 @@ class Plan:
         'custom': TYPE_CUSTOM
     }
 
+    TYPE_LABEL_MAP = {
+        '企业培训': TYPE_CORPORATE,
+        '团建活动': TYPE_TEAMBUILDING,
+        '即兴演出': TYPE_IMPROV_SHOW,
+        '即兴培训': TYPE_IMPROV_TRAINING,
+        '即兴训练': TYPE_IMPROV_TRAINING,
+        '团队建设': TYPE_TEAMBUILDING,
+        '工作坊': TYPE_CORPORATE,
+        '讲座/授课': TYPE_CORPORATE,
+        '自定义': TYPE_CUSTOM
+    }
+
+    TYPE_LABELS = {
+        TYPE_CORPORATE: '企业培训',
+        TYPE_TEAMBUILDING: '团建活动',
+        TYPE_IMPROV_SHOW: '即兴演出',
+        TYPE_IMPROV_TRAINING: '即兴培训',
+        TYPE_CUSTOM: '自定义'
+    }
+
     # 已交付和已复盘的方案默认视为只读，避免现场结束后的方案被继续修改导致复盘上下文失真。
     READONLY_STATUSES = {STATUS_DELIVERED, STATUS_REVIEWED}
 
     @staticmethod
     def normalize_type(plan_type):
-        return Plan.LEGACY_TYPE_MAP.get(plan_type, plan_type or Plan.TYPE_CUSTOM)
+        return Plan.TYPE_LABEL_MAP.get(plan_type) or Plan.LEGACY_TYPE_MAP.get(plan_type, plan_type or Plan.TYPE_CUSTOM)
 
     @staticmethod
     def normalize_scenes(data):
@@ -90,6 +110,12 @@ class Plan:
             'reviewMethod': str(data.get('reviewMethod', '') or '').lower(),
             'reviewNotes': Plan.normalize_review_notes(data.get('reviewNotes')),
             'prepConfig': Plan.normalize_prep_config(data),
+            'source': data.get('source', 'manual'),
+            'templateId': data.get('templateId', ''),
+            'templateName': data.get('templateName', ''),
+            'isTemplateInstance': bool(data.get('isTemplateInstance', False)),
+            'isPersonalTemplate': bool(data.get('isPersonalTemplate', False)),
+            'templateSourcePlanId': data.get('templateSourcePlanId', ''),
             'sessionId': data.get('sessionId', ''),
             'createdAt': now,
             'updatedAt': now
@@ -111,6 +137,13 @@ class Plan:
         result['reviewNotes'] = Plan.normalize_review_notes(result.get('reviewNotes'))
         result['reviewMethod'] = str(result.get('reviewMethod', '') or '').lower()
         result['prepConfig'] = Plan.normalize_prep_config(result)
+        result['source'] = result.get('source', 'manual')
+        result['templateId'] = result.get('templateId', '')
+        result['templateName'] = result.get('templateName', '')
+        result['isTemplateInstance'] = bool(result.get('isTemplateInstance', False))
+        result['isPersonalTemplate'] = bool(result.get('isPersonalTemplate', False))
+        result['templateSourcePlanId'] = result.get('templateSourcePlanId', '')
+        result['typeLabel'] = Plan.TYPE_LABELS.get(result['type'], '自定义')
         if 'createdAt' in result:
             result['createdAt'] = result['createdAt'].isoformat() if isinstance(result['createdAt'], datetime) else result['createdAt']
         if 'updatedAt' in result:

@@ -19,6 +19,7 @@ from functions.plan.delete import main as plan_delete
 from functions.plan.list import main as plan_list
 from functions.plan.detail import main as plan_detail
 from functions.plan.confirm import main as plan_confirm
+from functions.plan.save_template import main as plan_save_template
 
 from functions.activity.create import main as activity_create
 from functions.activity.update import main as activity_update
@@ -43,6 +44,12 @@ from functions.review.list import main as review_list
 from functions.feedback.submit import main as feedback_submit
 from functions.feedback.stats import main as feedback_stats
 from functions.feedback.list import main as feedback_list
+
+from functions.interaction.create import main as interaction_create
+from functions.interaction.detail import main as interaction_detail
+from functions.interaction.submit import main as interaction_submit
+from functions.interaction.stats import main as interaction_stats
+from functions.interaction.update import main as interaction_update
 
 from functions.user.login import main as user_login
 from functions.user.profile import main as user_profile
@@ -164,6 +171,13 @@ def api_plan_confirm(planId):
     event = build_event()
     event['pathParameters'] = {'planId': planId}
     return handle_response(plan_confirm(event, None))
+
+
+@app.route('/plan/save-template/<planId>', methods=['POST'])
+def api_plan_save_template(planId):
+    event = build_event()
+    event['pathParameters'] = {'planId': planId}
+    return handle_response(plan_save_template(event, None))
 
 
 @app.route('/activity/create', methods=['POST'])
@@ -296,6 +310,36 @@ def api_feedback_stats():
 def api_feedback_list():
     event = build_event()
     return handle_response(feedback_list(event, None))
+
+
+@app.route('/interaction/create', methods=['POST'])
+def api_interaction_create():
+    event = build_event()
+    return handle_response(interaction_create(event, None))
+
+
+@app.route('/interaction/detail', methods=['GET'])
+def api_interaction_detail():
+    event = build_event()
+    return handle_response(interaction_detail(event, None))
+
+
+@app.route('/interaction/submit', methods=['POST'])
+def api_interaction_submit():
+    event = build_event()
+    return handle_response(interaction_submit(event, None))
+
+
+@app.route('/interaction/stats', methods=['GET'])
+def api_interaction_stats():
+    event = build_event()
+    return handle_response(interaction_stats(event, None))
+
+
+@app.route('/interaction/update', methods=['POST'])
+def api_interaction_update():
+    event = build_event()
+    return handle_response(interaction_update(event, None))
 
 
 @app.route('/note/list', methods=['GET'])

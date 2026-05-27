@@ -11,6 +11,8 @@ function normalizePlan(plan : UTSJSONObject) : UTSJSONObject {
   nextPlan['scenes'] = (plan['scenes'] as Array<string>) || (plan['tags'] as Array<string>) || [] as Array<string>
   nextPlan['reviewNotes'] = (plan['reviewNotes'] as Array<string>) || [] as Array<string>
   nextPlan['reviewMethod'] = ((plan['reviewMethod'] as string) || '').toLowerCase()
+  nextPlan['isTemplateInstance'] = (plan['isTemplateInstance'] as boolean) || false
+  nextPlan['isPersonalTemplate'] = (plan['isPersonalTemplate'] as boolean) || false
   return nextPlan
 }
 
@@ -134,6 +136,21 @@ export const usePlanStore = defineStore('plan', () => {
     }
   }
 
+  async function saveAsTemplate(planId : string) {
+    try {
+      loading.value = true
+      const data = normalizePlan(await planApi.savePlanAsTemplate(planId))
+      plans.value.unshift(data)
+      error.value = ''
+      return data
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '保存模板失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function restartReview(planId : string) {
     try {
       loading.value = true
@@ -174,6 +191,7 @@ export const usePlanStore = defineStore('plan', () => {
     updatePlan,
     deletePlan,
     confirmPlan,
+    saveAsTemplate,
     restartReview,
     setCurrentPlan
   }

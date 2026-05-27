@@ -25,6 +25,7 @@ const contentTopOffset = navBarInfo['secondaryContentTopOffset'] as number
 const contentRowTop = navBarInfo['contentRowTop'] as number
 const contentRowHeight = navBarInfo['contentRowHeight'] as number
 const maxWidth = getDesktopMaxWidth()
+const backButtonInset = '32rpx'
 
 const backIconName = computed<string>(() => {
   return props.backIconColor === '#FFFFFF' ? 'stateBackLight' : 'stateBack'
@@ -38,7 +39,7 @@ const backIconName = computed<string>(() => {
       <view class="navbar-content" :style="{ height: contentHeight + 'px', maxWidth: maxWidth > 0 ? maxWidth + 'px' : 'none' }">
         <view class="navbar-row" :style="{ top: contentRowTop + 'px', height: contentRowHeight + 'px' }">
         <view v-if="showBack" class="navbar-back" :style="{ width: leftSafeWidth + 'px' }" @click="$emit('back')">
-          <view class="back-icon-hit" :style="{ marginLeft: navHorizontalPadding + 'px' }">
+          <view class="back-icon-hit" :style="{ marginLeft: backButtonInset }">
             <view class="back-icon-box">
               <AppIcon :name="backIconName" preset="nav" />
             </view>
@@ -47,7 +48,7 @@ const backIconName = computed<string>(() => {
         <view class="navbar-title-wrap" :style="{ left: leftSafeWidth + 'px', right: rightSafeWidth + 'px' }">
           <text class="navbar-title" :style="{ color: titleColor }">{{ title }}</text>
         </view>
-        <view class="navbar-right" :style="{ minWidth: rightSafeWidth + 'px', paddingRight: navHorizontalPadding + 'px' }">
+        <view class="navbar-right" :style="{ right: rightSafeWidth + 'px' }">
           <slot name="right"></slot>
         </view>
         </view>
@@ -86,17 +87,17 @@ const backIconName = computed<string>(() => {
   z-index: 2;
 }
 .back-icon-hit {
-  width: 88rpx;
+  width: 76rpx;
   height: 88rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   box-sizing: border-box;
 }
 .back-icon-box {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 32rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
   background-color: transparent;
   display: flex;
   align-items: center;
@@ -123,10 +124,14 @@ const backIconName = computed<string>(() => {
   line-height: 1.25;
 }
 .navbar-right {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
   z-index: 1;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: flex-end;
+  max-width: 168rpx;
 }
 </style>

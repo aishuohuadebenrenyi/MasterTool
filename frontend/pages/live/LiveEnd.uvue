@@ -111,7 +111,8 @@ function goHome() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120rpx 48rpx 60rpx;
+  padding: 120rpx 32rpx 60rpx;
+  box-sizing: border-box;
 }
 .end-icon-wrap {
   margin-bottom: 32rpx;
@@ -173,8 +174,16 @@ function goHome() {
   height: 96rpx;
   border-radius: 20rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+}
+.action-inline-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
 }
 .action-btn-primary {
   background-color: #4A7CF7;

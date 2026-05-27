@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from common import success, error, require_auth, get_db
 from common.errors import ErrorCode
+from common.validators import validate_object_id
 
 
 @require_auth
@@ -13,8 +14,15 @@ def main(event, context):
 
     if not session_id:
         return error('缺少场次ID', ErrorCode.PARAM_ERROR, 400)
+    valid, msg = validate_object_id(session_id, '场次ID')
+    if not valid:
+        return error(msg, ErrorCode.PARAM_ERROR, 400)
 
     db = get_db()
+    from bson import ObjectId
+    session = db.live_sessions.find_one({'_id': ObjectId(session_id), 'userId': event.get('userId')})
+    if not session:
+        return error('场次不存在', ErrorCode.NOT_FOUND, 404)
     feedbacks = list(db.feedback.find({'sessionId': session_id}))
     participants_total = db.participants.count_documents({'sessionId': session_id, 'checkedIn': True})
 

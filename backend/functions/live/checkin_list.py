@@ -23,6 +23,10 @@ def main(event, context):
     db = get_db()
     from bson import ObjectId
 
+    session = db.live_sessions.find_one({'_id': ObjectId(session_id), 'userId': user_id})
+    if not session:
+        return error('场次不存在', ErrorCode.NOT_FOUND, 404)
+
     participants = list(db.participants.find({'sessionId': session_id}).sort('checkinTime', -1))
 
     from models.participant import Participant

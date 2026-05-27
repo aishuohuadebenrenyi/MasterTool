@@ -4,6 +4,7 @@ import { useUserStore } from '../../stores/user'
 import { usePlanStore } from '../../stores/plan'
 import * as feedbackApi from '../../api/feedback'
 import NavBar from '../../components/NavBar.uvue'
+import AppIcon from '../../components/AppIcon.uvue'
 
 const userStore = useUserStore()
 const planStore = usePlanStore()
@@ -93,6 +94,9 @@ async function buildCharts() {
 }
 
 async function loadData() {
+  if (!userStore.isLoggedIn) {
+    return
+  }
   loading.value = true
   try {
     if (userStore.isLoggedIn) {
@@ -108,13 +112,34 @@ async function loadData() {
 onMounted(() => {
   loadData()
 })
+
+async function handleLogin() {
+  try {
+    await userStore.loginWithWechat()
+    await loadData()
+    uni.showToast({ title: '登录成功', icon: 'success' })
+  } catch (e : unknown) {
+    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+  }
+}
 </script>
 
 <template>
   <view class="page">
     <NavBar title="数据详情" @back="uni.navigateBack()" />
 
-    <view class="range-toggle">
+    <view v-if="!userStore.isLoggedIn" class="login-empty">
+      <view class="app-empty-icon-wrap">
+        <AppIcon name="stateChart" preset="hero" />
+      </view>
+      <text class="app-empty-title">登录后查看数据</text>
+      <text class="app-empty-subtitle">培训场次、满意度、NPS 会跟随账号统计</text>
+      <view class="login-empty-btn" @click="handleLogin">
+        <text class="login-empty-btn-text">微信登录</text>
+      </view>
+    </view>
+
+    <view v-if="userStore.isLoggedIn" class="range-toggle">
       <view
         :class="['range-btn', rangeType === '6个月' ? 'range-btn-active' : '']"
         @click="setRange('6个月')"
@@ -129,7 +154,7 @@ onMounted(() => {
       </view>
     </view>
 
-    <scroll-view class="content" scroll-y>
+    <scroll-view v-if="userStore.isLoggedIn" class="content" scroll-y>
       <view class="stats-row">
         <view class="stats-card">
           <text class="stats-card-value">{{ totalSessions }}</text>
@@ -246,6 +271,35 @@ onMounted(() => {
 }
 .navbar-placeholder {
   width: 72rpx;
+}
+.login-empty {
+  margin: 32rpx 24rpx;
+  min-height: 520rpx;
+  padding: 72rpx 32rpx;
+  border-radius: 24rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+.login-empty-btn {
+  margin-top: 32rpx;
+  height: 72rpx;
+  padding: 0 36rpx;
+  border-radius: 36rpx;
+  background-color: #4A7CF7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-empty-btn-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 600;
 }
 .range-toggle {
   display: flex;

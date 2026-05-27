@@ -63,6 +63,12 @@ def main(event, context):
         'reviewMethod': 'reviewMethod',
         'reviewNotes': 'reviewNotes',
         'prepConfig': 'prepConfig',
+        'source': 'source',
+        'templateId': 'templateId',
+        'templateName': 'templateName',
+        'isTemplateInstance': 'isTemplateInstance',
+        'isPersonalTemplate': 'isPersonalTemplate',
+        'templateSourcePlanId': 'templateSourcePlanId',
         'sessionId': 'sessionId'
     }
     for source, target in field_mapping.items():

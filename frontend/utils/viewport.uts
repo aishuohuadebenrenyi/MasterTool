@@ -37,6 +37,10 @@ export function getViewportWidth() : number {
   return 375
 }
 
+export function rpxToPx(rpx : number) : number {
+  return Math.round(rpx * getViewportWidth() / 750)
+}
+
 export function getDesktopMaxWidth() : number {
   const width = getViewportWidth()
   if (width >= 1280) {

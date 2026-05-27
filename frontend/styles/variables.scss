@@ -1,30 +1,32 @@
-$brand-primary: #FF6B35;
-$brand-primary-light: #FF8F66;
-$brand-primary-dark: #E55A28;
+$brand-primary: #4A7CF7;
+$brand-primary-light: #6B9BFF;
+$brand-primary-dark: #3366E0;
+$brand-primary-bg: #EEF2FF;
 $brand-secondary: #4A90D9;
 
-$text-primary: #1A1A1A;
-$text-secondary: #666666;
+$text-primary: #1A1A2E;
+$text-secondary: #8E8E93;
 $text-tertiary: #999999;
 $text-inverse: #FFFFFF;
 
 $bg-primary: #FFFFFF;
-$bg-secondary: #F5F5F5;
+$bg-secondary: #F0F0F5;
 $bg-tertiary: #EEEEEE;
+$bg-page: #F5F5F7;
 $bg-dark: #0D1117;
 
-$border-color: #E5E5E5;
-$divider-color: #F0F0F0;
+$border-color: #E5E5EA;
+$divider-color: #F0F0F5;
 
-$success-color: #52C41A;
-$warning-color: #FAAD14;
-$error-color: #FF4D4F;
-$info-color: #1890FF;
+$success-color: #34C759;
+$warning-color: #FF9500;
+$error-color: #FF3B30;
+$info-color: #007AFF;
 
 $radius-sm: 8rpx;
-$radius-md: 12rpx;
-$radius-lg: 16rpx;
-$radius-xl: 24rpx;
+$radius-md: 16rpx;
+$radius-lg: 24rpx;
+$radius-xl: 32rpx;
 $radius-round: 999rpx;
 
 $spacing-xs: 8rpx;
@@ -40,7 +42,7 @@ $font-size-lg: 32rpx;
 $font-size-xl: 36rpx;
 $font-size-xxl: 44rpx;
 
-$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+$shadow-sm: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
 $shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
 $shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
 

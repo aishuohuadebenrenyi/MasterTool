@@ -1,0 +1,21 @@
+import { get, post } from './request'
+
+export function createInteraction(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/interaction/create', data, { showLoading: true, loadingText: '正在生成入口...' })
+}
+
+export function getInteractionDetail(interactionId : string, code : string) : Promise<UTSJSONObject> {
+  return get('/interaction/detail', { interactionId, code } as UTSJSONObject)
+}
+
+export function submitInteraction(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/interaction/submit', data, { showLoading: true, loadingText: '正在提交...' })
+}
+
+export function updateInteraction(data : UTSJSONObject) : Promise<UTSJSONObject> {
+  return post('/interaction/update', data)
+}
+
+export function getInteractionStats(interactionId : string) : Promise<UTSJSONObject> {
+  return get('/interaction/stats', { interactionId } as UTSJSONObject, { showSlowTip: false } as UTSJSONObject)
+}

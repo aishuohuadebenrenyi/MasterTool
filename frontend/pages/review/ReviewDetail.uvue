@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useReviewStore } from '../../stores/review'
 import { usePlanStore } from '../../stores/plan'
-import { PLAN_TYPE_LABELS, PLAN_STATUS } from '../../utils/constants'
+import { PLAN_STATUS, getPlanTypeLabel } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 
@@ -64,7 +64,7 @@ const planName = computed<string>(() => {
 const planTypeLabel = computed<string>(() => {
   if (plan.value == null) return ''
   const t = plan.value!['type'] as string
-  return (PLAN_TYPE_LABELS[t] as string) || ''
+  return getPlanTypeLabel(t)
 })
 
 const planPeople = computed<string>(() => {

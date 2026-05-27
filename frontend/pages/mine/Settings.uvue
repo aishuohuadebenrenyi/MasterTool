@@ -5,16 +5,16 @@ import NavBar from '../../components/NavBar.uvue'
 
 const configStore = useConfigStore()
 
-const swipeRight = computed<boolean>(() => configStore.swipeNextEnabled)
-const swipeLeft = computed<boolean>(() => configStore.swipePrevEnabled)
+const swipeNext = computed<boolean>(() => configStore.swipeNextEnabled)
+const swipePrev = computed<boolean>(() => configStore.swipePrevEnabled)
 const doubleTapDelay = computed<boolean>(() => configStore.doubleTapDelayEnabled)
 const timerSound = computed<boolean>(() => configStore.soundEnabled)
 const autoSave = computed<boolean>(() => configStore.autoSaveNotes)
 
-function toggleSwipeRight() {
+function toggleSwipeNext() {
   configStore.toggleSwipeNext()
 }
-function toggleSwipeLeft() {
+function toggleSwipePrev() {
   configStore.toggleSwipePrev()
 }
 function toggleDoubleTapDelay() {
@@ -41,19 +41,19 @@ onMounted(() => {
         <text class="section-title">手势控制</text>
         <view class="setting-item">
           <view class="setting-info">
-            <text class="setting-label">右滑推进</text>
-            <text class="setting-desc">向右滑动推进到下一步</text>
+            <text class="setting-label">左滑推进</text>
+            <text class="setting-desc">向左滑动推进到下一步</text>
           </view>
-          <view :class="['toggle', swipeRight ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeRight">
+          <view :class="['toggle', swipeNext ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeNext">
             <view class="toggle-thumb"></view>
           </view>
         </view>
         <view class="setting-item">
           <view class="setting-info">
-            <text class="setting-label">左滑回退</text>
-            <text class="setting-desc">向左滑动回退到上一步</text>
+            <text class="setting-label">右滑回退</text>
+            <text class="setting-desc">向右滑动回退到上一步</text>
           </view>
-          <view :class="['toggle', swipeLeft ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeLeft">
+          <view :class="['toggle', swipePrev ? 'toggle-on' : 'toggle-off']" @click="toggleSwipePrev">
             <view class="toggle-thumb"></view>
           </view>
         </view>

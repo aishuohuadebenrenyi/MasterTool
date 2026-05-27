@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { usePlanStore } from '../../stores/plan'
-import { PLAN_TYPE_LABELS, PLAN_STATUS } from '../../utils/constants'
+import { PLAN_STATUS, getPlanTypeLabel } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import { getDesktopMaxWidth } from '../../utils/viewport'
@@ -23,7 +23,7 @@ const filteredPlans = computed(() => {
 })
 
 function getTypeLabel(type : string) : string {
-  return (PLAN_TYPE_LABELS[type] as string) || '未知类型'
+  return getPlanTypeLabel(type)
 }
 
 function isReviewed(plan : UTSJSONObject) : boolean {

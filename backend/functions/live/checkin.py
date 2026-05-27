@@ -7,6 +7,7 @@ from common.errors import ErrorCode
 from common.validators import validate_object_id
 from models.participant import Participant
 from datetime import datetime
+import uuid
 
 
 def main(event, context):
@@ -36,7 +37,7 @@ def main(event, context):
     if session.get('phase') == 'ended':
         return error('场次已结束', ErrorCode.STATUS_ERROR, 400)
 
-    openid = data.get('openid', '')
+    openid = data.get('openid', '') or f'manual_{uuid.uuid4().hex[:12]}'
     existing = db.participants.find_one({'sessionId': session_id, 'openid': openid})
     if existing:
         return error('已签到', ErrorCode.ALREADY_EXISTS, 400)
@@ -44,7 +45,7 @@ def main(event, context):
     participant_data = {
         'sessionId': session_id,
         'openid': openid,
-        'name': data.get('name', ''),
+        'name': data.get('name', '') or '匿名参与者',
         'avatar': data.get('avatar', ''),
         'checkedIn': True,
         'groupId': data.get('groupId', ''),

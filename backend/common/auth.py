@@ -2,11 +2,16 @@ import time
 import hashlib
 import hmac
 import functools
+import os
 from .errors import ErrorCode
 from .response import error
 
 
-SECRET_KEY = 'trainer-toolbox-secret-key-change-in-production'
+SECRET_KEY = (
+    os.environ.get('TRAINER_TOOLBOX_SECRET_KEY')
+    or os.environ.get('SECRET_KEY')
+    or 'trainer-toolbox-secret-key-change-in-production'
+)
 
 
 def generate_token(user_id, timestamp=None):

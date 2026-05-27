@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from common import success, error, get_db
 from common.errors import ErrorCode
+from common.validators import validate_object_id, validate_range
 from models.feedback import Feedback
 
 
@@ -20,6 +21,19 @@ def main(event, context):
     session_id = data.get('sessionId', '')
     if not session_id:
         return error('缺少场次ID', ErrorCode.PARAM_ERROR, 400)
+    valid, msg = validate_object_id(session_id, '场次ID')
+    if not valid:
+        return error(msg, ErrorCode.PARAM_ERROR, 400)
+    rating = data.get('rating', data.get('stars'))
+    if rating is not None:
+        valid, msg = validate_range(rating, 1, 5, '满意度')
+        if not valid:
+            return error(msg, ErrorCode.PARAM_ERROR, 400)
+    nps = data.get('nps')
+    if nps is not None:
+        valid, msg = validate_range(nps, 0, 10, 'NPS')
+        if not valid:
+            return error(msg, ErrorCode.PARAM_ERROR, 400)
 
     db = get_db()
     from bson import ObjectId

@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePlanStore } from '../../stores/plan'
-import { PLAN_TYPE_LABELS, PLAN_STATUS_LABELS } from '../../utils/constants'
+import { PLAN_STATUS_LABELS, getPlanTypeIconName, getPlanTypeLabel } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import { getDesktopMaxWidth } from '../../utils/viewport'
+import { buildPlanMarkdown, getPlanDocumentFileName } from '../../utils/planDocument'
 
 const planStore = usePlanStore()
 const pageMaxWidth = getDesktopMaxWidth()
@@ -17,18 +18,11 @@ const plan = computed(() => planStore.currentPlan)
 const planName = computed<string>(() => (plan.value?.['name'] as string) || '')
 const planType = computed<string>(() => {
   const type = plan.value?.['type'] as string
-  return (PLAN_TYPE_LABELS[type] as string) || type || ''
+  return getPlanTypeLabel(type)
 })
 const planTypeIcon = computed<string>(() => {
   const type = plan.value?.['type'] as string
-  const icons : UTSJSONObject = {
-    'improv_training': 'typeTraining',
-    'team_building': 'typeTeam',
-    'workshop': 'phaseSkill',
-    'lecture': 'stateDocument',
-    'custom': 'phaseCustom'
-  }
-  return (icons[type] as string) || 'stateDocument'
+  return getPlanTypeIconName(type)
 })
 const planPeople = computed<string>(() => plan.value?.['people'] != null ? String(plan.value['people']) : '')
 const planClient = computed<string>(() => (plan.value?.['client'] as string) || '')
@@ -44,6 +38,13 @@ const planStatusClass = computed<string>(() => {
 const planDate = computed<string>(() => (plan.value?.['date'] as string) || '')
 const planScene = computed<string>(() => (plan.value?.['scene'] as string) || '')
 const phases = computed<Array<UTSJSONObject>>(() => (plan.value?.['phases'] as Array<UTSJSONObject>) || [])
+const viewTitle = computed<string>(() => viewMode.value === 'client' ? '客户版课程概览' : '培训师执行版')
+const viewDesc = computed<string>(() => {
+  if (viewMode.value === 'client') {
+    return '突出课程价值、参与体验和交付节奏，隐藏内部控场提示。'
+  }
+  return '保留时间控制、工具使用、控场提醒和现场执行细节。'
+})
 
 const totalDuration = computed<number>(() => {
   if (planDuration.value > 0) return planDuration.value
@@ -89,6 +90,31 @@ function switchView(mode : string) {
   viewMode.value = mode
 }
 
+async function exportPlanDoc() {
+  if (!plan.value) return
+  const markdown = buildPlanMarkdown(plan.value, viewMode.value)
+  const fileName = getPlanDocumentFileName(plan.value)
+  uni.setClipboardData({
+    data: markdown,
+    success() {
+      uni.showToast({ title: `已复制${fileName}`, icon: 'none' })
+    },
+    fail() {
+      uni.showToast({ title: '导出失败，请稍后重试', icon: 'none' })
+    }
+  })
+}
+
+async function saveAsTemplate() {
+  if (!planId.value) return
+  try {
+    await planStore.saveAsTemplate(planId.value)
+    uni.showToast({ title: '已保存为个人模板', icon: 'success' })
+  } catch (_e : unknown) {
+    uni.showToast({ title: '保存模板失败', icon: 'none' })
+  }
+}
+
 function formatDuration(minutes : number) : string {
   if (minutes < 60) return `${minutes}分钟`
   const h = Math.floor(minutes / 60)
@@ -121,11 +147,23 @@ function formatDuration(minutes : number) : string {
         </view>
       </view>
 
-      <view class="export-btn-disabled app-card-surface">
-        <view class="summary-icon-row">
+      <view class="action-row">
+        <view class="action-btn app-card-surface" @click="exportPlanDoc">
           <AppIcon name="stateExport" preset="section" />
-          <text class="export-btn-text">导出方案文档（即将上线）</text>
+          <text class="action-btn-text action-btn-text-secondary">导出 Markdown</text>
         </view>
+        <view class="action-btn action-btn-secondary app-card-surface" @click="saveAsTemplate">
+          <AppIcon name="stateFavorite" preset="section" />
+          <text class="action-btn-text action-btn-text-secondary">另存为模板</text>
+        </view>
+      </view>
+
+      <view class="view-note app-card-surface">
+        <view class="summary-icon-row">
+          <AppIcon :name="viewMode === 'client' ? 'statePeople' : 'toolToolbox'" preset="section" />
+          <text class="view-note-title">{{ viewTitle }}</text>
+        </view>
+        <text class="view-note-desc">{{ viewDesc }}</text>
       </view>
 
       <view class="summary-card app-card-surface">
@@ -171,7 +209,7 @@ function formatDuration(minutes : number) : string {
         <view class="timeline-header">
           <view class="summary-icon-row">
             <AppIcon name="phaseSimulation" preset="section" />
-            <text class="timeline-title">环节流程（总时长 {{ totalDuration }} 分钟）</text>
+          <text class="timeline-title">{{ viewMode === 'client' ? '课程议程' : '执行时间线' }}（总时长 {{ totalDuration }} 分钟）</text>
           </view>
         </view>
         <view class="timeline">
@@ -191,6 +229,8 @@ function formatDuration(minutes : number) : string {
               <view class="timeline-progress-bg">
                 <view class="timeline-progress-fill" :style="{ width: getPhasePercent(getPhaseDuration(phase)) + '%', backgroundColor: getPhaseColor(index) }"></view>
               </view>
+              <text v-if="viewMode === 'trainer'" class="timeline-phase-note">控场重点：说明目标、观察参与状态、按时间推进并记录复盘线索。</text>
+              <text v-else class="timeline-phase-note">参与体验：围绕「{{ phase['name'] }}」完成体验、交流与沉淀。</text>
             </view>
           </view>
         </view>
@@ -242,19 +282,51 @@ function formatDuration(minutes : number) : string {
 .toggle-text-active {
   color: #4A7CF7;
 }
-.export-btn-disabled {
-  height: 88rpx;
+.action-row {
   display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.action-btn {
+  flex: 1;
+  min-height: 88rpx;
+  display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   border-radius: 16rpx;
-  background-color: #E8E8ED;
-  margin-bottom: 24rpx;
+  background-color: #FFFFFF;
+  gap: 10rpx;
 }
-.export-btn-text {
+.action-btn-secondary {
+  background-color: #FFFFFF;
+}
+.action-btn-text {
   font-size: 28rpx;
-  color: #AEAEB2;
-  font-weight: 500;
+  color: #4A7CF7;
+  font-weight: 700;
+}
+.action-btn-text-secondary {
+  color: #4A7CF7;
+}
+.view-note {
+  background-color: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0,0,0,0.05);
+}
+.view-note-title {
+  font-size: 28rpx;
+  color: #1A1A2E;
+  font-weight: 700;
+}
+.view-note-desc {
+  font-size: 25rpx;
+  color: #8E8E93;
+  line-height: 1.45;
+  margin-top: 12rpx;
 }
 .summary-card {
   background-color: #FFFFFF;
@@ -420,6 +492,12 @@ function formatDuration(minutes : number) : string {
 .timeline-progress-fill {
   height: 12rpx;
   border-radius: 6rpx;
+}
+.timeline-phase-note {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #8E8E93;
+  line-height: 1.45;
 }
 .empty-phases {
   padding: 60rpx 0;

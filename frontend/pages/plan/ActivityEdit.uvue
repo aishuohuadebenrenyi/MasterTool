@@ -333,6 +333,7 @@ function goBack() {
   background-color: #FFFFFF;
   border-radius: 48rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   margin-top: 24rpx;
@@ -344,5 +345,12 @@ function goBack() {
   font-size: 32rpx;
   font-weight: 600;
   color: #FF3B30;
+}
+.action-inline-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
 }
 </style>

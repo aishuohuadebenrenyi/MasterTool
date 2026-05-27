@@ -6,9 +6,9 @@ import AppIcon from '../../components/AppIcon.uvue'
 
 const faqList = ref<Array<UTSJSONObject>>([
   { question: '如何创建新的培训方案？', answer: '在备课页面点击右上角的"+"按钮，选择培训类型并填写基本信息即可创建新的培训方案。', expanded: false },
-  { question: '如何使用手势控制功能？', answer: '在培训现场页面，右滑推进到下一步，左滑回退到上一步，双击屏幕可启动延时计时。可在设置中开启或关闭各项手势。', expanded: false },
+  { question: '如何使用手势控制功能？', answer: '在培训现场页面，左滑推进到下一步，右滑回退到上一步，双击计时区可延时 5 分钟。可在设置中开启或关闭各项手势。', expanded: false },
   { question: '培训数据如何统计？', answer: '系统会自动记录每次培训的参与人数、满意度评分和NPS数据，您可以在"数据详情"页面查看趋势图表和统计信息。', expanded: false },
-  { question: '如何导出培训记录？', answer: '在培训记录页面，点击右上角的导出按钮，选择需要导出的记录和格式，即可生成文件并分享。', expanded: false },
+  { question: '能否导出方案或培训记录？', answer: '方案预览页已保留导出入口，当前版本暂未开放导出；正式开放后会在方案预览和培训记录中提供统一入口。', expanded: false },
   { question: '如何修改个人信息？', answer: '在"我的"页面点击头像旁边的"编辑"按钮，即可修改昵称、头像等个人信息。' }
 ] as Array<UTSJSONObject>)
 

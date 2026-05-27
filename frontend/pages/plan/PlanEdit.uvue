@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePlanStore } from '../../stores/plan'
-import { PLAN_STATUS } from '../../utils/constants'
+import { PLAN_STATUS, getPlanTypeLabel, normalizePlanType } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
@@ -52,6 +52,8 @@ const totalDuration = computed(() => {
   return total
 })
 
+const planTypeLabel = computed<string>(() => getPlanTypeLabel(planType.value))
+
 onLoad((options) => {
   if (options != null && options['id'] != null) {
     planId.value = options['id'] as string
@@ -64,7 +66,7 @@ async function loadPlan(id : string) {
     const data = await planStore.fetchPlanDetail(id)
     if (data != null) {
       planName.value = (data['name'] as string) || ''
-      planType.value = (data['type'] as string) || ''
+      planType.value = normalizePlanType((data['type'] as string) || '')
       planPeople.value = data['people'] != null ? String(data['people']) : ''
       planClient.value = (data['client'] as string) || ''
       planStatus.value = (data['status'] as string) || ''
@@ -147,7 +149,7 @@ function getBadgeColor(index : number) : string {
 function buildPlanData(status : string) : UTSJSONObject {
   return {
     name: planName.value,
-    type: planType.value,
+    type: normalizePlanType(planType.value),
     people: parseInt(planPeople.value) || 0,
     client: planClient.value,
     phases: phases.value,
@@ -212,7 +214,9 @@ function startTraining() {
   <view class="page">
     <NavBar title="方案编辑" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack">
       <template #right>
-        <text class="nav-action" @click="goPreview">预览</text>
+        <view class="nav-action" @click="goPreview">
+          <text class="nav-action-text">预览</text>
+        </view>
       </template>
     </NavBar>
 
@@ -244,7 +248,7 @@ function startTraining() {
           <text class="form-label">方案类型</text>
           <view class="tag-row" v-if="planType">
             <view class="tag-item tag-active">
-              <text class="tag-text tag-text-active">{{ planType }}</text>
+              <text class="tag-text tag-text-active">{{ planTypeLabel }}</text>
             </view>
           </view>
           <view class="tag-row" v-else>
@@ -268,13 +272,13 @@ function startTraining() {
               <text class="phase-duration">{{ phase['duration'] }}分钟</text>
             </view>
             <view class="phase-actions" v-if="!isReadonly">
-              <view class="phase-action-btn" @click="moveUp(index)" v-if="index > 0">
-                <view class="phase-action-icon rotate-up">
+              <view :class="['phase-action-btn', { disabled: index === 0 }]" @click="moveUp(index)">
+                <view class="phase-action-icon phase-action-up">
                   <AppIcon name="stateChevronRight" size="18rpx" />
                 </view>
               </view>
-              <view class="phase-action-btn" @click="moveDown(index)" v-if="index < phases.length - 1">
-                <view class="phase-action-icon rotate-down">
+              <view :class="['phase-action-btn', { disabled: index === phases.length - 1 }]" @click="moveDown(index)">
+                <view class="phase-action-icon phase-action-down">
                   <AppIcon name="stateChevronRight" size="18rpx" />
                 </view>
               </view>
@@ -378,9 +382,21 @@ function startTraining() {
   transform: translateX(-50%);
 }
 .nav-action {
-  font-size: 28rpx;
+  min-width: 72rpx;
+  height: 48rpx;
+  padding: 0 18rpx;
+  border-radius: 24rpx;
+  background-color: #EEF2FF;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.nav-action-text {
+  font-size: 24rpx;
   color: #4A7CF7;
-  padding: 8rpx 16rpx;
+  font-weight: 600;
 }
 .content {
   padding: 24rpx 32rpx;
@@ -554,9 +570,19 @@ function startTraining() {
   border-radius: 12rpx;
   background-color: #F0F0F5;
 }
+.phase-action-btn.disabled {
+  opacity: 0.36;
+}
 .phase-action-icon {
-  font-size: 28rpx;
-  color: #8E8E93;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phase-action-up {
+  transform: rotate(-90deg);
+}
+.phase-action-down {
+  transform: rotate(90deg);
 }
 .phase-action-delete {
   background-color: #FFF0F0;

@@ -59,3 +59,13 @@ class TestPlan:
 
     def test_lecture_type(self):
         assert Plan.TYPE_LECTURE == 'lecture'
+
+    def test_normalize_type_accepts_chinese_label(self):
+        assert Plan.normalize_type('即兴训练') == Plan.TYPE_IMPROV_TRAINING
+        assert Plan.normalize_type('团队建设') == Plan.TYPE_TEAMBUILDING
+
+    def test_to_dict_includes_type_label(self):
+        plan = Plan.create('user_001', {'name': '测试', 'type': '即兴训练'})
+        result = Plan.to_dict(plan)
+        assert result['type'] == Plan.TYPE_IMPROV_TRAINING
+        assert result['typeLabel'] == '即兴培训'

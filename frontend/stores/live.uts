@@ -22,17 +22,25 @@ export const useLiveStore = defineStore('live', () => {
   const isPaused = computed<boolean>(() => phase.value === (LIVE_PHASES['PAUSED'] as string))
   const isEnded = computed<boolean>(() => phase.value === (LIVE_PHASES['ENDED'] as string))
 
+  function applySession(result : UTSJSONObject, fallback : UTSJSONObject = {} as UTSJSONObject) {
+    sessionId.value = (result['sessionId'] as string | null) || (result['id'] as string | null) || sessionId.value
+    planId.value = (result['planId'] as string | null) || (fallback['planId'] as string | null) || planId.value
+    planName.value = (result['planName'] as string) || (fallback['planName'] as string) || planName.value
+    phase.value = (result['phase'] as string) || phase.value
+    currentPhaseIndex.value = (result['currentPhaseIndex'] as number) || 0
+    startTime.value = typeof result['startTime'] === 'string' ? new Date(result['startTime'] as string).getTime() : ((result['startTime'] as number | null) || Date.now())
+    duration.value = (result['duration'] as number) || 0
+    groups.value = (result['groups'] as Array<UTSJSONObject>) || []
+    scores.value = (result['scores'] as UTSJSONObject) || {} as UTSJSONObject
+  }
+
   async function startSession(data : UTSJSONObject) {
     try {
       loading.value = true
       const result = await liveApi.startLiveSession(data)
       // sessionId 是现场链路的核心主键，后续签到、分组、积分、抽人、复盘都会沿着它继续往下走。
-      sessionId.value = result['sessionId'] as string | null
-      planId.value = data['planId'] as string | null
-      planName.value = (data['planName'] as string) || ''
+      applySession(result, data)
       phase.value = LIVE_PHASES['IN_PROGRESS'] as string
-      startTime.value = typeof result['startTime'] === 'string' ? new Date(result['startTime'] as string).getTime() : ((result['startTime'] as number | null) || Date.now())
-      duration.value = 0
       error.value = ''
       return result
     } catch (e : unknown) {
@@ -87,6 +95,9 @@ export const useLiveStore = defineStore('live', () => {
     try {
       loading.value = true
       const result = await liveApi.checkin(sessionId.value, data)
+      const id = result['id'] as string
+      participants.value = participants.value.filter((item : UTSJSONObject) : boolean => (item['id'] as string) !== id)
+      participants.value.unshift(result)
       error.value = ''
       return result
     } catch (e : unknown) {
@@ -101,7 +112,7 @@ export const useLiveStore = defineStore('live', () => {
     try {
       loading.value = true
       const result = await liveApi.createGroup(sessionId.value, data)
-      groups.value = (result['groups'] as Array<UTSJSONObject>) || []
+      groups.value = (result['groups'] as Array<UTSJSONObject>) || (result as unknown as Array<UTSJSONObject>) || []
       error.value = ''
       return result
     } catch (e : unknown) {
@@ -116,6 +127,20 @@ export const useLiveStore = defineStore('live', () => {
     try {
       loading.value = true
       const result = await liveApi.updateScore(sessionId.value, data)
+      const participantId = result['participantId'] as string
+      const groupId = result['groupId'] as string
+      const score = (result['score'] as number) || 0
+      if (participantId) {
+        scores.value[participantId] = score
+      }
+      if (groupId) {
+        scores.value[groupId] = score
+        for (let i = 0; i < groups.value.length; i++) {
+          if ((groups.value[i]['groupId'] as string) === groupId) {
+            groups.value[i]['score'] = score
+          }
+        }
+      }
       error.value = ''
       return result
     } catch (e : unknown) {
@@ -134,6 +159,25 @@ export const useLiveStore = defineStore('live', () => {
       return result
     } catch (e : unknown) {
       error.value = (e instanceof Error ? e.message : '随机抽取失败')
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadCheckins() {
+    if (!sessionId.value) {
+      participants.value = []
+      return [] as Array<UTSJSONObject>
+    }
+    try {
+      loading.value = true
+      const result = await liveApi.getCheckinList(sessionId.value)
+      participants.value = (result as unknown as Array<UTSJSONObject>) || []
+      error.value = ''
+      return participants.value
+    } catch (e : unknown) {
+      error.value = (e instanceof Error ? e.message : '获取签到列表失败')
       throw e
     } finally {
       loading.value = false
@@ -193,6 +237,7 @@ export const useLiveStore = defineStore('live', () => {
     createGroup,
     updateScore,
     randomPick,
+    loadCheckins,
     addNote,
     reset
   }

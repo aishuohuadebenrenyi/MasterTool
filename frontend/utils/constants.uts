@@ -34,6 +34,26 @@ export const PLAN_TYPE_LABELS : UTSJSONObject = {
   'custom': '自定义'
 }
 
+export const PLAN_TYPE_CODES_BY_LABEL : UTSJSONObject = {
+  '企业培训': 'corporate',
+  '团建活动': 'teambuilding',
+  '即兴演出': 'improv_show',
+  '即兴培训': 'improv_training',
+  '即兴训练': 'improv_training',
+  '团队建设': 'teambuilding',
+  '工作坊': 'corporate',
+  '讲座/授课': 'corporate',
+  '自定义': 'custom'
+}
+
+export const PLAN_TYPE_ICON_NAMES : UTSJSONObject = {
+  'corporate': 'typeCorporate',
+  'teambuilding': 'typeTeam',
+  'improv_show': 'typeShow',
+  'improv_training': 'typeTraining',
+  'custom': 'phaseCustom'
+}
+
 export const LEGACY_PLAN_TYPE_MAP : UTSJSONObject = {
   'corporate_training': 'corporate',
   'corporate': 'corporate',
@@ -125,10 +145,17 @@ export function normalizePlanType(planType : string | null) : string {
   if (planType == null || planType.length === 0) {
     return PLAN_TYPES['CUSTOM'] as string
   }
+  const byLabel = PLAN_TYPE_CODES_BY_LABEL[planType] as string
+  if (byLabel) return byLabel
   return (LEGACY_PLAN_TYPE_MAP[planType] as string) || planType
 }
 
 export function getPlanTypeLabel(planType : string | null) : string {
   const normalized = normalizePlanType(planType)
   return (PLAN_TYPE_LABELS[normalized] as string) || '自定义'
+}
+
+export function getPlanTypeIconName(planType : string | null) : string {
+  const normalized = normalizePlanType(planType)
+  return (PLAN_TYPE_ICON_NAMES[normalized] as string) || 'stateDocument'
 }
