@@ -1,7 +1,15 @@
 function showToast(message : string, icon : string = 'none', duration : number = 1800) {
+  if (icon === 'success') {
+    uni.showToast({
+      title: message,
+      icon: 'success',
+      duration
+    })
+    return
+  }
   uni.showToast({
     title: message,
-    icon,
+    icon: 'none',
     duration
   })
 }

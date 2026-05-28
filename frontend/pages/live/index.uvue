@@ -758,6 +758,15 @@ function stopInteractionPolling() {
   }
 }
 
+function triggerLightVibration() {
+  try {
+    const uniCompat = uni as any
+    if (typeof uniCompat.vibrateShort === 'function') {
+      uniCompat.vibrateShort({ type: 'light' })
+    }
+  } catch (_e : unknown) {}
+}
+
 function playSound(key : string) {
   activeSound.value = key
   const item = soundList.find((sound : UTSJSONObject) : boolean => (sound['key'] as string) === key)
@@ -775,9 +784,7 @@ function playSound(key : string) {
       activeSoundAudio = audio
       audio.src = src
       audio.onError(() => {
-        try {
-          uni.vibrateShort({ type: 'light' })
-        } catch (_e : unknown) {}
+        triggerLightVibration()
       })
       audio.onEnded(() => {
         if (activeSoundAudio === audio) {
@@ -792,9 +799,7 @@ function playSound(key : string) {
     played = false
   }
   if (!played) {
-    try {
-      uni.vibrateShort({ type: 'light' })
-    } catch (_e : unknown) {}
+    triggerLightVibration()
   }
   showInfo((played ? '已播放' : '已触发') + name)
   setTimeout(() => {

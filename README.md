@@ -37,6 +37,12 @@
   - `反馈收集`
   - `复盘中心 / 复盘详情`
 
+## 项目文档
+
+- [小程序功能与流程审计](docs/mini-program-function-flow-audit.md)
+- [PRD 实现决策记录](docs/prd-implementation-decisions.md)
+- [腾讯 CloudBase 部署与改造方案](docs/cloudbase-deployment-migration-plan.md)
+
 ## 技术栈
 
 ### 前端
