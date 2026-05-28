@@ -30,6 +30,8 @@ def main(event, context):
         empty_distribution = [{'star': star, 'count': 0} for star in range(1, 6)]
         return success({
             'count': 0,
+            'participantsTotal': participants_total,
+            'participantCount': participants_total,
             'avgSatisfaction': 0,
             'nps': 0,
             'responseRate': '0%',
@@ -66,6 +68,8 @@ def main(event, context):
 
     return success({
         'count': total,
+        'participantsTotal': participants_total,
+        'participantCount': participants_total,
         'avgSatisfaction': avg_rating,
         'nps': avg_nps,
         'responseRate': response_rate,

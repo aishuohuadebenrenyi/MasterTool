@@ -57,5 +57,6 @@ defineEmits(['click'])
 .tool-label {
   font-size: $font-size-xs;
   color: $text-secondary;
+  text-align: center;
 }
 </style>

@@ -7,16 +7,17 @@ import { getSafeAreaBottom } from '../../utils/viewport'
 
 const liveStore = useLiveStore()
 const safeAreaBottom = ref<number>(getSafeAreaBottom())
+const endedSessionId = ref<string>('')
 
 const planName = computed(() : string => liveStore.planName || '培训')
+const dataSessionId = computed<string>(() => endedSessionId.value || (liveStore.sessionId as string) || '')
 
 const participantCount = computed(() : number => liveStore.participants.length)
 
 const durationMinutes = computed(() : string => {
   const d = liveStore.duration
   if (d > 0) {
-    const mins = Math.floor(d / 60)
-    return mins > 0 ? mins + '分钟' : d + '秒'
+    return d + '分钟'
   }
   if (liveStore.startTime) {
     const elapsed = Math.floor((Date.now() - liveStore.startTime) / 1000)
@@ -27,7 +28,8 @@ const durationMinutes = computed(() : string => {
 })
 
 function goFeedback() {
-  uni.navigateTo({ url: '/pages/feedback/index' })
+  const sid = dataSessionId.value
+  uni.navigateTo({ url: sid ? `/pages/feedback/index?sessionId=${sid}` : '/pages/feedback/index' })
 }
 
 function goReview() {
@@ -39,8 +41,9 @@ function goReview() {
 }
 
 function goDataDetail() {
-  if (liveStore.sessionId) {
-    uni.navigateTo({ url: `/pages/mine/DataDetail?sessionId=${liveStore.sessionId}` })
+  const sid = dataSessionId.value
+  if (sid) {
+    uni.navigateTo({ url: `/pages/mine/DataDetail?sessionId=${sid}` })
   } else {
     uni.navigateTo({ url: '/pages/mine/DataDetail' })
   }
@@ -50,6 +53,12 @@ function goHome() {
   liveStore.reset()
   uni.switchTab({ url: '/pages/home/index' })
 }
+
+onLoad((options) => {
+  if (options != null && options['sessionId'] != null) {
+    endedSessionId.value = (options['sessionId'] as string) || ''
+  }
+})
 </script>
 
 <template>

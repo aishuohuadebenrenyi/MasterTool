@@ -12,7 +12,9 @@ import {
   TODO_TYPES,
   STORAGE_KEYS,
   normalizePlanType,
-  getPlanTypeLabel
+  getPlanTypeLabel,
+  getActivitySceneLabel,
+  normalizeActivityScene
 } from '../../__uts_mirror__/utils/constants'
 
 describe('PLAN_STATUS', () => {
@@ -62,8 +64,8 @@ describe('ACTIVITY_CATEGORIES', () => {
   it('has labels for all categories', () => {
     expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.ICEBREAKER]).toBe('破冰')
     expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.ENERGY]).toBe('能量')
-    expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.COLLABORATION]).toBe('协作')
-    expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.CREATIVITY]).toBe('创意')
+    expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.COLLABORATION]).toBe('协作沟通')
+    expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.CREATIVITY]).toBe('创新思维')
     expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.REFLECTION]).toBe('反思')
     expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES.CUSTOM]).toBe('自定义')
   })
@@ -142,6 +144,12 @@ describe('ACTIVITY_CATEGORY_LABELS completeness', () => {
     Object.keys(ACTIVITY_CATEGORIES).forEach(key => {
       expect(ACTIVITY_CATEGORY_LABELS[ACTIVITY_CATEGORIES[key]]).toBeDefined()
     })
+  })
+
+  it('normalizes legacy activity scene codes to Chinese labels', () => {
+    expect(normalizeActivityScene('custom')).toBe('自定义')
+    expect(getActivitySceneLabel('collaboration')).toBe('协作沟通')
+    expect(getActivitySceneLabel('创新思维')).toBe('创新思维')
   })
 })
 

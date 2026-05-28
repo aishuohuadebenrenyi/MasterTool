@@ -2,10 +2,11 @@
 import { ref, computed } from 'vue'
 import { useActivityStore } from '../../stores/activity'
 import { usePlanStore } from '../../stores/plan'
-import { ACTIVITY_CATEGORY_LABELS } from '../../utils/constants'
+import { getActivitySceneLabel } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { showSuccess, showError } from '../../utils/toast'
 
 const activityStore = useActivityStore()
 const planStore = usePlanStore()
@@ -30,14 +31,13 @@ const categoryLabel = computed(() : string => {
   if (activity.value == null) return ''
   const category = activity.value['category'] as string
   if (!category) return ''
-  const label = ACTIVITY_CATEGORY_LABELS[category] as string | null
-  return label != null ? label : category
+  return getActivitySceneLabel(category)
 })
 
 const scenes = computed(() : Array<string> => {
   if (activity.value == null) return []
   const s = activity.value['scenes'] as Array<string> | null
-  return s != null ? s : []
+  return s != null ? s.map((scene : string) : string => getActivitySceneLabel(scene)) : []
 })
 
 const riskLevel = computed(() : string => {
@@ -132,7 +132,7 @@ async function handleToggleFavorite() {
     await activityStore.toggleFavorite(activityId.value)
     isFavorite.value = !isFavorite.value
   } catch (e) {
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    showError('操作失败')
   }
 }
 
@@ -155,7 +155,7 @@ function backToPlanList() {
 
 function selectPhaseForAdd(phaseIndex : number) {
   showAddToPlan.value = false
-  uni.showToast({ title: '已添加到方案', icon: 'success' })
+  showSuccess('已添加到方案')
 }
 </script>
 

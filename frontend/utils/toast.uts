@@ -1,0 +1,19 @@
+function showToast(message : string, icon : string = 'none', duration : number = 1800) {
+  uni.showToast({
+    title: message,
+    icon,
+    duration
+  })
+}
+
+export function showSuccess(message : string, duration : number = 1800) {
+  showToast(message, 'success', duration)
+}
+
+export function showInfo(message : string, duration : number = 1800) {
+  showToast(message, 'none', duration)
+}
+
+export function showError(message : string, duration : number = 1800) {
+  showToast(message, 'none', duration)
+}

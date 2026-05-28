@@ -7,9 +7,12 @@ import AppIcon from '../../components/AppIcon.uvue'
 import { PLAN_TYPES } from '../../utils/constants'
 import { calcNavBarInfo } from '../../utils/navbar'
 import { getDesktopMaxWidth, rpxToPx } from '../../utils/viewport'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
+import * as storage from '../../utils/storage'
 
 const planStore = usePlanStore()
 const userStore = useUserStore()
+const PREPARE_FILTER_INTENT_KEY = 'prepare_filter_intent'
 
 const navBarInfo = calcNavBarInfo()
 const tabContentTopOffset = navBarInfo['tabContentTopOffset'] as number
@@ -39,10 +42,10 @@ const reviewCount = computed(() => planStore.deliveredPlans.length)
 const todos = computed(() => {
   const items : Array<UTSJSONObject> = []
   if (planStore.confirmedPlans.length > 0) {
-    items.push({ iconSrc: '/static/icons/home-start.svg', label: `${planStore.confirmedPlans.length} 个方案待开课`, action: 'confirmed' })
+    items.push({ iconName: 'phaseOpening', label: `${planStore.confirmedPlans.length} 个方案待开课`, action: 'confirmed' })
   }
   if (planStore.deliveredPlans.length > 0) {
-    items.push({ iconSrc: '/static/icons/home-review.svg', label: `${planStore.deliveredPlans.length} 场待复盘`, action: 'review' })
+    items.push({ iconName: 'phaseReflection', label: `${planStore.deliveredPlans.length} 场待复盘`, action: 'review' })
   }
   if (planStore.draftPlans.length > 0) {
     items.push({ iconName: 'stateDocument', label: `${planStore.draftPlans.length} 个草稿方案`, action: 'draft' })
@@ -101,19 +104,19 @@ async function handleLogin() {
   try {
     await userStore.loginWithWechat()
     await planStore.fetchPlans()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    showSuccess('登录成功')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+    showError(e instanceof Error ? e.message : '登录失败')
   }
 }
 
 function ensureLoggedIn() : boolean {
   if (userStore.isLoggedIn) return true
-  uni.showToast({ title: '请先登录后使用', icon: 'none' })
+  showInfo('请先登录')
   return false
 }
 
-function openPlanSelect() {
+async function handleStartCourse() {
   if (!ensureLoggedIn()) return
   showPlanSelect.value = true
 }
@@ -122,10 +125,20 @@ function closePlanSelect() {
   showPlanSelect.value = false
 }
 
-function selectFromMyPlans() {
+async function selectFromMyPlans() {
   if (!ensureLoggedIn()) return
   showPlanSelect.value = false
-  uni.switchTab({ url: '/pages/prepare/index' })
+  if (planStore.plans.length === 0 && !planStore.loading) {
+    await planStore.fetchPlans()
+  }
+  if (planStore.confirmedPlans.length > 0) {
+    goPrepareWithStatus('已确认')
+    return
+  }
+  showInfo('暂无已确认方案，请先确认草稿方案', 2600)
+  setTimeout(() => {
+    goPrepareWithStatus('草稿')
+  }, 1400)
 }
 
 function selectTemplate(tpl : UTSJSONObject) {
@@ -234,6 +247,8 @@ async function startLive() {
       const draft = await planStore.createPlan({
         name: trainingName.value,
         type: selectedTemplate.value['id'] as string,
+        contentKind: 'plan',
+        status: 'draft',
         source: 'quick_start',
         templateId: selectedTemplate.value['id'] as string,
         templateName: selectedTemplate.value['name'] as string,
@@ -252,46 +267,38 @@ async function startLive() {
       await planStore.confirmPlan(planId)
     }
     if (!planId) {
-      uni.showToast({ title: '缺少方案信息', icon: 'none' })
+      showInfo('缺少方案信息')
       return
     }
     uni.navigateTo({ url: `/pages/live/index?planId=${planId}` })
   } catch (_e : unknown) {
-    uni.showToast({ title: '开课准备失败', icon: 'none' })
+    showError('开课准备失败')
   }
 }
 
-function goReviewCenter() {
+function goReviewCenter(filter : string = '') {
   if (!ensureLoggedIn()) return
-  uni.navigateTo({ url: '/pages/review/ReviewCenter' })
+  const query = filter ? `?filter=${filter}` : ''
+  uni.navigateTo({ url: `/pages/review/ReviewCenter${query}` })
+}
+
+function goPrepareWithStatus(statusLabel : string) {
+  if (!ensureLoggedIn()) return
+  storage.set(PREPARE_FILTER_INTENT_KEY, {
+    tab: 'plans',
+    status: statusLabel
+  } as UTSJSONObject)
+  uni.switchTab({ url: '/pages/prepare/index' })
 }
 
 function handleTodoClick(action : string) {
   if (!ensureLoggedIn()) return
   if (action === 'confirmed') {
-    const confirmedPlan = planStore.confirmedPlans.length > 0 ? planStore.confirmedPlans[0] : null
-    if (confirmedPlan) {
-      selectedPlanId.value = confirmedPlan['id'] as string
-      selectedTemplate.value = null
-      trainingName.value = (confirmedPlan['name'] as string) || ''
-      prepPeopleCount.value = String(confirmedPlan['people'] || 0)
-      const prepConfig = (confirmedPlan['prepConfig'] as UTSJSONObject) || {} as UTSJSONObject
-      checkInMethod.value = (prepConfig['checkinMode'] as string) || '扫码签到'
-      const savedGroupMode = (prepConfig['groupMode'] as string) || '按人数均分'
-      groupMethod.value = savedGroupMode === '自由分组' ? '按人数均分' : savedGroupMode
-      teamCount.value = String(prepConfig['groupCount'] || '待分组')
-      scoreMode.value = (prepConfig['scoreMode'] as string) || '简化模式'
-      showPrepConfirm.value = true
-    }
+    goPrepareWithStatus('已确认')
   } else if (action === 'review') {
-    goReviewCenter()
+    goReviewCenter('pending')
   } else if (action === 'draft') {
-    const draftPlan = planStore.draftPlans.length > 0 ? planStore.draftPlans[0] : null
-    if (draftPlan) {
-      uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${draftPlan['id'] as string}` })
-    } else {
-      uni.switchTab({ url: '/pages/prepare/index' })
-    }
+    goPrepareWithStatus('草稿')
   }
 }
 
@@ -350,19 +357,19 @@ onUnmounted(() => {
     </view>
 
     <view class="scene-cards" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
-      <view class="scene-card-primary" @click="openPlanSelect">
+      <view class="scene-card-primary" @click="handleStartCourse">
         <view class="scene-card-decor"></view>
-        <view class="scene-card-primary-top">
+        <view class="scene-card-primary-content">
+          <view class="scene-card-copy scene-card-copy-primary">
+            <text class="scene-card-title-primary">我要开课</text>
+            <text class="scene-card-status-primary">开始一场培训</text>
+          </view>
           <view class="scene-card-icon-shell">
-            <AppIcon name="phaseOpening" preset="hero" />
+            <AppIcon name="phaseOpening" size="48rpx" />
           </view>
         </view>
-        <view class="scene-card-copy">
-          <text class="scene-card-title-primary">我要开课</text>
-          <text class="scene-card-status-primary">开始一场培训</text>
-        </view>
       </view>
-      <view class="scene-card-secondary" @click="goReviewCenter">
+      <view class="scene-card-secondary" @click="goReviewCenter('pending')">
         <view class="scene-card-icon-shell scene-card-icon-shell-secondary">
           <AppIcon class="scene-card-icon-sm-image" src="/static/icons/home-review.svg" size="56rpx" />
         </view>
@@ -380,7 +387,7 @@ onUnmounted(() => {
     <view class="todo-list" v-if="todos.length > 0" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="todo-item" v-for="(item, index) in todos" :key="index" @click="handleTodoClick(item['action'] as string)">
         <view class="todo-icon-wrap">
-          <AppIcon v-if="item['iconName'] || item['iconSrc']" class="todo-icon" :name="item['iconName'] as string" :src="item['iconSrc'] as string" size="32rpx" />
+          <AppIcon v-if="item['iconName'] || item['iconSrc']" class="todo-icon" :name="item['iconName'] as string" :src="item['iconSrc'] as string" size="38rpx" />
         </view>
         <text class="todo-text">{{ item['label'] }}</text>
         <AppIcon name="stateChevronRight" size="24rpx" />
@@ -435,8 +442,10 @@ onUnmounted(() => {
         <input class="form-input" v-model="peopleCount" type="number" placeholder="请输入参与人数" />
       </view>
       <template #footer>
-        <view class="submit-btn" @click="submitQuickCreate">
-          <text class="submit-btn-text">创建并准备</text>
+        <view class="sheet-submit-actions">
+          <view class="submit-btn" @click="submitQuickCreate">
+            <text class="submit-btn-text">创建并准备</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -514,8 +523,10 @@ onUnmounted(() => {
       </view>
 
       <template #footer>
-        <view class="submit-btn" @click="startLive">
-          <text class="submit-btn-text">一键开始</text>
+        <view class="sheet-submit-actions">
+          <view class="submit-btn" @click="startLive">
+            <text class="submit-btn-text">一键开始</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -655,10 +666,12 @@ onUnmounted(() => {
 .scene-card-primary {
   background: linear-gradient(135deg, #4A7CF7, #6B9BFF);
   border-radius: 24rpx;
-  padding: 48rpx 40rpx;
+  min-height: 230rpx;
+  padding: 40rpx;
   position: relative;
   overflow: hidden;
   box-shadow: 0 10rpx 32rpx rgba(74, 124, 247, 0.18);
+  box-sizing: border-box;
 }
 .scene-card-decor {
   position: absolute;
@@ -669,22 +682,27 @@ onUnmounted(() => {
   border-radius: 80rpx;
   background-color: rgba(255, 255, 255, 0.1);
 }
-.scene-card-primary-top {
+.scene-card-primary-content {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 28rpx;
+  justify-content: center;
+  min-height: 150rpx;
+  position: relative;
+  z-index: 1;
 }
 .scene-card-icon-shell {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 32rpx;
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 26rpx;
   background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  margin-left: 24rpx;
+  flex-shrink: 0;
 }
 .scene-card-icon-shell-secondary {
   width: 88rpx;
@@ -692,21 +710,28 @@ onUnmounted(() => {
   border-radius: 24rpx;
   background: #F4F7FF;
   box-shadow: none;
+  margin-left: 0;
 }
 .scene-card-copy {
   display: flex;
   flex-direction: column;
   gap: 10rpx;
 }
+.scene-card-copy-primary {
+  align-items: center;
+  text-align: center;
+}
 .scene-card-title-primary {
   font-size: 38rpx;
   font-weight: 600;
   color: #FFFFFF;
   line-height: 1.2;
+  text-align: center;
 }
 .scene-card-status-primary {
   font-size: 26rpx;
   color: rgba(255, 255, 255, 0.88);
+  text-align: center;
 }
 .scene-card-secondary {
   background-color: #FFFFFF;
@@ -765,10 +790,10 @@ onUnmounted(() => {
   box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
 }
 .todo-icon-wrap {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 18rpx;
-  background-color: #F4F7FF;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background-color: #F6F8FF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -776,8 +801,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .todo-icon {
-  width: 32rpx;
-  height: 32rpx;
+  width: 38rpx;
+  height: 38rpx;
 }
 .todo-text {
   flex: 1;
@@ -1030,17 +1055,24 @@ onUnmounted(() => {
   margin-top: 48rpx;
   padding-bottom: 20rpx;
 }
+.sheet-submit-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
 .submit-btn {
-  width: 100%;
-  height: 96rpx;
+  min-width: 220rpx;
+  height: 76rpx;
+  padding: 0 36rpx;
   background-color: #4A7CF7;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 .submit-btn-text {
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: #FFFFFF;
 }

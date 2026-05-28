@@ -26,6 +26,8 @@ def test_save_plan_as_personal_template(monkeypatch, mock_db):
 
     data = response['data']
     assert data['name'] == '企业培训方案模板'
+    assert data['contentKind'] == 'template'
+    assert data['status'] == ''
     assert data['source'] == 'personal_template'
     assert data['isPersonalTemplate'] is True
     assert data['templateSourcePlanId'] == str(plan['_id'])

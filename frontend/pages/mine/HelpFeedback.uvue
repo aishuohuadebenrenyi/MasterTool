@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import * as userApi from '../../api/user'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { showSuccess } from '../../utils/toast'
 
 const faqList = ref<Array<UTSJSONObject>>([
   { question: '如何创建新的培训方案？', answer: '在备课页面点击右上角的"+"按钮，选择培训类型并填写基本信息即可创建新的培训方案。', expanded: false },
@@ -30,7 +31,7 @@ async function submitFeedback() {
       contact: contactText.value.trim(),
       category: 'help_feedback'
     } as UTSJSONObject)
-    uni.showToast({ title: '感谢您的反馈', icon: 'success' })
+    showSuccess('感谢反馈')
     feedbackText.value = ''
     contactText.value = ''
   } finally {

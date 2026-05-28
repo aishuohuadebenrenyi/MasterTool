@@ -37,7 +37,10 @@ def main(event, context):
     if not plan:
         return error('方案不存在', ErrorCode.NOT_FOUND, 404)
 
+    is_template = plan.get('contentKind') == Plan.CONTENT_KIND_TEMPLATE
     target_status = data.get('status')
+    if is_template and target_status is not None:
+        return error('模板不参与方案状态流转', ErrorCode.STATUS_ERROR, 400)
     if target_status is not None:
         target_status = str(target_status)
         if target_status == Plan.STATUS_DELIVERED and not Plan.can_restart_review(plan.get('status')):
@@ -47,7 +50,9 @@ def main(event, context):
         if target_status in {Plan.STATUS_DRAFT, Plan.STATUS_CONFIRMED} and plan.get('status') in Plan.READONLY_STATUSES:
             return error('已交付方案不允许回退到可编辑状态', ErrorCode.STATUS_ERROR, 400)
 
-    if target_status is None and not Plan.can_edit(plan['status']):
+    metadata_fields = {'isPinned', 'isFavorite'}
+    metadata_only = target_status is None and set(data.keys()).issubset(metadata_fields)
+    if target_status is None and not is_template and not metadata_only and not Plan.can_edit(plan['status']):
         return error('当前状态不允许编辑', ErrorCode.STATUS_ERROR, 400)
 
     update_fields = {}
@@ -68,12 +73,16 @@ def main(event, context):
         'templateName': 'templateName',
         'isTemplateInstance': 'isTemplateInstance',
         'isPersonalTemplate': 'isPersonalTemplate',
+        'isPinned': 'isPinned',
+        'isFavorite': 'isFavorite',
         'templateSourcePlanId': 'templateSourcePlanId',
         'sessionId': 'sessionId'
     }
     for source, target in field_mapping.items():
         if source in data:
             value = data[source]
+            if is_template and target in {'client', 'sessionId', 'isTemplateInstance'}:
+                continue
             if target == 'type':
                 value = Plan.normalize_type(value)
             elif target == 'reviewMethod':
@@ -87,6 +96,14 @@ def main(event, context):
 
     if target_status is not None:
         update_fields['status'] = target_status
+    elif is_template:
+        update_fields['status'] = ''
+        update_fields['contentKind'] = Plan.CONTENT_KIND_TEMPLATE
+        update_fields['source'] = 'personal_template'
+        update_fields['isPersonalTemplate'] = True
+        update_fields['isTemplateInstance'] = False
+        update_fields['client'] = ''
+        update_fields['sessionId'] = ''
 
     if not update_fields:
         return error('没有需要更新的字段', ErrorCode.PARAM_ERROR, 400)

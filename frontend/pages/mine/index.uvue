@@ -5,6 +5,7 @@ import { calcNavBarInfo } from '../../utils/navbar'
 import { getDesktopMaxWidth, rpxToPx } from '../../utils/viewport'
 import AppIcon from '../../components/AppIcon.uvue'
 import HalfSheet from '../../components/HalfSheet.uvue'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 
 const userStore = useUserStore()
 
@@ -34,15 +35,15 @@ async function handleLogin() {
   try {
     await userStore.loginWithWechat()
     await userStore.fetchStats()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    showSuccess('登录成功')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+    showError(e instanceof Error ? e.message : '登录失败')
   }
 }
 
 function goAuthed(url : string) {
   if (!userStore.isLoggedIn) {
-    uni.showToast({ title: '请先登录后查看', icon: 'none' })
+    showInfo('请先登录')
     return
   }
   uni.navigateTo({ url })
@@ -51,15 +52,15 @@ function goAuthed(url : string) {
 async function saveProfile() {
   const nextName = editNickname.value.trim()
   if (!nextName) {
-    uni.showToast({ title: '请输入昵称', icon: 'none' })
+    showInfo('请输入昵称')
     return
   }
   try {
     await userStore.updateProfile({ nickname: nextName } as UTSJSONObject)
     showProfileEdit.value = false
-    uni.showToast({ title: '已保存', icon: 'success' })
+    showSuccess('已保存')
   } catch (_e : unknown) {
-    uni.showToast({ title: '保存失败，请稍后重试', icon: 'none' })
+    showError('保存失败')
   }
 }
 
@@ -144,8 +145,10 @@ onMounted(() => {
         <input class="profile-edit-input" v-model="editNickname" placeholder="请输入昵称" placeholder-class="input-placeholder" maxlength="20" />
       </view>
       <template #footer>
-        <view class="profile-save-btn" @click="saveProfile">
-          <text class="profile-save-btn-text">保存</text>
+        <view class="profile-footer-actions">
+          <view class="profile-save-btn" @click="saveProfile">
+            <text class="profile-save-btn-text">保存</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -341,15 +344,23 @@ onMounted(() => {
   color: #1A1A2E;
 }
 .profile-save-btn {
-  height: 84rpx;
-  border-radius: 22rpx;
+  min-width: 180rpx;
+  height: 76rpx;
+  padding: 0 34rpx;
+  border-radius: 20rpx;
   background-color: #4A7CF7;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+.profile-footer-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
 .profile-save-btn-text {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: #FFFFFF;
 }

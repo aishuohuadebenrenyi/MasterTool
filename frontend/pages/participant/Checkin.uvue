@@ -4,6 +4,7 @@ import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import * as liveApi from '../../api/live'
 import { getDesktopMaxWidth } from '../../utils/viewport'
+import { showError, showSuccess } from '../../utils/toast'
 
 const pageMaxWidth = getDesktopMaxWidth()
 const sessionId = ref<string>('')
@@ -37,9 +38,11 @@ async function submitCheckin() {
       name: name.value.trim()
     } as UTSJSONObject)
     submitted.value = true
-    uni.showToast({ title: '签到成功', icon: 'success' })
+    showSuccess('签到成功')
   } catch (e : unknown) {
-    errorMessage.value = e instanceof Error ? e.message : '签到失败'
+    const message = e instanceof Error ? e.message : '签到失败'
+    errorMessage.value = message
+    showError(message)
   } finally {
     submitting.value = false
   }

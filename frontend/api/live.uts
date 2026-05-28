@@ -9,7 +9,7 @@ export function endLiveSession(sessionId : string) : Promise<UTSJSONObject> {
 }
 
 export function checkin(sessionId : string | null, data : UTSJSONObject) : Promise<UTSJSONObject> {
-  return post('/live/checkin', { sessionId, ...data })
+  return post('/live/checkin', { sessionId, ...data }, { showError: false })
 }
 
 export function getCheckinList(sessionId : string) : Promise<UTSJSONObject> {

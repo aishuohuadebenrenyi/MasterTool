@@ -4,6 +4,7 @@ import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import * as interactionApi from '../../api/interaction'
 import { getDesktopMaxWidth } from '../../utils/viewport'
+import { showSuccess, showInfo } from '../../utils/toast'
 
 const pageMaxWidth = getDesktopMaxWidth()
 const interactionId = ref<string>('')
@@ -69,12 +70,12 @@ async function submit() {
   if (submitting.value || !isOpen.value) return
   const type = interactionType.value
   if (type === 'vote' && selectedOption.value < 0) {
-    uni.showToast({ title: '请选择一个选项', icon: 'none' })
+    showInfo('请选择一个选项')
     return
   }
   const trimmed = content.value.trim()
   if (type !== 'vote' && !trimmed) {
-    uni.showToast({ title: '请输入内容', icon: 'none' })
+    showInfo('请输入内容')
     return
   }
   submitting.value = true
@@ -87,7 +88,7 @@ async function submit() {
       name: name.value.trim(),
       anonymous: !name.value.trim()
     } as UTSJSONObject)
-    uni.showToast({ title: '提交成功', icon: 'success' })
+    showSuccess('提交成功')
     content.value = ''
     selectedOption.value = -1
   } catch (_e : unknown) {

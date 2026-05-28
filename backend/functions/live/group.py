@@ -9,6 +9,15 @@ from datetime import datetime
 import random
 
 
+def build_member_detail(participant):
+    return {
+        'id': str(participant['_id']),
+        'name': participant.get('name', '') or '匿名参与者',
+        'avatar': participant.get('avatar', ''),
+        'score': participant.get('score', 0)
+    }
+
+
 @require_auth
 def main(event, context):
     user_id = event.get('userId')
@@ -57,12 +66,17 @@ def main(event, context):
                 'groupId': f'group_{i + 1}',
                 'groupName': f'第{i + 1}组',
                 'members': [],
+                'memberNames': [],
+                'memberDetails': [],
                 'score': 0
             })
 
         for idx, p in enumerate(participants):
             group_idx = idx % group_count
-            groups[group_idx]['members'].append(str(p['_id']))
+            member_detail = build_member_detail(p)
+            groups[group_idx]['members'].append(member_detail['id'])
+            groups[group_idx]['memberNames'].append(member_detail['name'])
+            groups[group_idx]['memberDetails'].append(member_detail)
             db.participants.update_one(
                 {'_id': p['_id']},
                 {'$set': {'groupId': groups[group_idx]['groupId']}}

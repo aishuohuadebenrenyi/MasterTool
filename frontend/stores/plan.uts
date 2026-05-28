@@ -5,14 +5,19 @@ import { PLAN_STATUS, normalizePlanType } from '../utils/constants'
 
 function normalizePlan(plan : UTSJSONObject) : UTSJSONObject {
   const nextPlan = { ...plan }
+  const contentKind = ((plan['contentKind'] as string) || 'plan') === 'template' ? 'template' : 'plan'
+  nextPlan['contentKind'] = contentKind
   nextPlan['type'] = normalizePlanType((plan['type'] as string) || '')
+  nextPlan['status'] = contentKind === 'template' ? '' : ((plan['status'] as string) || PLAN_STATUS['DRAFT'] as string)
   nextPlan['client'] = (plan['client'] as string) || (plan['clientName'] as string) || ''
   nextPlan['clientName'] = nextPlan['client']
   nextPlan['scenes'] = (plan['scenes'] as Array<string>) || (plan['tags'] as Array<string>) || [] as Array<string>
   nextPlan['reviewNotes'] = (plan['reviewNotes'] as Array<string>) || [] as Array<string>
   nextPlan['reviewMethod'] = ((plan['reviewMethod'] as string) || '').toLowerCase()
-  nextPlan['isTemplateInstance'] = (plan['isTemplateInstance'] as boolean) || false
-  nextPlan['isPersonalTemplate'] = (plan['isPersonalTemplate'] as boolean) || false
+  nextPlan['isTemplateInstance'] = contentKind === 'template' ? false : ((plan['isTemplateInstance'] as boolean) || false)
+  nextPlan['isPersonalTemplate'] = contentKind === 'template'
+  nextPlan['isPinned'] = (plan['isPinned'] as boolean) || false
+  nextPlan['isFavorite'] = (plan['isFavorite'] as boolean) || false
   return nextPlan
 }
 
@@ -22,10 +27,12 @@ export const usePlanStore = defineStore('plan', () => {
   const loading = ref<boolean>(false)
   const error = ref<string>('')
 
-  const draftPlans = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['status'] as string) === PLAN_STATUS['DRAFT'] as string))
-  const confirmedPlans = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['status'] as string) === PLAN_STATUS['CONFIRMED'] as string))
-  const deliveredPlans = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['status'] as string) === PLAN_STATUS['DELIVERED'] as string))
-  const reviewedPlans = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['status'] as string) === PLAN_STATUS['REVIEWED'] as string))
+  const normalPlans = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['contentKind'] as string) === 'plan'))
+  const personalTemplates = computed<Array<UTSJSONObject>>(() => plans.value.filter(p => (p['contentKind'] as string) === 'template'))
+  const draftPlans = computed<Array<UTSJSONObject>>(() => normalPlans.value.filter(p => (p['status'] as string) === PLAN_STATUS['DRAFT'] as string))
+  const confirmedPlans = computed<Array<UTSJSONObject>>(() => normalPlans.value.filter(p => (p['status'] as string) === PLAN_STATUS['CONFIRMED'] as string))
+  const deliveredPlans = computed<Array<UTSJSONObject>>(() => normalPlans.value.filter(p => (p['status'] as string) === PLAN_STATUS['DELIVERED'] as string))
+  const reviewedPlans = computed<Array<UTSJSONObject>>(() => normalPlans.value.filter(p => (p['status'] as string) === PLAN_STATUS['REVIEWED'] as string))
 
   async function fetchPlans() {
     loading.value = true
@@ -182,6 +189,8 @@ export const usePlanStore = defineStore('plan', () => {
     loading,
     error,
     draftPlans,
+    normalPlans,
+    personalTemplates,
     confirmedPlans,
     deliveredPlans,
     reviewedPlans,

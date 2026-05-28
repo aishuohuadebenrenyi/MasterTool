@@ -5,6 +5,7 @@ import { PLAN_STATUS, getPlanTypeLabel, normalizePlanType } from '../../utils/co
 import NavBar from '../../components/NavBar.uvue'
 import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 
 const planStore = usePlanStore()
 
@@ -14,6 +15,7 @@ const planType = ref('')
 const planPeople = ref('')
 const planClient = ref('')
 const planStatus = ref('')
+const contentKind = ref<string>('plan')
 const phases = ref<Array<UTSJSONObject>>([])
 const addPhaseVisible = ref(false)
 const newPhaseName = ref('')
@@ -40,8 +42,12 @@ const isConfirmed = computed(() => {
   return planStatus.value === PLAN_STATUS['CONFIRMED'] as string
 })
 
+const isTemplate = computed<boolean>(() => {
+  return contentKind.value === 'template'
+})
+
 const isReadonly = computed(() => {
-  return planStatus.value === PLAN_STATUS['DELIVERED'] as string || planStatus.value === PLAN_STATUS['REVIEWED'] as string
+  return !isTemplate.value && (planStatus.value === PLAN_STATUS['DELIVERED'] as string || planStatus.value === PLAN_STATUS['REVIEWED'] as string)
 })
 
 const totalDuration = computed(() => {
@@ -53,6 +59,7 @@ const totalDuration = computed(() => {
 })
 
 const planTypeLabel = computed<string>(() => getPlanTypeLabel(planType.value))
+const pageTitle = computed<string>(() => isTemplate.value ? '模板编辑' : '方案编辑')
 
 onLoad((options) => {
   if (options != null && options['id'] != null) {
@@ -66,10 +73,11 @@ async function loadPlan(id : string) {
     const data = await planStore.fetchPlanDetail(id)
     if (data != null) {
       planName.value = (data['name'] as string) || ''
+      contentKind.value = ((data['contentKind'] as string) || 'plan') === 'template' ? 'template' : 'plan'
       planType.value = normalizePlanType((data['type'] as string) || '')
       planPeople.value = data['people'] != null ? String(data['people']) : ''
       planClient.value = (data['client'] as string) || ''
-      planStatus.value = (data['status'] as string) || ''
+      planStatus.value = isTemplate.value ? '' : ((data['status'] as string) || '')
       phases.value = (data['phases'] as Array<UTSJSONObject>) || []
     }
   } catch (e) {}
@@ -93,7 +101,7 @@ function goBack() {
 
 async function goPreview() {
   if (!planId.value) {
-    await doSave(PLAN_STATUS['DRAFT'] as string)
+    await doSave(isTemplate.value ? '' : PLAN_STATUS['DRAFT'] as string)
   }
   if (planId.value) {
     uni.navigateTo({ url: `/pages/plan/PlanPreview?id=${planId.value}` })
@@ -115,13 +123,17 @@ function selectPhaseType(item : UTSJSONObject) {
 }
 
 function confirmAddPhase() {
-  if (!newPhaseName.value) return
+  if (!newPhaseName.value) {
+    showInfo('请选择或输入环节')
+    return
+  }
   phases.value.push({
     name: newPhaseName.value,
     duration: parseInt(newPhaseDuration.value) || 10,
     type: newPhaseName.value
   } as UTSJSONObject)
   addPhaseVisible.value = false
+  showSuccess('已添加')
 }
 
 function removePhase(index : number) {
@@ -147,15 +159,22 @@ function getBadgeColor(index : number) : string {
 }
 
 function buildPlanData(status : string) : UTSJSONObject {
-  return {
+  const data = {
     name: planName.value,
     type: normalizePlanType(planType.value),
+    contentKind: contentKind.value,
     people: parseInt(planPeople.value) || 0,
-    client: planClient.value,
     phases: phases.value,
-    duration: totalDuration.value,
-    status: status
+    duration: totalDuration.value
   } as UTSJSONObject
+  if (isTemplate.value) {
+    data['source'] = 'personal_template'
+    data['isPersonalTemplate'] = true
+  } else {
+    data['client'] = planClient.value
+    data['status'] = status
+  }
+  return data
 }
 
 async function doSave(status : string) {
@@ -173,10 +192,10 @@ async function saveDraft() {
   saving.value = true
   try {
     await doSave(PLAN_STATUS['DRAFT'] as string)
-    uni.showToast({ title: '已保存草稿', icon: 'success' })
+    showSuccess('已保存草稿')
     setTimeout(() => { uni.navigateBack() }, 500)
   } catch (e) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
+    showError('保存失败')
   } finally {
     saving.value = false
   }
@@ -184,35 +203,102 @@ async function saveDraft() {
 
 async function confirmPlanAction() {
   if (saving.value) return
+  if (isTemplate.value) return
   if (!planName.value) {
-    uni.showToast({ title: '请输入方案名称', icon: 'none' })
+    showInfo('请输入方案名称')
+    return
+  }
+  if (phases.value.length === 0) {
+    showInfo('请先添加环节')
     return
   }
   saving.value = true
   try {
-    await doSave(PLAN_STATUS['CONFIRMED'] as string)
+    await doSave(PLAN_STATUS['DRAFT'] as string)
     if (planId.value) {
       await planStore.confirmPlan(planId.value)
     }
     planStatus.value = PLAN_STATUS['CONFIRMED'] as string
-    uni.showToast({ title: '方案已确认', icon: 'success' })
+    showSuccess('已确认方案')
   } catch (e) {
-    uni.showToast({ title: '确认失败', icon: 'none' })
+    showError('确认失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function confirmAndStartTraining() {
+  if (isTemplate.value) return
+  saving.value = true
+  try {
+    await doSave(PLAN_STATUS['DRAFT'] as string)
+    if (planId.value) {
+      await planStore.confirmPlan(planId.value)
+      planStatus.value = PLAN_STATUS['CONFIRMED'] as string
+      showSuccess('已确认方案')
+      uni.navigateTo({ url: `/pages/live/index?planId=${planId.value}` })
+    }
+  } catch (e) {
+    showError('开课失败')
   } finally {
     saving.value = false
   }
 }
 
 function startTraining() {
-  if (planId.value) {
+  if (saving.value) return
+  if (isTemplate.value) return
+  if (!planName.value) {
+    showInfo('请输入方案名称')
+    return
+  }
+  if (phases.value.length === 0) {
+    showInfo('请先添加环节')
+    return
+  }
+  if (isConfirmed.value && planId.value) {
     uni.navigateTo({ url: `/pages/live/index?planId=${planId.value}` })
+    return
+  }
+  uni.showModal({
+    title: '确认并开始培训',
+    content: '将先确认当前方案，然后进入培训现场。',
+    confirmText: '开始培训',
+    cancelText: '再看看',
+    success: (res) => {
+      if (res.confirm) {
+        confirmAndStartTraining()
+      }
+    }
+  })
+}
+
+async function saveTemplateAction() {
+  if (saving.value) return
+  if (!planName.value) {
+    showInfo('请输入模板名称')
+    return
+  }
+  if (phases.value.length === 0) {
+    showInfo('请先添加环节')
+    return
+  }
+  saving.value = true
+  try {
+    await doSave('')
+    showSuccess('已保存模板')
+    setTimeout(() => { uni.navigateBack() }, 500)
+  } catch (e) {
+    showError('保存失败')
+  } finally {
+    saving.value = false
   }
 }
 </script>
 
 <template>
   <view class="page">
-    <NavBar title="方案编辑" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack">
+    <NavBar :title="pageTitle" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack">
       <template #right>
         <view class="nav-action" @click="goPreview">
           <text class="nav-action-text">预览</text>
@@ -223,8 +309,8 @@ function startTraining() {
     <view class="content">
       <view class="card">
         <view class="form-item">
-          <text class="form-label">方案名称</text>
-          <input class="form-input" v-model="planName" placeholder="请输入方案名称" :disabled="isReadonly" />
+          <text class="form-label">{{ isTemplate ? '模板名称' : '方案名称' }}</text>
+          <input class="form-input" v-model="planName" :placeholder="isTemplate ? '请输入模板名称' : '请输入方案名称'" :disabled="isReadonly" />
         </view>
         <view class="form-row">
           <view class="form-item form-item-half">
@@ -239,7 +325,7 @@ function startTraining() {
               </view>
             </view>
           </view>
-          <view class="form-item form-item-half">
+          <view class="form-item form-item-half" v-if="!isTemplate">
             <text class="form-label">客户名称</text>
             <input class="form-input" v-model="planClient" placeholder="请输入客户名称" :disabled="isReadonly" />
           </view>
@@ -274,16 +360,16 @@ function startTraining() {
             <view class="phase-actions" v-if="!isReadonly">
               <view :class="['phase-action-btn', { disabled: index === 0 }]" @click="moveUp(index)">
                 <view class="phase-action-icon phase-action-up">
-                  <AppIcon name="stateChevronRight" size="18rpx" />
+                  <AppIcon name="stateChevronRight" size="28rpx" />
                 </view>
               </view>
               <view :class="['phase-action-btn', { disabled: index === phases.length - 1 }]" @click="moveDown(index)">
                 <view class="phase-action-icon phase-action-down">
-                  <AppIcon name="stateChevronRight" size="18rpx" />
+                  <AppIcon name="stateChevronRight" size="28rpx" />
                 </view>
               </view>
               <view class="phase-action-btn phase-action-delete" @click="removePhase(index)">
-                <AppIcon name="stateClose" size="18rpx" />
+                <AppIcon name="stateClose" size="24rpx" />
               </view>
             </view>
           </view>
@@ -297,7 +383,13 @@ function startTraining() {
       </view>
     </view>
 
-    <view class="bottom-bar" v-if="!isReadonly">
+    <view class="bottom-bar" v-if="!isReadonly && isTemplate">
+      <view class="btn-template-save" @click="saveTemplateAction">
+        <text class="btn-template-save-text">保存模板</text>
+      </view>
+    </view>
+
+    <view class="bottom-bar" v-if="!isReadonly && !isTemplate">
       <view class="btn-confirm" @click="confirmPlanAction" v-if="isDraft">
         <text class="btn-confirm-text">确认方案</text>
       </view>
@@ -315,7 +407,7 @@ function startTraining() {
           :key="idx"
           @click="selectPhaseType(item)"
         >
-          <AppIcon :name="item['iconName'] as string" size="36rpx" />
+          <AppIcon :name="item['iconName'] as string" size="44rpx" />
           <text class="popup-grid-label" :class="{ 'popup-grid-label-active': newPhaseName === (item['name'] as string) }">{{ item['name'] }}</text>
         </view>
       </view>
@@ -330,8 +422,10 @@ function startTraining() {
         </view>
       </view>
       <template #footer>
-        <view class="popup-btn" @click="confirmAddPhase">
-          <text class="popup-btn-text">确认添加</text>
+        <view class="popup-footer-actions">
+          <view class="popup-btn" @click="confirmAddPhase">
+            <text class="popup-btn-text">确认添加</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -562,8 +656,8 @@ function startTraining() {
   gap: 8rpx;
 }
 .phase-action-btn {
-  width: 48rpx;
-  height: 48rpx;
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -650,6 +744,20 @@ function startTraining() {
   color: #FFFFFF;
   font-weight: 500;
 }
+.btn-template-save {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  background-color: #4A7CF7;
+}
+.btn-template-save-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
 .popup-mask {
   position: fixed;
   top: 0;
@@ -696,11 +804,12 @@ function startTraining() {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 20rpx;
-  margin-bottom: 32rpx;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
 }
 .popup-grid-item {
-  width: calc(50% - 10rpx);
+  width: 48%;
+  min-height: 132rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -709,6 +818,8 @@ function startTraining() {
   border-radius: 20rpx;
   background-color: #F5F5F7;
   border: 2rpx solid transparent;
+  margin-bottom: 20rpx;
+  box-sizing: border-box;
 }
 .popup-grid-item-active {
   border-color: #4A7CF7;
@@ -751,16 +862,24 @@ function startTraining() {
   background-color: #FAFAFA;
 }
 .popup-btn {
-  height: 88rpx;
+  min-width: 204rpx;
+  height: 76rpx;
+  padding: 0 34rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   background-color: #4A7CF7;
+  box-sizing: border-box;
+}
+.popup-footer-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
 .popup-btn-text {
-  font-size: 30rpx;
+  font-size: 28rpx;
   color: #FFFFFF;
-  font-weight: 500;
+  font-weight: 600;
 }
 </style>

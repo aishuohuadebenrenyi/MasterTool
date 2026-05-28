@@ -5,6 +5,7 @@ import { usePlanStore } from '../../stores/plan'
 import { PLAN_STATUS, getPlanTypeLabel } from '../../utils/constants'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { showSuccess, showError } from '../../utils/toast'
 
 const reviewStore = useReviewStore()
 const planStore = usePlanStore()
@@ -209,12 +210,12 @@ async function completeReview() {
       isCompleted: true
     } as UTSJSONObject)
     await planStore.fetchPlanDetail(plan.value!['id'] as string)
-    uni.showToast({ title: '复盘完成！', icon: 'success' })
+    showSuccess('复盘完成')
     setTimeout(() => {
       uni.navigateBack({})
     }, 1500)
   } catch (e : unknown) {
-    uni.showToast({ title: '保存失败，请重试', icon: 'none' })
+    showError('保存失败')
   }
 }
 

@@ -5,6 +5,7 @@ import { usePlanStore } from '../../stores/plan'
 import * as feedbackApi from '../../api/feedback'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { showSuccess, showError } from '../../utils/toast'
 
 const userStore = useUserStore()
 const planStore = usePlanStore()
@@ -13,10 +14,39 @@ const rangeType = ref<string>('6个月')
 const monthlyStats = ref<Array<UTSJSONObject>>([] as Array<UTSJSONObject>)
 const sceneStats = ref<Array<UTSJSONObject>>([] as Array<UTSJSONObject>)
 const loading = ref<boolean>(false)
+const currentSessionId = ref<string>('')
+const sessionStats = ref<UTSJSONObject>({} as UTSJSONObject)
 
-const totalSessions = computed<number>(() => (userStore.stats?.['totalSessions'] as number) || 0)
-const totalParticipants = computed<number>(() => (userStore.stats?.['totalParticipants'] as number) || 0)
-const avgSatisfaction = computed<string>(() => String((userStore.stats?.['avgSatisfaction'] as number) || 0))
+const isSessionMode = computed<boolean>(() => currentSessionId.value.length > 0)
+const pageTitle = computed<string>(() => isSessionMode.value ? '本场数据' : '数据详情')
+const sessionMetricLabel = computed<string>(() => isSessionMode.value ? '本场培训' : '总培训场次')
+const participantMetricLabel = computed<string>(() => isSessionMode.value ? '已签到人数' : '累计参与人数')
+const satisfactionEmptyText = computed<string>(() => isSessionMode.value ? '暂无本场满意度数据' : '暂无趋势数据')
+const npsEmptyText = computed<string>(() => isSessionMode.value ? '暂无本场 NPS 数据' : '暂无趋势数据')
+const loadingText = computed<string>(() => isSessionMode.value ? '正在加载本场数据...' : '正在加载趋势数据...')
+const totalSessions = computed<number>(() => isSessionMode.value ? 1 : ((userStore.stats?.['totalSessions'] as number) || 0))
+const totalParticipants = computed<number>(() => {
+  if (isSessionMode.value) {
+    return Number(sessionStats.value['participantsTotal'] || sessionStats.value['participantCount'] || 0)
+  }
+  return (userStore.stats?.['totalParticipants'] as number) || 0
+})
+const avgSatisfaction = computed<string>(() => {
+  const value = isSessionMode.value ? sessionStats.value['avgSatisfaction'] : userStore.stats?.['avgSatisfaction']
+  return String((value as number) || 0)
+})
+const fourthMetricValue = computed<string>(() => {
+  if (isSessionMode.value) {
+    return String((sessionStats.value['nps'] as number) || 0)
+  }
+  return rangeType.value
+})
+const fourthMetricLabel = computed<string>(() => isSessionMode.value ? '本场 NPS' : '当前观察区间')
+const satisfactionChartTitle = computed<string>(() => isSessionMode.value ? '本场满意度' : '满意度趋势')
+const npsChartTitle = computed<string>(() => isSessionMode.value ? '本场 NPS' : 'NPS趋势')
+const distributionTitle = computed<string>(() => isSessionMode.value ? '满意度分布' : '场景分布')
+const distributionEmptyText = computed<string>(() => isSessionMode.value ? '暂无满意度分布数据' : '暂无场景分布数据')
+const distributionUnit = computed<string>(() => isSessionMode.value ? ' 份' : ' 次')
 
 function setRange(range : string) {
   rangeType.value = range
@@ -93,8 +123,49 @@ async function buildCharts() {
   } as UTSJSONObject)).sort((a : UTSJSONObject, b : UTSJSONObject) => ((b['count'] as number) || 0) - ((a['count'] as number) || 0))
 }
 
+function buildSessionCharts() {
+  const satisfaction = Number(sessionStats.value['avgSatisfaction'] || 0)
+  const nps = Number(sessionStats.value['nps'] || 0)
+  const responseCount = Number(sessionStats.value['count'] || sessionStats.value['totalResponses'] || 0)
+  monthlyStats.value = [{
+    month: '本场',
+    satisfaction: satisfaction.toFixed(1),
+    nps,
+    count: responseCount,
+    barWidth: Math.max(12, Math.min(240, satisfaction * 48))
+  } as UTSJSONObject]
+
+  const distribution = (sessionStats.value['satisfactionDistribution'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>
+  sceneStats.value = distribution.map((item : UTSJSONObject) => ({
+    name: String(item['star'] || '') + '星',
+    count: (item['count'] as number) || 0
+  } as UTSJSONObject))
+}
+
+async function loadSessionData() {
+  const sid = currentSessionId.value
+  if (!sid) return
+  loading.value = true
+  try {
+    const stats = await feedbackApi.getFeedbackStats(sid)
+    sessionStats.value = stats
+    buildSessionCharts()
+  } catch (_e : unknown) {
+    sessionStats.value = {} as UTSJSONObject
+    monthlyStats.value = []
+    sceneStats.value = []
+    showError('本场数据加载失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 async function loadData() {
   if (!userStore.isLoggedIn) {
+    return
+  }
+  if (isSessionMode.value) {
+    await loadSessionData()
     return
   }
   loading.value = true
@@ -109,6 +180,12 @@ async function loadData() {
   }
 }
 
+onLoad((options) => {
+  if (options != null && options['sessionId'] != null) {
+    currentSessionId.value = (options['sessionId'] as string) || ''
+  }
+})
+
 onMounted(() => {
   loadData()
 })
@@ -117,16 +194,16 @@ async function handleLogin() {
   try {
     await userStore.loginWithWechat()
     await loadData()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    showSuccess('登录成功')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+    showError(e instanceof Error ? e.message : '登录失败')
   }
 }
 </script>
 
 <template>
   <view class="page">
-    <NavBar title="数据详情" @back="uni.navigateBack()" />
+    <NavBar :title="pageTitle" @back="uni.navigateBack()" />
 
     <view v-if="!userStore.isLoggedIn" class="login-empty">
       <view class="app-empty-icon-wrap">
@@ -139,7 +216,7 @@ async function handleLogin() {
       </view>
     </view>
 
-    <view v-if="userStore.isLoggedIn" class="range-toggle">
+    <view v-if="userStore.isLoggedIn && !isSessionMode" class="range-toggle">
       <view
         :class="['range-btn', rangeType === '6个月' ? 'range-btn-active' : '']"
         @click="setRange('6个月')"
@@ -158,11 +235,11 @@ async function handleLogin() {
       <view class="stats-row">
         <view class="stats-card">
           <text class="stats-card-value">{{ totalSessions }}</text>
-          <text class="stats-card-label">总培训场次</text>
+          <text class="stats-card-label">{{ sessionMetricLabel }}</text>
         </view>
         <view class="stats-card">
           <text class="stats-card-value">{{ totalParticipants }}</text>
-          <text class="stats-card-label">累计参与人数</text>
+          <text class="stats-card-label">{{ participantMetricLabel }}</text>
         </view>
       </view>
 
@@ -172,18 +249,18 @@ async function handleLogin() {
           <text class="stats-card-label">平均满意度</text>
         </view>
         <view class="stats-card">
-          <text class="stats-card-value">{{ rangeType }}</text>
-          <text class="stats-card-label">当前观察区间</text>
+          <text class="stats-card-value">{{ fourthMetricValue }}</text>
+          <text class="stats-card-label">{{ fourthMetricLabel }}</text>
         </view>
       </view>
 
       <view class="chart-card">
-        <text class="chart-card-title">满意度趋势</text>
+        <text class="chart-card-title">{{ satisfactionChartTitle }}</text>
         <view v-if="loading" class="chart-placeholder">
-          <text class="chart-placeholder-text">正在加载趋势数据...</text>
+          <text class="chart-placeholder-text">{{ loadingText }}</text>
         </view>
         <view v-else-if="monthlyStats.length === 0" class="chart-placeholder">
-          <text class="chart-placeholder-text">暂无趋势数据</text>
+          <text class="chart-placeholder-text">{{ satisfactionEmptyText }}</text>
         </view>
         <view v-else class="chart-list">
           <view v-for="item in monthlyStats" :key="item['month']" class="chart-row">
@@ -197,12 +274,12 @@ async function handleLogin() {
       </view>
 
       <view class="chart-card">
-        <text class="chart-card-title">NPS趋势</text>
+        <text class="chart-card-title">{{ npsChartTitle }}</text>
         <view v-if="loading" class="chart-placeholder">
-          <text class="chart-placeholder-text">正在加载趋势数据...</text>
+          <text class="chart-placeholder-text">{{ loadingText }}</text>
         </view>
         <view v-else-if="monthlyStats.length === 0" class="chart-placeholder">
-          <text class="chart-placeholder-text">暂无趋势数据</text>
+          <text class="chart-placeholder-text">{{ npsEmptyText }}</text>
         </view>
         <view v-else class="chart-list">
           <view v-for="item in monthlyStats" :key="item['month'] + '_nps'" class="chart-row">
@@ -216,17 +293,17 @@ async function handleLogin() {
       </view>
 
       <view class="chart-card">
-        <text class="chart-card-title">场景分布</text>
+        <text class="chart-card-title">{{ distributionTitle }}</text>
         <view v-if="loading" class="chart-placeholder">
-          <text class="chart-placeholder-text">正在加载场景数据...</text>
+          <text class="chart-placeholder-text">正在加载数据...</text>
         </view>
         <view v-else-if="sceneStats.length === 0" class="chart-placeholder">
-          <text class="chart-placeholder-text">暂无场景分布数据</text>
+          <text class="chart-placeholder-text">{{ distributionEmptyText }}</text>
         </view>
         <view v-else class="scene-list">
           <view v-for="item in sceneStats" :key="item['name']" class="scene-row">
             <text class="scene-name">{{ item['name'] }}</text>
-            <text class="scene-count">{{ item['count'] }} 次</text>
+            <text class="scene-count">{{ item['count'] }}{{ distributionUnit }}</text>
           </view>
         </view>
       </view>

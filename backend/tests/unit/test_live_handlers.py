@@ -3,6 +3,7 @@ from bson import ObjectId
 from common.auth import generate_token
 from models.live_session import LiveSession
 from models.participant import Participant
+from functions.live import checkin as live_checkin
 from functions.live import group as live_group
 from functions.live import pick as live_pick
 from functions.live import score as live_score
@@ -68,6 +69,37 @@ def test_group_create_returns_groups_payload(monkeypatch, mock_db):
     groups = response['data']['groups']
     assert len(groups) == 2
     assert sum(len(group['members']) for group in groups) == 4
+    assert sum(len(group['memberNames']) for group in groups) == 4
+    assert all(group['memberDetails'] for group in groups)
+
+
+def test_checkin_rejects_duplicate_name_in_same_session(monkeypatch, mock_db):
+    monkeypatch.setattr(live_checkin, 'get_db', lambda: mock_db)
+    session = LiveSession.create('test_user', {'planId': str(ObjectId()), 'planName': '测试'})
+    mock_db.live_sessions.insert_one(session)
+    session_id = str(session['_id'])
+
+    first = live_checkin.main({
+        'body': {
+            'sessionId': session_id,
+            'openid': 'openid_1',
+            'name': ' 张三 '
+        }
+    }, None)
+
+    assert first['data']['name'] == '张三'
+
+    response, status = live_checkin.main({
+        'body': {
+            'sessionId': session_id,
+            'openid': 'openid_2',
+            'name': '张三'
+        }
+    }, None)
+
+    assert status == 400
+    assert response['code'] == 3002
+    assert response['message'] == '该姓名已签到，请勿重复签到'
 
 
 def test_score_updates_group_score(monkeypatch, mock_db):

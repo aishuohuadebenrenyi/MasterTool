@@ -12,6 +12,12 @@ const pageMaxWidth = getDesktopMaxWidth()
 const reviewFilter = ref<string>('全部')
 const reviewFilters = ['全部', '待复盘', '已复盘'] as string[]
 
+function normalizeReviewFilter(raw : string | null) : string {
+  if (raw === 'pending' || raw === 'delivered' || raw === '待复盘') return '待复盘'
+  if (raw === 'done' || raw === 'reviewed' || raw === '已复盘') return '已复盘'
+  return '全部'
+}
+
 const filteredPlans = computed(() => {
   let list = [...planStore.deliveredPlans, ...planStore.reviewedPlans] as Array<UTSJSONObject>
   if (reviewFilter.value === '待复盘') {
@@ -41,6 +47,12 @@ function goReviewDetail(planId : string) {
 function startReview(planId : string) {
   uni.navigateTo({ url: `/pages/review/ReviewDetail?planId=${planId}` })
 }
+
+onLoad((options) => {
+  if (options != null && options['filter'] != null) {
+    reviewFilter.value = normalizeReviewFilter(options['filter'] as string)
+  }
+})
 
 onMounted(() => {
   planStore.fetchPlans()

@@ -4,6 +4,7 @@ import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import * as feedbackApi from '../../api/feedback'
 import { getDesktopMaxWidth } from '../../utils/viewport'
+import { showSuccess } from '../../utils/toast'
 
 const pageMaxWidth = getDesktopMaxWidth()
 const sessionId = ref<string>('')
@@ -56,7 +57,7 @@ async function submitFeedback() {
       name: name.value.trim()
     } as UTSJSONObject)
     submitted.value = true
-    uni.showToast({ title: '反馈已提交', icon: 'success' })
+    showSuccess('反馈已提交')
   } catch (e : unknown) {
     errorMessage.value = e instanceof Error ? e.message : '反馈提交失败'
   } finally {

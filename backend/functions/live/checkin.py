@@ -10,6 +10,14 @@ from datetime import datetime
 import uuid
 
 
+def normalize_participant_name(raw_name):
+    return ' '.join(str(raw_name or '').strip().split())
+
+
+def same_participant_name(left, right):
+    return normalize_participant_name(left).lower() == normalize_participant_name(right).lower()
+
+
 def main(event, context):
     data = event.get('body', {})
 
@@ -37,15 +45,24 @@ def main(event, context):
     if session.get('phase') == 'ended':
         return error('场次已结束', ErrorCode.STATUS_ERROR, 400)
 
-    openid = data.get('openid', '') or f'manual_{uuid.uuid4().hex[:12]}'
-    existing = db.participants.find_one({'sessionId': session_id, 'openid': openid})
+    participant_name = normalize_participant_name(data.get('name', ''))
+    if not participant_name:
+        return error('请输入姓名', ErrorCode.PARAM_ERROR, 400)
+
+    openid = str(data.get('openid', '') or '').strip() or f'manual_{uuid.uuid4().hex[:12]}'
+    existing = db.participants.find_one({'sessionId': session_id, 'openid': openid, 'checkedIn': True})
     if existing:
-        return error('已签到', ErrorCode.ALREADY_EXISTS, 400)
+        return error('该用户已签到', ErrorCode.ALREADY_EXISTS, 400)
+
+    existing_participants = db.participants.find({'sessionId': session_id, 'checkedIn': True})
+    for participant in existing_participants:
+        if same_participant_name(participant.get('name', ''), participant_name):
+            return error('该姓名已签到，请勿重复签到', ErrorCode.ALREADY_EXISTS, 400)
 
     participant_data = {
         'sessionId': session_id,
         'openid': openid,
-        'name': data.get('name', '') or '匿名参与者',
+        'name': participant_name,
         'avatar': data.get('avatar', ''),
         'checkedIn': True,
         'groupId': data.get('groupId', ''),

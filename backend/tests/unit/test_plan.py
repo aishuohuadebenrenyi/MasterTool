@@ -14,6 +14,7 @@ class TestPlan:
         plan = Plan.create('user_001', data)
         assert plan['userId'] == 'user_001'
         assert plan['name'] == '测试方案'
+        assert plan['contentKind'] == Plan.CONTENT_KIND_PLAN
         assert plan['status'] == Plan.STATUS_DRAFT
         assert plan['type'] == 'improv_training'
         assert plan['people'] == 20
@@ -69,3 +70,22 @@ class TestPlan:
         result = Plan.to_dict(plan)
         assert result['type'] == Plan.TYPE_IMPROV_TRAINING
         assert result['typeLabel'] == '即兴培训'
+
+    def test_to_dict_includes_plan_list_flags(self):
+        plan = Plan.create('user_001', {'name': '测试', 'isPinned': True, 'isFavorite': True})
+        result = Plan.to_dict(plan)
+        assert result['isPinned'] is True
+        assert result['isFavorite'] is True
+
+    def test_template_has_no_plan_status(self):
+        template = Plan.create('user_001', {
+            'contentKind': Plan.CONTENT_KIND_TEMPLATE,
+            'name': '企业培训模板',
+            'status': Plan.STATUS_DRAFT,
+            'clientName': '客户'
+        })
+        result = Plan.to_dict(template)
+        assert result['contentKind'] == Plan.CONTENT_KIND_TEMPLATE
+        assert result['status'] == ''
+        assert result['client'] == ''
+        assert result['isPersonalTemplate'] is True

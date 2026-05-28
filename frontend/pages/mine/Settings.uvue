@@ -45,6 +45,8 @@ onMounted(() => {
             <text class="setting-desc">向左滑动推进到下一步</text>
           </view>
           <view :class="['toggle', swipeNext ? 'toggle-on' : 'toggle-off']" @click="toggleSwipeNext">
+            <text :class="['toggle-text', swipeNext ? 'toggle-text-active' : '']">开</text>
+            <text :class="['toggle-text', !swipeNext ? 'toggle-text-active' : '']">关</text>
             <view class="toggle-thumb"></view>
           </view>
         </view>
@@ -54,6 +56,8 @@ onMounted(() => {
             <text class="setting-desc">向右滑动回退到上一步</text>
           </view>
           <view :class="['toggle', swipePrev ? 'toggle-on' : 'toggle-off']" @click="toggleSwipePrev">
+            <text :class="['toggle-text', swipePrev ? 'toggle-text-active' : '']">开</text>
+            <text :class="['toggle-text', !swipePrev ? 'toggle-text-active' : '']">关</text>
             <view class="toggle-thumb"></view>
           </view>
         </view>
@@ -63,6 +67,8 @@ onMounted(() => {
             <text class="setting-desc">双击屏幕启动延时计时</text>
           </view>
           <view :class="['toggle', doubleTapDelay ? 'toggle-on' : 'toggle-off']" @click="toggleDoubleTapDelay">
+            <text :class="['toggle-text', doubleTapDelay ? 'toggle-text-active' : '']">开</text>
+            <text :class="['toggle-text', !doubleTapDelay ? 'toggle-text-active' : '']">关</text>
             <view class="toggle-thumb"></view>
           </view>
         </view>
@@ -76,6 +82,8 @@ onMounted(() => {
             <text class="setting-desc">倒计时结束时播放提示音</text>
           </view>
           <view :class="['toggle', timerSound ? 'toggle-on' : 'toggle-off']" @click="toggleTimerSound">
+            <text :class="['toggle-text', timerSound ? 'toggle-text-active' : '']">开</text>
+            <text :class="['toggle-text', !timerSound ? 'toggle-text-active' : '']">关</text>
             <view class="toggle-thumb"></view>
           </view>
         </view>
@@ -85,6 +93,8 @@ onMounted(() => {
             <text class="setting-desc">自动保存培训记录和进度</text>
           </view>
           <view :class="['toggle', autoSave ? 'toggle-on' : 'toggle-off']" @click="toggleAutoSave">
+            <text :class="['toggle-text', autoSave ? 'toggle-text-active' : '']">开</text>
+            <text :class="['toggle-text', !autoSave ? 'toggle-text-active' : '']">关</text>
             <view class="toggle-thumb"></view>
           </view>
         </view>
@@ -175,27 +185,56 @@ onMounted(() => {
   margin-top: 4rpx;
 }
 .toggle {
-  width: 96rpx;
-  height: 56rpx;
-  border-radius: 28rpx;
+  width: 128rpx;
+  height: 60rpx;
+  border-radius: 30rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  padding: 4rpx;
+  justify-content: space-between;
+  padding: 4rpx 12rpx;
   transition: background-color 0.3s;
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 .toggle-on {
   background-color: #4A7CF7;
-  justify-content: flex-end;
 }
 .toggle-off {
   background-color: #E5E5EA;
-  justify-content: flex-start;
 }
 .toggle-thumb {
+  position: absolute;
+  top: 6rpx;
   width: 48rpx;
   height: 48rpx;
   border-radius: 24rpx;
   background-color: #FFFFFF;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+  transition: left 0.24s ease;
+}
+.toggle-on .toggle-thumb {
+  left: 74rpx;
+}
+.toggle-off .toggle-thumb {
+  left: 6rpx;
+}
+.toggle-text {
+  width: 44rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  z-index: 1;
+}
+.toggle-off .toggle-text {
+  color: #8E8E93;
+}
+.toggle-text-active {
+  color: #FFFFFF;
+}
+.toggle-off .toggle-text-active {
+  color: #1A1A2E;
 }
 </style>

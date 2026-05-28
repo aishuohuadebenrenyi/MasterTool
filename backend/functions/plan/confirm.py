@@ -29,6 +29,9 @@ def main(event, context):
     if not plan:
         return error('方案不存在', ErrorCode.NOT_FOUND, 404)
 
+    if plan.get('contentKind') == Plan.CONTENT_KIND_TEMPLATE:
+        return error('模板不参与方案状态流转', ErrorCode.STATUS_ERROR, 400)
+
     if not Plan.can_confirm(plan['status']):
         return error('当前状态不允许确认', ErrorCode.STATUS_ERROR, 400)
 

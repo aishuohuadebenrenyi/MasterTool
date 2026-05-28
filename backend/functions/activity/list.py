@@ -28,7 +28,13 @@ def main(event, context):
         ]
     }
     if category:
-        filter_query['scenes'] = {'$in': [category]}
+        category_values = Activity.scene_query_values(category)
+        filter_query.setdefault('$and', []).append({
+            '$or': [
+                {'scenes': {'$in': category_values}},
+                {'category': {'$in': category_values}}
+            ]
+        })
     if search:
         filter_query['$and'] = [{
             '$or': [

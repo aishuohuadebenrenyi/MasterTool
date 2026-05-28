@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import { useActivityStore } from '../../stores/activity'
 import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
+import { getDesktopMaxWidth } from '../../utils/viewport'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 
 const activityStore = useActivityStore()
+const pageMaxWidth = getDesktopMaxWidth()
 
 const form = ref<UTSJSONObject>({
   name: '',
@@ -46,20 +49,99 @@ function isDifficultySelected(tag : string) : boolean {
   return (form.value['difficulty'] as string) === tag
 }
 
+function normalizeDifficultyForForm(raw : string) : string {
+  if (raw === 'low' || raw === 'easy' || raw === '简单') return '简单'
+  if (raw === 'high' || raw === 'hard' || raw === '困难') return '困难'
+  return '中等'
+}
+
+function getDifficultyCode(label : string) : string {
+  if (label === '简单') return 'low'
+  if (label === '困难') return 'high'
+  return 'medium'
+}
+
+function parseDurationValue(raw : string) : number {
+  const cleaned = raw.replace(/[^0-9]/g, '')
+  return parseInt(cleaned) || 0
+}
+
+function getText(data : UTSJSONObject, first : string, second : string = '') : string {
+  const value = data[first] as string
+  if (value) return value
+  if (second) {
+    const raw = data[second]
+    if (Array.isArray(raw)) {
+      return (raw as Array<string>).join('\n')
+    }
+    const next = raw as string
+    if (next) return next
+  }
+  return ''
+}
+
+function applyActivity(data : UTSJSONObject) {
+  const scenes = (data['scenes'] as Array<string>) || [] as Array<string>
+  form.value = {
+    name: (data['name'] as string) || '',
+    scenes,
+    difficulty: normalizeDifficultyForForm((data['difficulty'] as string) || (data['intensity'] as string) || ''),
+    participants: (data['participants'] as string) || (data['people'] as string) || '',
+    duration: data['duration'] != null ? String(data['duration']) : '',
+    objective: getText(data, 'objective', 'learningGoal'),
+    rules: getText(data, 'rules', 'description'),
+    reviewQuestions: getText(data, 'reviewQuestions', 'reviewGuide'),
+    leaderTips: getText(data, 'leaderTips', 'tips')
+  } as UTSJSONObject
+}
+
+function buildPayload() : UTSJSONObject {
+  const scenes = (form.value['scenes'] as Array<string>) || [] as Array<string>
+  const difficulty = (form.value['difficulty'] as string) || '中等'
+  const rules = (form.value['rules'] as string) || ''
+  const reviewQuestions = (form.value['reviewQuestions'] as string) || ''
+  const leaderTips = (form.value['leaderTips'] as string) || ''
+  const payload = {
+    name: (form.value['name'] as string).trim(),
+    scenes,
+    category: scenes.length > 0 ? scenes[0] : '通用',
+    difficulty,
+    intensity: getDifficultyCode(difficulty),
+    people: (form.value['participants'] as string) || '',
+    participants: (form.value['participants'] as string) || '',
+    objective: (form.value['objective'] as string) || '',
+    learningGoal: (form.value['objective'] as string) || '',
+    rules,
+    steps: rules ? [rules] as Array<string> : [] as Array<string>,
+    reviewQuestions,
+    reviewGuide: reviewQuestions,
+    leaderTips,
+    tips: leaderTips,
+    isCustom: true
+  } as UTSJSONObject
+  const duration = parseDurationValue((form.value['duration'] as string) || '')
+  if (duration > 0) {
+    payload['duration'] = duration
+  }
+  return payload
+}
+
 async function handleSave() {
   if (!(form.value['name'] as string).trim()) {
-    uni.showToast({ title: '请输入活动名称', icon: 'none' })
+    showInfo('请输入活动名称')
     return
   }
+  const payload = buildPayload()
   try {
     if (isEditing.value && editingId.value) {
-      await activityStore.updateActivity(editingId.value, { ...form.value })
+      await activityStore.updateActivity(editingId.value, payload)
     } else {
-      await activityStore.createActivity({ ...form.value })
+      await activityStore.createActivity(payload)
     }
+    showSuccess(isEditing.value ? '已更新活动' : '已保存活动')
     uni.navigateBack()
   } catch (e : unknown) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
+    showError('保存失败')
   }
 }
 
@@ -74,7 +156,7 @@ async function handleDelete() {
           await activityStore.deleteActivity(editingId.value)
           uni.navigateBack()
         } catch (e : unknown) {
-          uni.showToast({ title: '删除失败', icon: 'none' })
+          showError('删除失败')
         }
       }
     }
@@ -84,91 +166,115 @@ async function handleDelete() {
 function goBack() {
   uni.navigateBack()
 }
+
+async function loadActivity(id : string) {
+  try {
+    const data = await activityStore.fetchActivityDetail(id)
+    if (data != null) {
+      applyActivity(data)
+    }
+  } catch (_e : unknown) {
+    showError('活动加载失败')
+  }
+}
+
+onLoad((options) => {
+  if (options != null && options['id'] != null) {
+    editingId.value = (options['id'] as string) || ''
+    isEditing.value = editingId.value.length > 0
+    if (editingId.value) {
+      loadActivity(editingId.value)
+    }
+  }
+})
 </script>
 
 <template>
-  <view class="page">
+  <view class="page app-secondary-page">
     <NavBar :title="isEditing ? '编辑活动' : '新增活动'" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
 
     <scroll-view class="form-scroll" scroll-y>
-      <view class="form-body">
-        <view class="form-group">
-          <view class="form-label-row">
-            <text class="form-label">活动名称</text>
-            <text class="form-required">*</text>
+      <view class="form-body app-secondary-page-content" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
+        <view class="form-card app-card-surface">
+          <view class="form-group">
+            <view class="form-label-row">
+              <text class="form-label">活动名称</text>
+              <text class="form-required">*</text>
+            </view>
+            <input class="form-input" v-model="form['name']" placeholder="请输入活动名称" placeholder-class="input-placeholder" />
           </view>
-          <input class="form-input" v-model="form['name']" placeholder="请输入活动名称" placeholder-class="input-placeholder" />
-        </view>
 
-        <view class="form-group">
-          <text class="form-label">培训场景</text>
-          <view class="tag-list">
-            <view
-              v-for="(tag, index) in categories"
-              :key="index"
-              class="tag-item"
-              :class="{ 'tag-active': isSceneSelected(tag) }"
-              @click="toggleScene(tag)"
-            >
-              <text class="tag-text" :class="{ 'tag-text-active': isSceneSelected(tag) }">{{ tag }}</text>
+          <view class="form-group">
+            <text class="form-label">培训场景</text>
+            <view class="tag-list">
+              <view
+                v-for="(tag, index) in categories"
+                :key="index"
+                class="tag-item"
+                :class="{ 'tag-active': isSceneSelected(tag) }"
+                @click="toggleScene(tag)"
+              >
+                <text class="tag-text" :class="{ 'tag-text-active': isSceneSelected(tag) }">{{ tag }}</text>
+              </view>
             </view>
           </view>
-        </view>
 
-        <view class="form-group">
-          <text class="form-label">难度</text>
-          <view class="tag-list">
-            <view
-              v-for="(tag, index) in difficulties"
-              :key="index"
-              class="tag-item"
-              :class="{ 'tag-active': isDifficultySelected(tag) }"
-              @click="selectDifficulty(tag)"
-            >
-              <text class="tag-text" :class="{ 'tag-text-active': isDifficultySelected(tag) }">{{ tag }}</text>
+          <view class="form-group">
+            <text class="form-label">难度</text>
+            <view class="tag-list">
+              <view
+                v-for="(tag, index) in difficulties"
+                :key="index"
+                class="tag-item"
+                :class="{ 'tag-active': isDifficultySelected(tag) }"
+                @click="selectDifficulty(tag)"
+              >
+                <text class="tag-text" :class="{ 'tag-text-active': isDifficultySelected(tag) }">{{ tag }}</text>
+              </view>
             </view>
           </view>
-        </view>
 
-        <view class="form-row">
-          <view class="form-group form-group-half">
-            <text class="form-label">人数范围</text>
-            <input class="form-input" v-model="form['participants']" placeholder="如：8-20人" placeholder-class="input-placeholder" />
+          <view class="form-row">
+            <view class="form-group form-group-half">
+              <text class="form-label">人数范围</text>
+              <input class="form-input" v-model="form['participants']" placeholder="如：8-20人" placeholder-class="input-placeholder" />
+            </view>
+            <view class="form-group form-group-half">
+              <text class="form-label">时长</text>
+              <input class="form-input" v-model="form['duration']" placeholder="如：30" placeholder-class="input-placeholder" />
+            </view>
           </view>
-          <view class="form-group form-group-half">
-            <text class="form-label">时长</text>
-            <input class="form-input" v-model="form['duration']" placeholder="如：30min" placeholder-class="input-placeholder" />
+
+          <view class="form-group">
+            <text class="form-label">学习目标</text>
+            <input class="form-input" v-model="form['objective']" placeholder="请输入学习目标" placeholder-class="input-placeholder" />
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">规则说明</text>
+            <textarea class="form-textarea" v-model="form['rules']" placeholder="请输入规则说明" placeholder-class="input-placeholder" :rows="4" />
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">复盘引导问题</text>
+            <textarea class="form-textarea" v-model="form['reviewQuestions']" placeholder="请输入复盘引导问题" placeholder-class="input-placeholder" :rows="3" />
+          </view>
+
+          <view class="form-group form-group-last">
+            <text class="form-label">带领者Tips</text>
+            <textarea class="form-textarea" v-model="form['leaderTips']" placeholder="请输入带领者Tips" placeholder-class="input-placeholder" :rows="3" />
           </view>
         </view>
 
-        <view class="form-group">
-          <text class="form-label">学习目标</text>
-          <input class="form-input" v-model="form['objective']" placeholder="请输入学习目标" placeholder-class="input-placeholder" />
-        </view>
-
-        <view class="form-group">
-          <text class="form-label">规则说明</text>
-          <textarea class="form-textarea" v-model="form['rules']" placeholder="请输入规则说明" placeholder-class="input-placeholder" :rows="4" />
-        </view>
-
-        <view class="form-group">
-          <text class="form-label">复盘引导问题</text>
-          <textarea class="form-textarea" v-model="form['reviewQuestions']" placeholder="请输入复盘引导问题" placeholder-class="input-placeholder" :rows="3" />
-        </view>
-
-        <view class="form-group">
-          <text class="form-label">带领者Tips</text>
-          <textarea class="form-textarea" v-model="form['leaderTips']" placeholder="请输入带领者Tips" placeholder-class="input-placeholder" :rows="3" />
-        </view>
-
-        <view class="save-btn" @click="handleSave">
-          <text class="save-btn-text">保存活动</text>
-        </view>
-
-        <view class="delete-btn" v-if="isEditing" @click="handleDelete">
-          <view class="action-inline-icon">
-            <AppIcon name="stateDelete" size="22rpx" />
-            <text class="delete-btn-text">删除活动</text>
+        <view class="form-actions">
+          <view class="delete-btn" v-if="isEditing" @click="handleDelete">
+            <view class="action-inline-icon">
+              <AppIcon name="stateDelete" size="22rpx" />
+              <text class="delete-btn-text">删除活动</text>
+            </view>
+          </view>
+          <view class="save-btn" @click="handleSave">
+            <text class="save-btn-text">保存活动</text>
           </view>
         </view>
       </view>
@@ -230,18 +336,26 @@ function goBack() {
   flex: 1;
 }
 .form-body {
-  padding: 24rpx 32rpx 60rpx;
+  padding-bottom: 96rpx;
+}
+.form-card {
+  padding: 32rpx;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
 }
 .form-group {
-  margin-bottom: 32rpx;
+  margin-bottom: 30rpx;
+}
+.form-group-last {
+  margin-bottom: 0;
 }
 .form-row {
   display: flex;
   flex-direction: row;
-  gap: 24rpx;
+  justify-content: space-between;
 }
 .form-group-half {
-  flex: 1;
+  width: calc(50% - 12rpx);
 }
 .form-label-row {
   display: flex;
@@ -265,8 +379,8 @@ function goBack() {
 }
 .form-input {
   height: 88rpx;
-  background-color: #FFFFFF;
-  border-radius: 16rpx;
+  background-color: #F8F9FE;
+  border-radius: 18rpx;
   padding: 0 24rpx;
   font-size: 28rpx;
   color: #1A1A2E;
@@ -275,8 +389,8 @@ function goBack() {
   border-color: #E5E5EA;
 }
 .form-textarea {
-  background-color: #FFFFFF;
-  border-radius: 16rpx;
+  background-color: #F8F9FE;
+  border-radius: 18rpx;
   padding: 24rpx;
   font-size: 28rpx;
   color: #1A1A2E;
@@ -293,7 +407,6 @@ function goBack() {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 16rpx;
 }
 .tag-item {
   padding: 12rpx 28rpx;
@@ -302,6 +415,8 @@ function goBack() {
   border-width: 1rpx;
   border-style: solid;
   border-color: #E5E5EA;
+  margin-right: 16rpx;
+  margin-bottom: 16rpx;
 }
 .tag-active {
   background-color: #4A7CF7;
@@ -314,37 +429,45 @@ function goBack() {
 .tag-text-active {
   color: #FFFFFF;
 }
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
 .save-btn {
-  height: 96rpx;
+  min-width: 220rpx;
+  height: 80rpx;
+  padding: 0 36rpx;
   background-color: #4A7CF7;
-  border-radius: 48rpx;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 16rpx;
+  box-sizing: border-box;
 }
 .save-btn-text {
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: #FFFFFF;
 }
 .delete-btn {
-  height: 96rpx;
-  background-color: #FFFFFF;
-  border-radius: 48rpx;
+  min-width: 200rpx;
+  height: 80rpx;
+  padding: 0 32rpx;
+  background-color: #FFF1F2;
+  border-radius: 20rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-top: 24rpx;
-  border-width: 2rpx;
-  border-style: solid;
-  border-color: #FF3B30;
+  margin-right: 16rpx;
+  box-sizing: border-box;
 }
 .delete-btn-text {
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #FF3B30;
+  color: #E5484D;
 }
 .action-inline-icon {
   display: flex;

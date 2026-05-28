@@ -17,10 +17,13 @@ def main(event, context):
     page_size = int(query.get('pageSize', 20))
     status = query.get('status', '')
     plan_type = query.get('type', '')
+    content_kind = query.get('contentKind', '')
 
     skip = (page - 1) * page_size
 
     filter_query = {'userId': user_id}
+    if content_kind:
+        filter_query['contentKind'] = Plan.normalize_content_kind(content_kind)
     if status:
         filter_query['status'] = status
     if plan_type:
@@ -30,7 +33,7 @@ def main(event, context):
 
     try:
         total = db.plans.count_documents(filter_query)
-        plans = db.plans.find(filter_query).sort('createdAt', -1).skip(skip).limit(page_size)
+        plans = db.plans.find(filter_query).sort([('isPinned', -1), ('createdAt', -1)]).skip(skip).limit(page_size)
         result = [Plan.to_dict(p) for p in plans]
         return success(paginate(result, total, page, page_size))
     except Exception as e:

@@ -1,5 +1,9 @@
 import pytest
+from common.auth import generate_token
+from functions.feedback import stats as feedback_stats
 from models.feedback import Feedback
+from models.live_session import LiveSession
+from models.participant import Participant
 
 
 class TestFeedback:
@@ -39,3 +43,31 @@ class TestFeedback:
 
     def test_to_dict_none(self):
         assert Feedback.to_dict(None) is None
+
+
+def test_feedback_stats_returns_current_session_participant_total(monkeypatch, mock_db):
+    monkeypatch.setattr(feedback_stats, 'get_db', lambda: mock_db)
+    session = LiveSession.create('test_user', {'planName': '企业培训'})
+    mock_db.live_sessions.insert_one(session)
+    session_id = str(session['_id'])
+    mock_db.participants.insert_many([
+        Participant.create({'sessionId': session_id, 'openid': 'o1', 'name': '学员1', 'checkedIn': True}),
+        Participant.create({'sessionId': session_id, 'openid': 'o2', 'name': '学员2', 'checkedIn': True}),
+        Participant.create({'sessionId': session_id, 'openid': 'o3', 'name': '学员3', 'checkedIn': False})
+    ])
+    mock_db.feedback.insert_one(Feedback.create({
+        'sessionId': session_id,
+        'rating': 5,
+        'nps': 9,
+        'text': '很好'
+    }))
+
+    response = feedback_stats.main({
+        'headers': {'Authorization': f'Bearer {generate_token("test_user")}'},
+        'queryStringParameters': {'sessionId': session_id}
+    }, None)
+
+    assert response['data']['count'] == 1
+    assert response['data']['participantsTotal'] == 2
+    assert response['data']['participantCount'] == 2
+    assert response['data']['responseRate'] == '50%'

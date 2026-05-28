@@ -28,7 +28,8 @@ def main(event, context):
     if not plan:
         return error('方案不存在', ErrorCode.NOT_FOUND, 404)
 
-    if not Plan.can_edit(plan['status']):
+    is_template = plan.get('contentKind') == Plan.CONTENT_KIND_TEMPLATE
+    if not is_template and not Plan.can_edit(plan['status']):
         return error('当前状态不允许删除', ErrorCode.STATUS_ERROR, 400)
 
     try:

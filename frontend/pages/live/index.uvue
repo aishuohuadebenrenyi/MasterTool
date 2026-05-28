@@ -13,6 +13,7 @@ import * as noteApi from '../../api/note'
 import * as interactionApi from '../../api/interaction'
 import { calcNavBarInfo } from '../../utils/navbar'
 import { getDesktopMaxWidth, getSafeAreaBottom, getViewportHeight } from '../../utils/viewport'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 
 const liveStore = useLiveStore()
 const planStore = usePlanStore()
@@ -156,6 +157,18 @@ const allTools : Array<UTSJSONObject> = [
   { key: 'note', iconName: 'toolNote', name: '笔记' } as UTSJSONObject
 ]
 
+const toolboxRows = computed<Array<Array<UTSJSONObject>>>(() => {
+  const rows : Array<Array<UTSJSONObject>> = []
+  for (let i = 0; i < allTools.length; i += 2) {
+    const row : Array<UTSJSONObject> = [allTools[i]]
+    if (i + 1 < allTools.length) {
+      row.push(allTools[i + 1])
+    }
+    rows.push(row)
+  }
+  return rows
+})
+
 function closeToolbox() {
   showToolbox.value = false
 }
@@ -183,6 +196,21 @@ const recentCheckins = computed<Array<UTSJSONObject>>(() => {
   }
   return items
 })
+
+function normalizeCheckinName(raw : string) : string {
+  return raw.trim().toLowerCase()
+}
+
+function isDuplicateCheckinName(name : string) : boolean {
+  const normalized = normalizeCheckinName(name)
+  if (!normalized) return false
+  const list = liveStore.participants
+  for (let i = 0; i < list.length; i++) {
+    const itemName = normalizeCheckinName((list[i]['name'] as string) || '')
+    if (itemName === normalized) return true
+  }
+  return false
+}
 
 const groupMethod = ref<string>('average')
 const groupCount = ref<number>(4)
@@ -282,7 +310,7 @@ function toggleTimer() {
 
 function delayFiveMinutes() {
   timerSeconds.value += 300
-  uni.showToast({ title: '已延时 5 分钟', icon: 'none' })
+  showInfo('已延时 5 分钟')
 }
 
 function handleTimerTap() {
@@ -315,7 +343,7 @@ async function confirmExit() {
   try {
     await liveStore.endSession()
   } catch (_e : unknown) {
-    uni.showToast({ title: '结束会话失败，请稍后重试', icon: 'none' })
+    showError('结束会话失败')
   } finally {
     uni.navigateBack({})
   }
@@ -341,10 +369,12 @@ async function handleNext() {
     }
     timerRunning.value = false
     try {
+      const endedSessionId = liveStore.sessionId || ''
       await liveStore.endSession()
-      uni.redirectTo({ url: '/pages/live/LiveEnd' })
+      const url = endedSessionId ? `/pages/live/LiveEnd?sessionId=${endedSessionId}` : '/pages/live/LiveEnd'
+      uni.redirectTo({ url })
     } catch (_e : unknown) {
-      uni.showToast({ title: '结束会话失败，请稍后重试', icon: 'none' })
+      showError('结束会话失败')
     }
   }
 }
@@ -384,13 +414,13 @@ function formatCheckinTime(raw : string) : string {
   return h + ':' + m
 }
 
-async function refreshCheckins(showError : boolean = false) {
+async function refreshCheckins(showFailure : boolean = false) {
   if (!liveStore.sessionId) return
   try {
     await liveStore.loadCheckins()
   } catch (_e : unknown) {
-    if (showError) {
-      uni.showToast({ title: '获取签到列表失败', icon: 'none' })
+    if (showFailure) {
+      showError('签到列表加载失败')
     }
   }
 }
@@ -415,11 +445,15 @@ function openScoreSheet() {
 async function addManualCheckin() {
   const name = manualCheckinName.value.trim()
   if (!name) {
-    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    showInfo('请输入姓名')
     return
   }
   if (!liveStore.sessionId) {
-    uni.showToast({ title: '会话未开始', icon: 'none' })
+    showInfo('请先开始培训')
+    return
+  }
+  if (isDuplicateCheckinName(name)) {
+    showInfo('该姓名已签到')
     return
   }
   try {
@@ -430,12 +464,42 @@ async function addManualCheckin() {
     } as UTSJSONObject)
     manualCheckinName.value = ''
     await refreshCheckins(false)
-    uni.showToast({ title: '已签到', icon: 'success' })
+    showSuccess('已签到')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '签到失败', icon: 'none' })
+    showError(e instanceof Error ? e.message : '签到失败')
   } finally {
     isLiveActionBusy.value = false
   }
+}
+
+function getParticipantNameById(participantId : string) : string {
+  if (!participantId) return ''
+  const list = liveStore.participants
+  for (let i = 0; i < list.length; i++) {
+    if ((list[i]['id'] as string) === participantId) {
+      return (list[i]['name'] as string) || ''
+    }
+  }
+  return ''
+}
+
+function resolveGroupMemberNames(group : UTSJSONObject, memberIds : Array<string>) : Array<string> {
+  const names : Array<string> = []
+  const details = (group['memberDetails'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>
+  for (let i = 0; i < details.length; i++) {
+    const name = (details[i]['name'] as string) || ''
+    if (name && names.indexOf(name) === -1) names.push(name)
+  }
+  const savedNames = (group['memberNames'] as Array<string>) || [] as Array<string>
+  for (let i = 0; i < savedNames.length; i++) {
+    const name = savedNames[i]
+    if (name && names.indexOf(name) === -1) names.push(name)
+  }
+  for (let i = 0; i < memberIds.length; i++) {
+    const name = getParticipantNameById(memberIds[i])
+    if (name && names.indexOf(name) === -1) names.push(name)
+  }
+  return names
 }
 
 function syncGroupResultsFromStore() {
@@ -444,12 +508,14 @@ function syncGroupResultsFromStore() {
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i]
     const members = (group['members'] as Array<string>) || [] as Array<string>
+    const memberNames = resolveGroupMemberNames(group, members)
     const groupId = (group['groupId'] as string) || 'group_' + (i + 1)
     const savedScore = (liveStore.scores[groupId] as number) || (group['score'] as number) || 0
     results.push({
       groupId,
       name: (group['groupName'] as string) || (group['name'] as string) || '第' + (i + 1) + '组',
-      count: members.length || ((group['count'] as number) || 0),
+      count: members.length || memberNames.length || ((group['count'] as number) || 0),
+      memberNames,
       color: groupColors[i % groupColors.length],
       score: savedScore
     } as UTSJSONObject)
@@ -460,15 +526,15 @@ function syncGroupResultsFromStore() {
 
 async function doGrouping() {
   if (!liveStore.sessionId) {
-    uni.showToast({ title: '会话未开始', icon: 'none' })
+    showInfo('请先开始培训')
     return
   }
   if (groupMethod.value === 'free') {
-    uni.showToast({ title: '当前不支持参与者自选队伍', icon: 'none' })
+    showInfo('当前不支持自选队伍')
     return
   }
   if (liveStore.participants.length < groupCount.value) {
-    uni.showToast({ title: '签到人数不足以分组', icon: 'none' })
+    showInfo('签到人数不足')
     return
   }
   try {
@@ -480,9 +546,9 @@ async function doGrouping() {
     } as UTSJSONObject)
     syncGroupResultsFromStore()
     syncScoresFromGroups()
-    uni.showToast({ title: '已生成分组', icon: 'success' })
+    showSuccess('已生成分组')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '分组失败', icon: 'none' })
+    showError('分组失败')
   } finally {
     isLiveActionBusy.value = false
   }
@@ -505,7 +571,7 @@ function syncScoresFromGroups() {
 
 function confirmGrouping() {
   if (groupResults.value.length === 0) {
-    uni.showToast({ title: '请先生成分组', icon: 'none' })
+    showInfo('请先生成分组')
     return
   }
   isGrouped.value = true
@@ -532,7 +598,7 @@ async function changeScore(idx : number, delta : number) {
     syncScoresFromGroups()
   } catch (e : unknown) {
     teamScores.value[idx]['score'] = currentScore
-    uni.showToast({ title: e instanceof Error ? e.message : '更新积分失败', icon: 'none' })
+    showError('更新积分失败')
   }
 }
 
@@ -543,7 +609,7 @@ async function resetScores() {
     try {
       await liveStore.updateScore({ groupId, score: 0 } as UTSJSONObject)
     } catch (_e : unknown) {
-      uni.showToast({ title: '重置积分失败', icon: 'none' })
+      showError('重置积分失败')
       return
     }
   }
@@ -554,7 +620,7 @@ async function resetScores() {
 function resetPickHistory() {
   pickedParticipantIds.value = []
   pickResult.value = ''
-  uni.showToast({ title: '已重置抽取记录', icon: 'none' })
+  showInfo('已重置抽取记录')
 }
 
 async function startPick() {
@@ -585,7 +651,7 @@ async function startPick() {
     }
   } catch (_e : unknown) {
     const message = !allowRepeatPick.value && pickedParticipantIds.value.length > 0 ? '本轮已抽完，可开启重复抽取' : '没有可抽取的已签到参与者'
-    uni.showToast({ title: message, icon: 'none' })
+    showInfo(message)
   } finally {
     isPicking.value = false
   }
@@ -630,7 +696,7 @@ async function ensureInteraction(type : string) : Promise<UTSJSONObject | null> 
   const current = getInteractionSession(type)
   if (current) return current
   if (!liveStore.sessionId) {
-    uni.showToast({ title: '请先开始培训', icon: 'none' })
+    showInfo('请先开始培训')
     return null
   }
   interactionLoading.value = true
@@ -730,7 +796,7 @@ function playSound(key : string) {
       uni.vibrateShort({ type: 'light' })
     } catch (_e : unknown) {}
   }
-  uni.showToast({ title: (played ? '已播放' : '已触发') + name, icon: 'none' })
+  showInfo((played ? '已播放' : '已触发') + name)
   setTimeout(() => {
     activeSound.value = ''
   }, 500)
@@ -1085,8 +1151,10 @@ onUnmounted(() => {
         <text class="checkin-time">{{ item['time'] as string }}</text>
       </view>
       <template #footer>
-        <view class="sheet-footer-btn sheet-footer-btn-danger" @click="checkinSheet = false">
-          <text class="sheet-footer-btn-text">结束签到</text>
+        <view class="sheet-footer-actions">
+          <view class="sheet-footer-btn sheet-footer-btn-secondary" @click="checkinSheet = false">
+            <text class="sheet-footer-btn-text-secondary">结束签到</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -1117,12 +1185,19 @@ onUnmounted(() => {
       </view>
       <view class="group-result-item" v-for="(item, idx) in groupResults" :key="idx">
         <view class="group-color-dot" :style="{ backgroundColor: item['color'] as string }"></view>
-        <text class="group-result-name">{{ item['name'] as string }}</text>
-        <text class="group-result-count">{{ item['count'] as number }}人</text>
+        <view class="group-result-main">
+          <view class="group-result-heading">
+            <text class="group-result-name">{{ item['name'] as string }}</text>
+            <text class="group-result-count">{{ item['count'] as number }}人</text>
+          </view>
+          <view v-if="(item['memberNames'] as Array<string>).length > 0" class="group-member-list">
+            <text class="group-member-chip" v-for="(member, memberIdx) in (item['memberNames'] as Array<string>)" :key="memberIdx">{{ member }}</text>
+          </view>
+        </view>
       </view>
       <template #footer>
         <view class="sheet-footer-row">
-          <view class="sheet-footer-btn sheet-footer-btn-secondary" @click="doGrouping()">
+          <view class="sheet-footer-btn sheet-footer-btn-secondary sheet-footer-btn-spaced" @click="doGrouping()">
             <text class="sheet-footer-btn-text-secondary">生成分组</text>
           </view>
           <view class="sheet-footer-btn sheet-footer-btn-primary" @click="confirmGrouping">
@@ -1158,8 +1233,10 @@ onUnmounted(() => {
         </view>
       </view>
       <template #footer>
-        <view v-if="isGrouped" class="sheet-footer-btn sheet-footer-btn-danger sheet-footer-btn-contained" @click="resetScores">
-          <text class="sheet-footer-btn-text">重置积分</text>
+        <view v-if="isGrouped" class="sheet-footer-actions">
+          <view class="sheet-footer-btn sheet-footer-btn-danger" @click="resetScores">
+            <text class="sheet-footer-btn-text-danger">重置积分</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
@@ -1408,19 +1485,24 @@ onUnmounted(() => {
         </view>
       </view>
       <template #footer>
-        <view class="sheet-footer-btn sheet-footer-btn-primary" @click="saveNote">
-          <text class="sheet-footer-btn-text">保存笔记</text>
+        <view class="sheet-footer-actions">
+          <view class="sheet-footer-btn sheet-footer-btn-primary" @click="saveNote">
+            <text class="sheet-footer-btn-text">保存笔记</text>
+          </view>
         </view>
       </template>
     </HalfSheet>
 
     <HalfSheet :visible="showToolbox" size="large" title="工具箱" @update:visible="showToolbox = $event">
       <view class="toolbox-grid">
-        <view class="toolbox-item" v-for="(tool, idx) in allTools" :key="idx" @click="openToolFromToolbox(tool)">
-          <view class="toolbox-item-icon-box">
-            <AppIcon :name="tool['iconName'] as string" size="40rpx" />
+        <view class="toolbox-row" v-for="(row, rowIdx) in toolboxRows" :key="rowIdx">
+          <view :class="['toolbox-item', idx === 0 && row.length > 1 ? 'toolbox-item-left' : '']" v-for="(tool, idx) in row" :key="idx" @click="openToolFromToolbox(tool)">
+            <view class="toolbox-item-icon-box">
+              <AppIcon :name="tool['iconName'] as string" size="38rpx" />
+            </view>
+            <text class="toolbox-item-name">{{ tool['name'] }}</text>
           </view>
-          <text class="toolbox-item-name">{{ tool['name'] }}</text>
+          <view v-if="row.length === 1" class="toolbox-item-placeholder"></view>
         </view>
       </view>
     </HalfSheet>
@@ -1680,31 +1762,56 @@ onUnmounted(() => {
 .sheet-footer-row {
   display: flex;
   flex-direction: row;
-  gap: 20rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  width: 100%;
+  max-width: 620rpx;
+  margin: 0 auto;
+}
+.sheet-footer-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 620rpx;
+  margin: 0 auto;
 }
 .sheet-footer-btn {
+  width: 300rpx;
+  max-width: 100%;
   height: 84rpx;
-  border-radius: 22rpx;
+  padding: 0 28rpx;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
+  box-sizing: border-box;
+}
+.sheet-footer-row .sheet-footer-btn {
   flex: 1;
+  min-width: 0;
+  max-width: 300rpx;
+}
+.sheet-footer-btn-spaced {
+  margin-right: 0;
 }
 .sheet-footer-btn-contained {
-  width: 100%;
-  max-width: 560rpx;
+  width: auto;
   margin-left: auto;
-  margin-right: auto;
+  margin-right: 0;
   flex: none;
 }
 .sheet-footer-btn-primary {
   background-color: #4A7CF7;
 }
 .sheet-footer-btn-secondary {
-  background-color: #F5F5F5;
+  background-color: #F3F5FA;
 }
 .sheet-footer-btn-danger {
-  background-color: #FF5A5F;
+  background-color: #FFF1F2;
 }
 .sheet-footer-btn-text {
   font-size: 28rpx;
@@ -1715,6 +1822,11 @@ onUnmounted(() => {
   font-size: 28rpx;
   font-weight: 600;
   color: #666666;
+}
+.sheet-footer-btn-text-danger {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #E5484D;
 }
 .checkin-stats {
   margin-bottom: 24rpx;
@@ -1916,8 +2028,8 @@ onUnmounted(() => {
 .group-result-item {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  padding: 20rpx 0;
+  align-items: flex-start;
+  padding: 22rpx 0;
   border-bottom-width: 1rpx;
   border-bottom-style: solid;
   border-bottom-color: #F5F5F5;
@@ -1927,15 +2039,43 @@ onUnmounted(() => {
   height: 24rpx;
   border-radius: 12rpx;
   margin-right: 20rpx;
+  margin-top: 8rpx;
+  flex-shrink: 0;
+}
+.group-result-main {
+  flex: 1;
+  min-width: 0;
+}
+.group-result-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 .group-result-name {
   font-size: 28rpx;
   color: #333333;
   flex: 1;
+  font-weight: 600;
 }
 .group-result-count {
   font-size: 26rpx;
   color: #999999;
+}
+.group-member-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 14rpx;
+}
+.group-member-chip {
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #4A5568;
+  background-color: #F5F7FF;
+  border-radius: 999rpx;
+  padding: 8rpx 16rpx;
+  margin-right: 12rpx;
+  margin-bottom: 12rpx;
 }
 .score-mode-row {
   display: flex;
@@ -2608,40 +2748,52 @@ onUnmounted(() => {
 }
 .toolbox-grid {
   display: flex;
+  flex-direction: column;
+}
+.toolbox-row {
+  display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: 24rpx;
+  margin-bottom: 18rpx;
 }
 .toolbox-item {
-  width: calc(50% - 12rpx);
-  min-height: 220rpx;
+  flex: 1;
+  min-width: 0;
+  min-height: 156rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 28rpx 0;
+  padding: 22rpx 16rpx;
   background-color: #F8F9FE;
-  border-radius: 16rpx;
+  border-radius: 18rpx;
   box-sizing: border-box;
 }
+.toolbox-item-left {
+  margin-right: 18rpx;
+}
+.toolbox-item-placeholder {
+  flex: 1;
+}
 .toolbox-item-icon-box {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 20rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
   background-color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
 .toolbox-item-icon {
   font-size: 40rpx;
 }
 .toolbox-item-name {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #1A1A2E;
-  font-weight: 500;
+  font-weight: 600;
+  text-align: center;
 }
 @keyframes overlayFadeIn {
   from { opacity: 0; }

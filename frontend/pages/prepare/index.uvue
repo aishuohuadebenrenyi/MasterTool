@@ -6,13 +6,16 @@ import { useUserStore } from '../../stores/user'
 import HalfSheet from '../../components/HalfSheet.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import SearchBar from '../../components/SearchBar.uvue'
-import { PLAN_STATUS_LABELS, getPlanTypeLabel, ACTIVITY_SCENE_LABELS } from '../../utils/constants'
+import { PLAN_STATUS_LABELS, getPlanTypeLabel, getActivitySceneLabel } from '../../utils/constants'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 import { calcNavBarInfo } from '../../utils/navbar'
 import { getDesktopMaxWidth, rpxToPx } from '../../utils/viewport'
+import * as storage from '../../utils/storage'
 
 const planStore = usePlanStore()
 const activityStore = useActivityStore()
 const userStore = useUserStore()
+const PREPARE_FILTER_INTENT_KEY = 'prepare_filter_intent'
 
 const navBarInfo = calcNavBarInfo()
 const tabContentTopOffset = navBarInfo['tabContentTopOffset'] as number
@@ -22,16 +25,39 @@ const pageMaxWidth = ref<number>(getDesktopMaxWidth())
 const activeTab = ref<string>('plans')
 const planSearch = ref<string>('')
 const activitySearch = ref<string>('')
+const planKindFilter = ref<string>('全部')
 const planTypeFilter = ref<string>('全部')
 const planStatusFilter = ref<string>('全部')
 const activitySceneFilter = ref<string>('全部')
+const planSwipeOffset = ref<UTSJSONObject>({})
 
+const planKindFilters = ['全部', '方案', '个人模板', '收藏'] as string[]
 const planTypes = ['全部', '企业培训', '团建活动', '即兴演出', '即兴培训'] as string[]
 const planStatuses = ['全部', '草稿', '已确认', '已交付', '已复盘'] as string[]
 const activityScenes = ['全部', '团队融合', '协作沟通', '领导力', '创新思维', '通用'] as string[]
 
+const showPlanStatusFilter = computed<boolean>(() => {
+  return planKindFilter.value === '全部' || planKindFilter.value === '方案'
+})
+
+const orderedPlans = computed<Array<UTSJSONObject>>(() => {
+  return [...planStore.plans].sort((a : UTSJSONObject, b : UTSJSONObject) : number => {
+    const aPinned = (a['isPinned'] as boolean) === true ? 1 : 0
+    const bPinned = (b['isPinned'] as boolean) === true ? 1 : 0
+    if (aPinned !== bPinned) return bPinned - aPinned
+    return 0
+  })
+})
+
 const filteredPlans = computed(() => {
-  let list = planStore.plans
+  let list = orderedPlans.value
+  if (planKindFilter.value === '方案') {
+    list = list.filter(p => (p['contentKind'] as string) === 'plan')
+  } else if (planKindFilter.value === '个人模板') {
+    list = list.filter(p => (p['contentKind'] as string) === 'template')
+  } else if (planKindFilter.value === '收藏') {
+    list = list.filter(p => (p['isFavorite'] as boolean) === true)
+  }
   if (planSearch.value) {
     const q = planSearch.value.toLowerCase()
     list = list.filter(p => {
@@ -43,15 +69,24 @@ const filteredPlans = computed(() => {
   if (planTypeFilter.value !== '全部') {
     list = list.filter(p => getPlanTypeLabel(p['type'] as string) === planTypeFilter.value)
   }
-  if (planStatusFilter.value !== '全部') {
+  if (showPlanStatusFilter.value && planStatusFilter.value !== '全部') {
     const statusMap = { '草稿': 'draft', '已确认': 'confirmed', '已交付': 'delivered', '已复盘': 'reviewed' } as UTSJSONObject
-    list = list.filter(p => (p['status'] as string) === (statusMap[planStatusFilter.value] as string))
+    list = list.filter(p => (p['contentKind'] as string) === 'plan' && (p['status'] as string) === (statusMap[planStatusFilter.value] as string))
   }
   return list
 })
 
+const orderedActivities = computed<Array<UTSJSONObject>>(() => {
+  return [...activityStore.activities].sort((a : UTSJSONObject, b : UTSJSONObject) : number => {
+    const aPinned = (a['isPinned'] as boolean) === true ? 1 : 0
+    const bPinned = (b['isPinned'] as boolean) === true ? 1 : 0
+    if (aPinned !== bPinned) return bPinned - aPinned
+    return 0
+  })
+})
+
 const filteredActivities = computed(() => {
-  let list = activityStore.activities
+  let list = orderedActivities.value
   if (activitySearch.value) {
     const q = activitySearch.value.toLowerCase()
     list = list.filter(a => {
@@ -64,14 +99,15 @@ const filteredActivities = computed(() => {
   if (activitySceneFilter.value !== '全部') {
     list = list.filter(a => {
       const scenes = ((a['scenes'] as Array<string>) || []) as Array<string>
-      return scenes.includes(activitySceneFilter.value) || (a['category'] as string) === activitySceneFilter.value
+      const matchedScene = scenes.some((scene : string) : boolean => getActivitySceneLabel(scene) === activitySceneFilter.value)
+      return matchedScene || getActivitySceneLabel(a['category'] as string) === activitySceneFilter.value
     })
   }
   return list
 })
 
 const personalTemplateList = computed<Array<UTSJSONObject>>(() => {
-  return planStore.plans.filter((plan : UTSJSONObject) : boolean => (plan['isPersonalTemplate'] as boolean) === true)
+  return planStore.personalTemplates
 })
 
 function switchTab(tab : string) {
@@ -84,7 +120,35 @@ function switchTab(tab : string) {
   }
 }
 
+function applyPrepareFilterIntent() {
+  const raw = storage.get(PREPARE_FILTER_INTENT_KEY)
+  if (!raw) return
+  storage.remove(PREPARE_FILTER_INTENT_KEY)
+  try {
+    const intent = JSON.parse(raw) as UTSJSONObject
+    const tab = (intent['tab'] as string) || 'plans'
+    const status = (intent['status'] as string) || '全部'
+    activeTab.value = tab === 'activities' ? 'activities' : 'plans'
+    if (activeTab.value === 'plans' && planStatuses.indexOf(status) !== -1) {
+      planKindFilter.value = '方案'
+      planStatusFilter.value = status
+      planTypeFilter.value = '全部'
+      planSearch.value = ''
+    }
+    if (activeTab.value === 'activities') {
+      activitySceneFilter.value = '全部'
+      activitySearch.value = ''
+    }
+  } catch (e) {
+    console.log('[prepare.applyFilterIntent]', e)
+  }
+}
+
 function goPlanDetail(plan : UTSJSONObject) {
+  if ((plan['contentKind'] as string) === 'template') {
+    uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${plan['id'] as string}` })
+    return
+  }
   const status = plan['status'] as string
   const planId = plan['id'] as string
   if (status === 'delivered' || status === 'reviewed') {
@@ -96,10 +160,20 @@ function goPlanDetail(plan : UTSJSONObject) {
 
 function getPlanSourceLabel(plan : UTSJSONObject) : string {
   const source = (plan['source'] as string) || ''
-  if ((plan['isPersonalTemplate'] as boolean) || source === 'personal_template') return '个人模板'
+  if ((plan['contentKind'] as string) === 'template') return '个人模板'
   if (source === 'quick_start') return '快速开课'
   if (plan['isTemplateInstance'] as boolean) return '模板生成'
   return ''
+}
+
+function isTemplate(plan : UTSJSONObject) : boolean {
+  return (plan['contentKind'] as string) === 'template'
+}
+
+function getPlanEmptyTitle() : string {
+  if (planKindFilter.value === '个人模板') return '暂无个人模板'
+  if (planKindFilter.value === '收藏') return '暂无收藏'
+  return '暂无方案'
 }
 
 const showTemplateSelect = ref<boolean>(false)
@@ -113,7 +187,7 @@ const templateList : Array<UTSJSONObject> = [
 
 function goPlanCreate() {
   if (!userStore.isLoggedIn) {
-    uni.showToast({ title: '请先登录后创建方案', icon: 'none' })
+    showInfo('请先登录')
     return
   }
   showTemplateSelect.value = true
@@ -157,7 +231,7 @@ function getTemplatePhases(key : string) : Array<UTSJSONObject> {
 
 async function createFromTemplate(tpl : UTSJSONObject) {
   if (!userStore.isLoggedIn) {
-    uni.showToast({ title: '请先登录后创建方案', icon: 'none' })
+    showInfo('请先登录')
     return
   }
   showTemplateSelect.value = false
@@ -169,19 +243,48 @@ async function createFromTemplate(tpl : UTSJSONObject) {
     const result = await planStore.createPlan({
       name: name,
       type: key,
+      contentKind: 'plan',
       status: 'draft',
       source: (tpl['isPersonalTemplate'] as boolean) ? 'personal_template_instance' : 'template',
       templateId: (tpl['id'] as string) || key,
       templateName: sourceName,
       isTemplateInstance: true,
+      isPersonalTemplate: false,
       people: 20,
       phases: templatePhases
     } as UTSJSONObject)
     const planId = (result as UTSJSONObject)['id'] as string
     uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${planId}` })
-    uni.showToast({ title: '方案已创建', icon: 'success' })
+    showSuccess('已创建方案')
   } catch (e) {
-    uni.showToast({ title: '创建失败', icon: 'none' })
+    showError('创建失败')
+  }
+}
+
+async function applyPlanTemplate(plan : UTSJSONObject) {
+  try {
+    const templateName = (plan['name'] as string) || '个人模板'
+    const planName = templateName.endsWith('模板') ? templateName.substring(0, templateName.length - 2) + '方案' : templateName + '方案'
+    const result = await planStore.createPlan({
+      name: planName,
+      type: plan['type'] as string,
+      contentKind: 'plan',
+      status: 'draft',
+      source: 'personal_template_instance',
+      templateId: plan['id'] as string,
+      templateName,
+      isTemplateInstance: true,
+      isPersonalTemplate: false,
+      people: (plan['people'] as number) || 20,
+      phases: (plan['phases'] as Array<UTSJSONObject>) || [] as Array<UTSJSONObject>,
+      duration: (plan['duration'] as number) || 0,
+      scenes: (plan['scenes'] as Array<string>) || [] as Array<string>,
+      prepConfig: (plan['prepConfig'] as UTSJSONObject) || {} as UTSJSONObject
+    } as UTSJSONObject)
+    showSuccess('已生成草稿方案')
+    uni.navigateTo({ url: `/pages/plan/PlanEdit?id=${(result['id'] as string)}` })
+  } catch (e) {
+    showError('应用模板失败')
   }
 }
 
@@ -191,6 +294,84 @@ function goActivityDetail(activityId : string) {
 
 function goLiveStart(planId : string) {
   uni.navigateTo({ url: `/pages/live/index?planId=${planId}` })
+}
+
+function onPlanTouchStart(e : TouchEvent, planId : string) {
+  const touch = e.touches[0]
+  planSwipeOffset.value[planId] = { startX: touch.clientX, currentX: 0, isOpen: false } as UTSJSONObject
+}
+
+function onPlanTouchMove(e : TouchEvent, planId : string) {
+  const touch = e.touches[0]
+  const startData = planSwipeOffset.value[planId] as UTSJSONObject | null
+  if (!startData) return
+  const startX = startData['startX'] as number
+  const diff = touch.clientX - startX
+  if (diff < 0) {
+    startData['currentX'] = diff
+  }
+}
+
+function onPlanTouchEnd(planId : string) {
+  const startData = planSwipeOffset.value[planId] as UTSJSONObject | null
+  if (!startData) return
+  const currentX = startData['currentX'] as number
+  startData['isOpen'] = currentX < -120
+  if (!startData['isOpen']) {
+    startData['currentX'] = 0
+  }
+}
+
+function getPlanSwipeTransform(planId : string) : string {
+  const startData = planSwipeOffset.value[planId] as UTSJSONObject | null
+  if (!startData) return 'translateX(0)'
+  const isOpen = startData['isOpen'] as boolean
+  if (isOpen) return 'translateX(-180px)'
+  const currentX = startData['currentX'] as number
+  if (currentX < 0) return 'translateX(' + currentX + 'px)'
+  return 'translateX(0)'
+}
+
+function closePlanSwipe(planId : string) {
+  const startData = planSwipeOffset.value[planId] as UTSJSONObject | null
+  if (startData) {
+    startData['isOpen'] = false
+    startData['currentX'] = 0
+  }
+}
+
+async function handlePlanSwipeAction(action : string, plan : UTSJSONObject) {
+  const planId = plan['id'] as string
+  closePlanSwipe(planId)
+  try {
+    if (action === 'delete') {
+      uni.showModal({
+        title: '删除方案',
+        content: '删除后不可恢复。',
+        confirmText: '删除',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            planStore.deletePlan(planId).then(() => {
+              showSuccess('已删除')
+            }).catch(() => {
+              showError('删除失败')
+            })
+          }
+        }
+      })
+    } else if (action === 'pin') {
+      const nextPinned = !((plan['isPinned'] as boolean) === true)
+      await planStore.updatePlan(planId, { isPinned: nextPinned } as UTSJSONObject)
+      showSuccess(nextPinned ? '已置顶' : '已取消置顶')
+    } else if (action === 'fav') {
+      const nextFavorite = !((plan['isFavorite'] as boolean) === true)
+      await planStore.updatePlan(planId, { isFavorite: nextFavorite } as UTSJSONObject)
+      showSuccess(nextFavorite ? '已收藏' : '已取消收藏')
+    }
+  } catch (e) {
+    showError('操作失败')
+  }
 }
 
 function getDifficultyClass(intensity : string) : string {
@@ -227,7 +408,10 @@ async function ensureActivitiesLoaded() {
 async function toggleActivityFavorite(id : string) {
   try {
     await activityStore.toggleFavorite(id)
-  } catch (e) {}
+    showSuccess('已更新收藏')
+  } catch (e) {
+    showError('操作失败')
+  }
 }
 
 const swipeOffset = ref<UTSJSONObject>({})
@@ -285,13 +469,19 @@ function closeSwipe(activityId : string) {
   }
 }
 
-function handleSwipeAction(action : string, activity : UTSJSONObject) {
+async function handleSwipeAction(action : string, activity : UTSJSONObject) {
   const activityId = activity['id'] as string
   closeSwipe(activityId)
   if (action === 'edit') {
     uni.navigateTo({ url: `/pages/plan/ActivityEdit?id=${activityId}` })
   } else if (action === 'pin') {
-    uni.showToast({ title: '已置顶', icon: 'success' })
+    try {
+      const nextPinned = !((activity['isPinned'] as boolean) === true)
+      await activityStore.updateActivity(activityId, { isPinned: nextPinned } as UTSJSONObject)
+      showSuccess(nextPinned ? '已置顶' : '已取消置顶')
+    } catch (e) {
+      showError('操作失败')
+    }
   } else if (action === 'fav') {
     toggleActivityFavorite(activityId)
   }
@@ -301,9 +491,9 @@ async function handleLogin() {
   try {
     await userStore.loginWithWechat()
     await loadPrepareData()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    showSuccess('登录成功')
   } catch (e : unknown) {
-    uni.showToast({ title: e instanceof Error ? e.message : '登录失败，请稍后重试', icon: 'none' })
+    showError(e instanceof Error ? e.message : '登录失败')
   }
 }
 
@@ -319,12 +509,23 @@ function loadPrepareData() : Promise<void> {
 }
 
 onMounted(() => {
+  applyPrepareFilterIntent()
   loadPrepareData()
+})
+
+onShow(() => {
+  applyPrepareFilterIntent()
 })
 
 watch(() => userStore.isLoggedIn, (loggedIn : boolean) => {
   if (loggedIn) {
     loadPrepareData()
+  }
+})
+
+watch(() => planKindFilter.value, (kind : string) => {
+  if (kind === '个人模板' || kind === '收藏') {
+    planStatusFilter.value = '全部'
   }
 })
 
@@ -376,8 +577,15 @@ onUnmounted(() => {
         <text class="section-action app-section-action-text" @click="goPlanCreate">+ 新建方案</text>
       </view>
       <view class="search-block">
-        <SearchBar :value="planSearch" placeholder="搜索方案名称或客户名" @update:value="planSearch = $event" />
+        <SearchBar :value="planSearch" placeholder="搜索方案/模板名称或客户名" @update:value="planSearch = $event" />
       </view>
+      <scroll-view class="filter-scroll app-filter-scroll" scroll-x>
+        <view class="filter-row app-filter-row">
+          <view class="filter-item app-filter-chip" :class="{ 'filter-active app-filter-chip-active': planKindFilter === item }" v-for="(item, idx) in planKindFilters" :key="idx" @click="planKindFilter = item">
+            <text class="filter-text" :class="{ 'filter-text-active': planKindFilter === item }">{{ item }}</text>
+          </view>
+        </view>
+      </scroll-view>
       <scroll-view class="filter-scroll app-filter-scroll" scroll-x>
         <view class="filter-row app-filter-row">
           <view class="filter-item app-filter-chip" :class="{ 'filter-active app-filter-chip-active': planTypeFilter === item }" v-for="(item, idx) in planTypes" :key="idx" @click="planTypeFilter = item">
@@ -385,7 +593,7 @@ onUnmounted(() => {
           </view>
         </view>
       </scroll-view>
-      <scroll-view class="filter-scroll app-filter-scroll" scroll-x>
+      <scroll-view class="filter-scroll app-filter-scroll" scroll-x v-if="showPlanStatusFilter">
         <view class="filter-row app-filter-row">
           <view class="filter-item app-filter-chip" :class="{ 'filter-active app-filter-chip-active': planStatusFilter === item }" v-for="(item, idx) in planStatuses" :key="idx" @click="planStatusFilter = item">
             <text class="filter-text" :class="{ 'filter-text-active': planStatusFilter === item }">{{ item }}</text>
@@ -393,26 +601,58 @@ onUnmounted(() => {
         </view>
       </scroll-view>
       <view class="plan-list app-list-stack">
-        <view class="plan-card app-card-surface" v-for="plan in filteredPlans" :key="plan['id']" @click="goPlanDetail(plan)">
-          <view class="plan-card-row">
-            <text class="plan-name">{{ plan['name'] as string }}</text>
-            <view v-if="getPlanSourceLabel(plan)" class="plan-source-badge">
-              <text class="plan-source-badge-text">{{ getPlanSourceLabel(plan) }}</text>
+        <view class="swipe-container plan-swipe-container" v-for="plan in filteredPlans" :key="plan['id']">
+          <view class="swipe-actions">
+            <view class="swipe-btn swipe-btn-delete" @click.stop="handlePlanSwipeAction('delete', plan)">
+              <AppIcon name="stateDelete" size="36rpx" />
             </view>
-            <view class="plan-type-badge">
-              <text class="plan-type-badge-text">{{ getPlanTypeLabel(plan['type'] as string) }}</text>
+            <view class="swipe-btn swipe-btn-pin" @click.stop="handlePlanSwipeAction('pin', plan)">
+              <AppIcon name="stateTag" size="36rpx" />
+            </view>
+            <view class="swipe-btn swipe-btn-fav" @click.stop="handlePlanSwipeAction('fav', plan)">
+              <AppIcon :name="(plan['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" size="36rpx" />
             </view>
           </view>
-          <view class="plan-meta-row">
-            <text class="plan-meta">{{ getPlanTypeLabel(plan['type'] as string) }} · {{ plan['people'] }}人 · {{ plan['duration'] }}分钟</text>
-          </view>
-          <view class="plan-card-footer">
-            <view :class="['status-tag', 'status-' + (plan['status'] as string)]">
-              <text class="status-text">{{ PLAN_STATUS_LABELS[plan['status'] as string] || plan['status'] }}</text>
-            </view>
-            <view class="plan-card-actions" v-if="plan['status'] === 'confirmed'">
-              <view class="btn-start app-action-button" @click.stop="goLiveStart(plan['id'] as string)">
-                <text class="btn-start-text app-action-button-text">开课</text>
+          <view
+            class="swipe-content"
+            :style="{ transform: getPlanSwipeTransform(plan['id'] as string) }"
+            @touchstart="onPlanTouchStart($event, plan['id'] as string)"
+            @touchmove="onPlanTouchMove($event, plan['id'] as string)"
+            @touchend="onPlanTouchEnd(plan['id'] as string)"
+          >
+            <view class="plan-card app-card-surface" @click="goPlanDetail(plan)">
+              <view class="plan-card-row">
+                <text class="plan-name">{{ plan['name'] as string }}</text>
+                <view v-if="(plan['isFavorite'] as boolean)" class="plan-favorite-badge">
+                  <AppIcon name="stateFavorite" size="24rpx" />
+                </view>
+                <view v-if="getPlanSourceLabel(plan)" class="plan-source-badge">
+                  <text class="plan-source-badge-text">{{ getPlanSourceLabel(plan) }}</text>
+                </view>
+                <view class="plan-type-badge">
+                  <text class="plan-type-badge-text">{{ getPlanTypeLabel(plan['type'] as string) }}</text>
+                </view>
+              </view>
+              <view class="plan-meta-row">
+                <text class="plan-meta">{{ getPlanTypeLabel(plan['type'] as string) }} · {{ plan['people'] }}人 · {{ plan['duration'] }}分钟</text>
+              </view>
+              <view class="plan-card-footer">
+                <view v-if="!isTemplate(plan)" :class="['status-tag', 'status-' + (plan['status'] as string)]">
+                  <text class="status-text">{{ PLAN_STATUS_LABELS[plan['status'] as string] || plan['status'] }}</text>
+                </view>
+                <view v-else class="template-static-tag">
+                  <text class="template-static-tag-text">模板</text>
+                </view>
+                <view class="plan-card-actions" v-if="isTemplate(plan)">
+                  <view class="btn-apply-template" @click.stop="applyPlanTemplate(plan)">
+                    <text class="btn-apply-template-text">应用</text>
+                  </view>
+                </view>
+                <view class="plan-card-actions" v-else-if="plan['status'] === 'confirmed'">
+                  <view class="btn-start app-action-button" @click.stop="goLiveStart(plan['id'] as string)">
+                    <text class="btn-start-text app-action-button-text">开课</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -422,7 +662,7 @@ onUnmounted(() => {
         <view class="app-empty-icon-wrap">
           <AppIcon class="empty-icon-image" src="/static/icons/empty-plan.svg" size="144rpx" />
         </view>
-        <text class="app-empty-title">暂无方案</text>
+        <text class="app-empty-title">{{ getPlanEmptyTitle() }}</text>
         <view class="btn-create app-action-button" @click="goPlanCreate">
           <text class="btn-create-text app-action-button-text">+ 新建方案</text>
         </view>
@@ -447,19 +687,19 @@ onUnmounted(() => {
       <view class="activity-list app-list-stack">
         <view class="swipe-container" v-for="activity in filteredActivities" :key="activity['id']">
           <view class="swipe-actions" v-if="(activity['isCustom'] as boolean)">
-            <view class="swipe-btn swipe-btn-edit" @click="handleSwipeAction('edit', activity)">
-                <AppIcon name="stateEdit" preset="action" />
+            <view class="swipe-btn swipe-btn-edit" @click.stop="handleSwipeAction('edit', activity)">
+                <AppIcon name="stateEdit" size="36rpx" />
             </view>
-            <view class="swipe-btn swipe-btn-pin" @click="handleSwipeAction('pin', activity)">
-                <AppIcon name="stateTag" preset="action" />
+            <view class="swipe-btn swipe-btn-pin" @click.stop="handleSwipeAction('pin', activity)">
+                <AppIcon name="stateTag" size="36rpx" />
             </view>
-            <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
-                <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" preset="action" />
+            <view class="swipe-btn swipe-btn-fav" @click.stop="handleSwipeAction('fav', activity)">
+                <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" size="36rpx" />
             </view>
           </view>
           <view class="swipe-actions swipe-actions-single" v-else>
-            <view class="swipe-btn swipe-btn-fav" @click="handleSwipeAction('fav', activity)">
-                <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" preset="action" />
+            <view class="swipe-btn swipe-btn-fav" @click.stop="handleSwipeAction('fav', activity)">
+                <AppIcon :name="(activity['isFavorite'] as boolean) ? 'stateFavorite' : 'stateFavoriteOutline'" size="36rpx" />
             </view>
           </view>
           <view class="swipe-content"
@@ -483,7 +723,7 @@ onUnmounted(() => {
               <view class="activity-card-footer">
                 <view class="activity-tags">
                   <view class="activity-tag">
-                  <text class="activity-tag-text">{{ ACTIVITY_SCENE_LABELS[activity['category'] as string] || activity['category'] }}</text>
+                  <text class="activity-tag-text">{{ getActivitySceneLabel(activity['category'] as string) }}</text>
                   </view>
                 </view>
               </view>
@@ -673,13 +913,19 @@ onUnmounted(() => {
 .plan-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 0;
 }
 .plan-card {
   background-color: #FFFFFF;
   border-radius: 24rpx;
   padding: 32rpx;
   box-shadow: 0 2rpx 16rpx rgba(0,0,0,0.06);
+}
+.plan-swipe-container {
+  border-radius: 24rpx;
+}
+.plan-swipe-container .plan-card {
+  margin-bottom: 0;
 }
 .plan-card-row {
   display: flex;
@@ -712,6 +958,17 @@ onUnmounted(() => {
   font-size: 21rpx;
   color: #25A244;
   font-weight: 600;
+}
+.plan-favorite-badge {
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 21rpx;
+  background-color: #F0F3FF;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .plan-type-badge-text {
   font-size: 22rpx;
@@ -748,6 +1005,16 @@ onUnmounted(() => {
 .status-confirmed .status-text { color: #1890FF; }
 .status-delivered .status-text { color: #34C759; }
 .status-reviewed .status-text { color: #722ED1; }
+.template-static-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+  background-color: #EEF2FF;
+}
+.template-static-tag-text {
+  font-size: 22rpx;
+  color: #4A7CF7;
+  font-weight: 600;
+}
 .plan-card-actions {
   display: flex;
   flex-direction: row;
@@ -761,6 +1028,20 @@ onUnmounted(() => {
 .btn-start-text {
   font-size: 26rpx;
 }
+.btn-apply-template {
+  min-height: 76rpx;
+  padding: 0 36rpx;
+  border-radius: 20rpx;
+  background-color: #34C759;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-apply-template-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
 .activity-list {
   display: flex;
   flex-direction: column;
@@ -770,6 +1051,7 @@ onUnmounted(() => {
   position: relative;
   overflow: hidden;
   margin-bottom: 16rpx;
+  border-radius: 24rpx;
 }
 .swipe-actions {
   position: absolute;
@@ -779,6 +1061,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   align-items: center;
+  overflow: hidden;
+  border-radius: 24rpx;
 }
 .swipe-actions-single {
   width: 60px;
@@ -790,17 +1074,17 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
 }
-.swipe-btn-icon {
-  font-size: 32rpx;
-}
 .swipe-btn-edit {
-  background-color: #4A7CF7;
+  background-color: #EAF0FF;
 }
 .swipe-btn-pin {
-  background-color: #FF9500;
+  background-color: #FFF7E6;
 }
 .swipe-btn-fav {
-  background-color: #FF2D55;
+  background-color: #EEF8F0;
+}
+.swipe-btn-delete {
+  background-color: #F1F3F7;
 }
 .swipe-content {
   position: relative;

@@ -6,6 +6,7 @@ import NavBar from '../../components/NavBar.uvue'
 import AppIcon from '../../components/AppIcon.uvue'
 import { getDesktopMaxWidth } from '../../utils/viewport'
 import { buildPlanMarkdown, getPlanDocumentFileName } from '../../utils/planDocument'
+import { showSuccess, showInfo, showError } from '../../utils/toast'
 
 const planStore = usePlanStore()
 const pageMaxWidth = getDesktopMaxWidth()
@@ -14,6 +15,7 @@ const viewMode = ref<string>('trainer')
 const planId = ref<string>('')
 
 const plan = computed(() => planStore.currentPlan)
+const isTemplate = computed<boolean>(() => (plan.value?.['contentKind'] as string) === 'template')
 
 const planName = computed<string>(() => (plan.value?.['name'] as string) || '')
 const planType = computed<string>(() => {
@@ -28,6 +30,7 @@ const planPeople = computed<string>(() => plan.value?.['people'] != null ? Strin
 const planClient = computed<string>(() => (plan.value?.['client'] as string) || '')
 const planDuration = computed<number>(() => (plan.value?.['duration'] as number) || 0)
 const planStatus = computed<string>(() => {
+  if (isTemplate.value) return '个人模板'
   const status = plan.value?.['status'] as string
   return (PLAN_STATUS_LABELS[status] as string) || status || ''
 })
@@ -97,10 +100,10 @@ async function exportPlanDoc() {
   uni.setClipboardData({
     data: markdown,
     success() {
-      uni.showToast({ title: `已复制${fileName}`, icon: 'none' })
+      showInfo(`已复制${fileName}`)
     },
     fail() {
-      uni.showToast({ title: '导出失败，请稍后重试', icon: 'none' })
+      showError('导出失败')
     }
   })
 }
@@ -109,9 +112,9 @@ async function saveAsTemplate() {
   if (!planId.value) return
   try {
     await planStore.saveAsTemplate(planId.value)
-    uni.showToast({ title: '已保存为个人模板', icon: 'success' })
+    showSuccess('已保存为个人模板')
   } catch (_e : unknown) {
-    uni.showToast({ title: '保存模板失败', icon: 'none' })
+    showError('保存模板失败')
   }
 }
 
@@ -125,7 +128,7 @@ function formatDuration(minutes : number) : string {
 
 <template>
   <view class="page app-secondary-page">
-    <NavBar title="方案预览" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
+    <NavBar :title="isTemplate ? '模板预览' : '方案预览'" backgroundColor="#FFFFFF" titleColor="#000000" backIconColor="#333333" @back="goBack" />
 
     <view class="content app-secondary-page-content" :style="{ maxWidth: pageMaxWidth > 0 ? pageMaxWidth + 'px' : 'none' }">
       <view class="toggle-bar app-top-switcher">
@@ -152,7 +155,7 @@ function formatDuration(minutes : number) : string {
           <AppIcon name="stateExport" preset="section" />
           <text class="action-btn-text action-btn-text-secondary">导出 Markdown</text>
         </view>
-        <view class="action-btn action-btn-secondary app-card-surface" @click="saveAsTemplate">
+        <view class="action-btn action-btn-secondary app-card-surface" v-if="!isTemplate" @click="saveAsTemplate">
           <AppIcon name="stateFavorite" preset="section" />
           <text class="action-btn-text action-btn-text-secondary">另存为模板</text>
         </view>
@@ -191,8 +194,11 @@ function formatDuration(minutes : number) : string {
             <AppIcon name="stateDocument" preset="meta" />
             <text class="summary-meta-text">{{ phases.length }}个环节</text>
           </view>
-          <view :class="['status-tag', planStatusClass]">
+          <view :class="['status-tag', planStatusClass]" v-if="!isTemplate">
             <text class="status-tag-text">{{ planStatus }}</text>
+          </view>
+          <view class="status-tag status-template" v-else>
+            <text class="status-tag-text status-template-text">个人模板</text>
           </view>
         </view>
         <view class="summary-tags" v-if="planType || planScene">
@@ -375,6 +381,9 @@ function formatDuration(minutes : number) : string {
 .status-reviewed {
   background-color: #F9F0FF;
 }
+.status-template {
+  background-color: #EEF2FF;
+}
 .status-tag-text {
   font-size: 22rpx;
   font-weight: 500;
@@ -390,6 +399,9 @@ function formatDuration(minutes : number) : string {
 }
 .status-reviewed .status-tag-text {
   color: #722ED1;
+}
+.status-template-text {
+  color: #4A7CF7;
 }
 .summary-tags {
   display: flex;

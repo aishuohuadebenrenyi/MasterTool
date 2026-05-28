@@ -52,6 +52,6 @@ class TestActivityFlow:
             activity = Activity.create('test_user', data)
             mock_db.activities.insert_one(activity)
 
-        icebreakers = list(mock_db.activities.find({'category': 'icebreaker'}))
+        icebreakers = list(mock_db.activities.find({'category': '破冰'}))
         assert len(icebreakers) == 1
-        assert icebreakers[0]['category'] == 'icebreaker'
+        assert icebreakers[0]['category'] == '破冰'

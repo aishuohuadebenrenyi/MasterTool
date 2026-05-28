@@ -79,7 +79,29 @@ export const ACTIVITY_SCENE_LABELS : UTSJSONObject = {
   '协作沟通': '协作沟通',
   '创新思维': '创新思维',
   '领导力': '领导力',
-  '通用': '通用'
+  '通用': '通用',
+  'icebreaker': '破冰',
+  'energy': '能量',
+  'collaboration': '协作沟通',
+  'creativity': '创新思维',
+  'reflection': '反思',
+  'custom': '自定义',
+  '情绪管理': '情绪管理'
+}
+
+export const ACTIVITY_SCENE_CODES_BY_LABEL : UTSJSONObject = {
+  '破冰': 'icebreaker',
+  '能量': 'energy',
+  '协作': 'collaboration',
+  '协作沟通': 'collaboration',
+  '创意': 'creativity',
+  '创新思维': 'creativity',
+  '反思': 'reflection',
+  '自定义': 'custom',
+  '团队融合': '团队融合',
+  '领导力': '领导力',
+  '通用': '通用',
+  '情绪管理': '情绪管理'
 }
 
 export const ACTIVITY_CATEGORIES : UTSJSONObject = {
@@ -96,8 +118,8 @@ export const ACTIVITY_CATEGORIES : UTSJSONObject = {
 export const ACTIVITY_CATEGORY_LABELS : UTSJSONObject = {
   'icebreaker': '破冰',
   'energy': '能量',
-  'collaboration': '协作',
-  'creativity': '创意',
+  'collaboration': '协作沟通',
+  'creativity': '创新思维',
   'reflection': '反思',
   'custom': '自定义',
   '团队融合': '团队融合',
@@ -158,4 +180,15 @@ export function getPlanTypeLabel(planType : string | null) : string {
 export function getPlanTypeIconName(planType : string | null) : string {
   const normalized = normalizePlanType(planType)
   return (PLAN_TYPE_ICON_NAMES[normalized] as string) || 'stateDocument'
+}
+
+export function normalizeActivityScene(scene : string | null) : string {
+  if (scene == null || scene.length === 0) {
+    return ACTIVITY_SCENES['GENERIC'] as string
+  }
+  return (ACTIVITY_SCENE_LABELS[scene] as string) || scene
+}
+
+export function getActivitySceneLabel(scene : string | null) : string {
+  return normalizeActivityScene(scene)
 }

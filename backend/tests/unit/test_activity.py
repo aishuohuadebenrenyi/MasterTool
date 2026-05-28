@@ -13,7 +13,7 @@ class TestActivity:
         activity = Activity.create('user_001', data)
         assert activity['userId'] == 'user_001'
         assert activity['name'] == '破冰游戏'
-        assert activity['category'] == 'icebreaker'
+        assert activity['category'] == '破冰'
         assert activity['isCustom'] is True
 
     def test_to_dict(self):
@@ -26,3 +26,7 @@ class TestActivity:
 
     def test_to_dict_none(self):
         assert Activity.to_dict(None) is None
+
+    def test_normalize_scene_accepts_legacy_code(self):
+        assert Activity.normalize_scene_value('custom') == '自定义'
+        assert Activity.normalize_scenes({'scenes': ['collaboration', '创新思维']}) == ['协作沟通', '创新思维']

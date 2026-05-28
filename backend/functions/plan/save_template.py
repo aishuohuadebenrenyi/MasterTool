@@ -7,7 +7,6 @@ from common.errors import ErrorCode
 from common.validators import validate_object_id
 from models.plan import Plan
 from bson import ObjectId
-from datetime import datetime
 
 
 @require_auth
@@ -24,12 +23,13 @@ def main(event, context):
     source_plan = db.plans.find_one({'_id': ObjectId(plan_id), 'userId': user_id})
     if not source_plan:
         return error('方案不存在', ErrorCode.NOT_FOUND, 404)
+    if source_plan.get('contentKind') == Plan.CONTENT_KIND_TEMPLATE:
+        return error('模板无需另存为模板', ErrorCode.STATUS_ERROR, 400)
 
-    now = datetime.utcnow()
     template = dict(source_plan)
-    template['_id'] = ObjectId()
     template['name'] = build_template_name(source_plan.get('name', '未命名方案'))
-    template['status'] = Plan.STATUS_DRAFT
+    template['contentKind'] = Plan.CONTENT_KIND_TEMPLATE
+    template['status'] = ''
     template['source'] = 'personal_template'
     template['isPersonalTemplate'] = True
     template['isTemplateInstance'] = False
@@ -37,8 +37,14 @@ def main(event, context):
     template['templateName'] = ''
     template['templateSourcePlanId'] = plan_id
     template['sessionId'] = ''
-    template['createdAt'] = now
-    template['updatedAt'] = now
+    template['client'] = ''
+    template['clientName'] = ''
+    template['date'] = ''
+    template['isPinned'] = False
+    template['isFavorite'] = False
+
+    template = Plan.create(user_id, template)
+    template['templateSourcePlanId'] = plan_id
 
     try:
         db.plans.insert_one(template)
