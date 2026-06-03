@@ -1,0 +1,120 @@
+<view class="activity-page">
+  <view class="detail-nav">
+    <view class="detail-back" bindtap="goBack">‹</view>
+    <view class="detail-title">{{pageTitle}}</view>
+    <view wx:if="{{mode === 'detail'}}" class="detail-edit" bindtap="goEdit">编辑</view>
+  </view>
+
+  <scroll-view class="detail-scroll" scroll-y>
+    <view class="detail-content">
+      <view class="detail-card header-card">
+        <view class="activity-name">{{activity.name}}</view>
+        <view class="tag-row">
+          <view wx:for="{{activity.scenes}}" wx:key="*this" class="scene-tag">{{item}}</view>
+          <view class="difficulty-tag">{{activity.difficulty}}</view>
+        </view>
+        <view class="meta-row">
+          <view class="meta-item">{{activity.peopleRange}}</view>
+          <view class="meta-dot">·</view>
+          <view class="meta-item">{{activity.durationText}}</view>
+        </view>
+      </view>
+
+      <view wx:if="{{mode === 'review-entry'}}" class="detail-card">
+        <view class="card-title">本场交付信息</view>
+        <view class="review-status-line">当前状态：{{reviewStatusText}}</view>
+        <view class="session-meta-grid">
+          <view class="session-meta-chip">{{sessionCustomerText}}</view>
+          <view class="session-meta-chip">{{sessionParticipantText}}</view>
+          <view class="session-meta-chip">{{sessionPhaseText}}</view>
+          <view class="session-meta-chip">{{sessionEndedText}}</view>
+        </view>
+        <view class="session-flow">{{sessionFlowText}}</view>
+        <view wx:if="{{sessionPhaseActivities.length > 0}}" class="session-phase-list">
+          <view wx:for="{{sessionPhaseActivities}}" wx:for-item="phase" wx:key="name" class="session-phase-item">
+            <view class="session-phase-name">{{phase.name}}</view>
+            <view wx:if="{{phase.activities.length > 0}}" class="session-activity-list">
+              <view wx:for="{{phase.activities}}" wx:for-item="activity" wx:key="activityId" class="session-activity-chip">{{activity.name}}</view>
+            </view>
+            <view wx:else class="session-phase-empty">当前环节未关联活动</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="detail-card">
+        <view class="card-title">学习目标</view>
+        <view class="card-body">{{activity.objective}}</view>
+      </view>
+
+      <view class="detail-card expandable-card">
+        <view class="expand-header" data-field="expandRules" bindtap="toggleExpand">
+          <view class="expand-title-wrap">
+            <image class="inline-icon" src="/static/icons/icon-state-document.png" mode="aspectFit" />
+            <view class="expand-title">规则说明</view>
+          </view>
+          <image class="expand-arrow {{expandRules ? 'open' : ''}}" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+        </view>
+        <view wx:if="{{expandRules}}" class="expand-body">{{activity.rules}}</view>
+      </view>
+
+      <view class="detail-card expandable-card">
+        <view class="expand-header" data-field="expandReview" bindtap="toggleExpand">
+          <view class="expand-title-wrap">
+            <image class="inline-icon" src="/static/icons/mine-feedback.png" mode="aspectFit" />
+            <view class="expand-title">复盘引导</view>
+          </view>
+          <image class="expand-arrow {{expandReview ? 'open' : ''}}" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+        </view>
+        <view wx:if="{{expandReview}}" class="expand-body">{{activity.reviewQuestions}}</view>
+      </view>
+
+      <view class="detail-card expandable-card">
+        <view class="expand-header" data-field="expandTips" bindtap="toggleExpand">
+          <view class="expand-title-wrap">
+            <image class="inline-icon" src="/static/icons/icon-phase-summary.png" mode="aspectFit" />
+            <view class="expand-title">带领者 Tips</view>
+          </view>
+          <image class="expand-arrow {{expandTips ? 'open' : ''}}" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+        </view>
+        <view wx:if="{{expandTips}}" class="expand-body">{{activity.leaderTips}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="bottom-bar">
+    <block wx:if="{{mode === 'review-entry'}}">
+      <view class="review-entry-btn" bindtap="goReview">{{reviewActionText}}</view>
+    </block>
+    <block wx:else>
+      <view class="favorite-btn" bindtap="toggleFavorite">
+        <image class="favorite-icon" src="{{isFavorite ? '/static/icons/icon-state-favorite.png' : '/static/icons/icon-state-favorite-outline.png'}}" mode="aspectFit" />
+      </view>
+      <view class="add-btn" bindtap="openAddToPlan">
+        <image class="add-icon" src="/static/icons/icon-state-document.png" mode="aspectFit" />
+        <text>添加到方案</text>
+      </view>
+    </block>
+  </view>
+
+  <half-sheet visible="{{showAddToPlan}}" title="{{addStep === 1 ? '选择方案' : '选择环节'}}" body-class="detail-sheet-body" bindclose="closeAddToPlan">
+    <view class="detail-sheet-content">
+        <view wx:if="{{addStep === 1}}">
+          <view wx:for="{{plans}}" wx:key="_id" class="plan-select-card" data-id="{{item._id}}" bindtap="selectPlan">
+            <view class="plan-select-name">{{item.name}}</view>
+            <view class="plan-select-meta">{{item.metaText}}</view>
+          </view>
+          <view wx:if="{{plans.length === 0}}" class="empty">暂无可添加的方案</view>
+        </view>
+        <view wx:if="{{addStep === 2}}">
+          <view class="back-to-plans" bindtap="backToPlans">‹ 返回方案列表</view>
+          <view wx:for="{{selectedPlan.phases}}" wx:key="name" class="phase-select-item" data-index="{{index}}" bindtap="selectPhase">
+            <view class="phase-badge">{{index + 1}}</view>
+            <view class="phase-select-main">
+              <view class="phase-select-name">{{item.name}}</view>
+              <view class="phase-select-time">{{item.duration}}分钟</view>
+            </view>
+          </view>
+        </view>
+    </view>
+  </half-sheet>
+</view>

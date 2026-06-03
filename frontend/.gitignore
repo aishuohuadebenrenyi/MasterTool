@@ -1,7 +1,0 @@
-node_modules/
-dist/
-unpackage/
-.hbuilderx/
-.DS_Store
-*.local
-coverage/

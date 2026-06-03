@@ -1,0 +1,85 @@
+<view class="preview-page">
+  <view class="preview-nav">
+    <view class="preview-back" bindtap="goBack">‹</view>
+    <view class="preview-title">{{pageTitle}}</view>
+  </view>
+
+  <scroll-view class="preview-scroll" scroll-y>
+    <view class="preview-content">
+      <view class="view-switch">
+        <view class="switch-track">
+          <view class="switch-item {{viewMode === 'trainer' ? 'active' : ''}}" data-mode="trainer" bindtap="switchView">培训师视角</view>
+          <view class="switch-item {{viewMode === 'client' ? 'active' : ''}}" data-mode="client" bindtap="switchView">客户视角</view>
+        </view>
+      </view>
+
+      <view class="action-row">
+        <view class="action-btn" bindtap="exportPlanDoc">
+          <image class="action-icon" src="/static/icons/icon-state-document.png" mode="aspectFit" />
+          <text>导出 Markdown</text>
+        </view>
+        <view class="action-btn" bindtap="saveAsTemplate">
+          <image class="action-icon" src="/static/icons/icon-state-favorite.png" mode="aspectFit" />
+          <text>另存为个人模板</text>
+        </view>
+      </view>
+
+      <view class="preview-card note-card">
+        <view class="note-title">{{viewTitle}}</view>
+        <view class="note-desc">{{viewDesc}}</view>
+      </view>
+
+      <view class="preview-card summary-card">
+        <view class="plan-name">{{plan.name}}</view>
+        <view class="meta-grid">
+          <view class="meta-item">
+            <view class="meta-label">类型</view>
+            <view class="meta-value">{{plan.type}}</view>
+          </view>
+          <view class="meta-item">
+            <view class="meta-label">人数</view>
+            <view class="meta-value">{{plan.participantCount}}人</view>
+          </view>
+          <view class="meta-item">
+            <view class="meta-label">时长</view>
+            <view class="meta-value">{{durationText}}</view>
+          </view>
+          <view class="meta-item">
+            <view class="meta-label">环节</view>
+            <view class="meta-value">{{phaseCountText}}</view>
+          </view>
+        </view>
+        <view class="summary-footer">
+          <view class="status-tag">{{statusText}}</view>
+          <view wx:if="{{plan.customerName}}" class="customer-name">{{plan.customerName}}</view>
+        </view>
+      </view>
+
+      <view class="preview-card timeline-card">
+        <view class="timeline-title">{{isClientView ? '课程议程' : '执行时间线'}}（总时长 {{durationText}}）</view>
+        <view wx:for="{{phases}}" wx:key="name" class="timeline-item">
+          <view class="timeline-left">
+            <view class="timeline-dot" style="{{item.dotStyle}}"></view>
+            <view wx:if="{{index < phases.length - 1}}" class="timeline-line"></view>
+          </view>
+          <view class="timeline-main">
+            <view class="phase-head">
+              <view class="phase-name">{{item.indexText}}. {{item.name}}</view>
+              <view class="phase-duration">{{item.durationText}}</view>
+            </view>
+            <view wx:if="{{item.hasActivities}}" class="phase-activity-panel">
+              <view class="phase-activity-title">关联活动 · {{item.activityCountText}}</view>
+              <view class="phase-activity-list">
+                <view wx:for="{{item.activities}}" wx:for-item="activity" wx:key="activityId" class="phase-activity-chip">{{activity.name}}</view>
+              </view>
+            </view>
+            <view class="progress-bg">
+              <view class="progress-fill" style="{{item.percentStyle}}"></view>
+            </view>
+            <view class="phase-note">{{item.note}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

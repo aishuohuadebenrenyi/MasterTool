@@ -1,0 +1,12 @@
+<view class="sub-page-layout {{pageClass}}">
+  <view class="sub-nav">
+    <view class="sub-back" bindtap="handleBack">‹</view>
+    <view class="sub-title">{{title}}</view>
+  </view>
+
+  <scroll-view class="sub-layout-scroll {{scrollClass}}" scroll-y>
+    <view class="sub-layout-body {{contentClass}}">
+      <slot></slot>
+    </view>
+  </scroll-view>
+</view>

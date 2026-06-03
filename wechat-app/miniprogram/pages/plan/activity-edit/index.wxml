@@ -1,0 +1,85 @@
+<view class="activity-edit-page">
+  <view class="edit-nav">
+    <view class="edit-back" bindtap="goBack">‹</view>
+    <view class="edit-title">{{pageTitle}}</view>
+  </view>
+
+  <scroll-view class="activity-scroll" scroll-y>
+    <view class="activity-body">
+      <view class="form-card">
+        <view class="form-group">
+          <view class="label-row">
+            <view class="form-label">活动名称</view>
+            <view class="required">*</view>
+          </view>
+          <input class="form-input" value="{{name}}" placeholder="请输入活动名称" data-field="name" bindinput="handleInput" />
+        </view>
+
+        <view class="form-group">
+          <view class="form-label">培训场景</view>
+          <view class="tag-list">
+            <view
+              wx:for="{{sceneTags}}"
+              wx:key="name"
+              class="tag-item {{item.active ? 'active' : ''}}"
+              data-value="{{item.name}}"
+              bindtap="toggleScene"
+            >{{item.name}}</view>
+          </view>
+        </view>
+
+        <view class="form-group">
+          <view class="form-label">难度</view>
+          <view class="tag-list">
+            <view
+              wx:for="{{difficultyTags}}"
+              wx:key="name"
+              class="tag-item {{item.active ? 'active' : ''}}"
+              data-value="{{item.name}}"
+              bindtap="selectDifficulty"
+            >{{item.name}}</view>
+          </view>
+        </view>
+
+        <view class="form-row">
+          <view class="form-group form-half">
+            <view class="form-label">人数范围</view>
+            <input class="form-input" value="{{participants}}" placeholder="如：8-20人" data-field="participants" bindinput="handleInput" />
+          </view>
+          <view class="form-group form-half">
+            <view class="form-label">时长</view>
+            <input class="form-input" value="{{duration}}" placeholder="如：30" data-field="duration" bindinput="handleInput" />
+          </view>
+        </view>
+
+        <view class="form-group">
+          <view class="form-label">学习目标</view>
+          <input class="form-input" value="{{objective}}" placeholder="请输入学习目标" data-field="objective" bindinput="handleInput" />
+        </view>
+
+        <view class="form-group">
+          <view class="form-label">规则说明</view>
+          <textarea class="form-textarea" value="{{rules}}" placeholder="请输入规则说明" data-field="rules" bindinput="handleInput" />
+        </view>
+
+        <view class="form-group">
+          <view class="form-label">复盘引导问题</view>
+          <textarea class="form-textarea small" value="{{reviewQuestions}}" placeholder="请输入复盘引导问题" data-field="reviewQuestions" bindinput="handleInput" />
+        </view>
+
+        <view class="form-group last">
+          <view class="form-label">带领者Tips</view>
+          <textarea class="form-textarea small" value="{{leaderTips}}" placeholder="请输入带领者Tips" data-field="leaderTips" bindinput="handleInput" />
+        </view>
+      </view>
+
+      <view class="form-actions">
+        <view wx:if="{{isEditing}}" class="delete-btn" bindtap="deleteActivity">
+          <image class="action-icon" src="/static/icons/icon-state-delete.png" mode="aspectFit" />
+          <view>删除活动</view>
+        </view>
+        <view class="save-btn" bindtap="saveActivity">保存活动</view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,14 @@
+<view class="sound-grid">
+  <view class="sound-btn {{activeSound === '欢呼' ? 'active' : ''}}" data-name="欢呼" bindtap="handlePlay">
+    <image class="sound-icon" src="/static/icons/icon-sound-cheer.png" mode="aspectFit" /><view>欢呼</view>
+  </view>
+  <view class="sound-btn {{activeSound === '鼓掌' ? 'active' : ''}}" data-name="鼓掌" bindtap="handlePlay">
+    <image class="sound-icon" src="/static/icons/icon-sound-clap.png" mode="aspectFit" /><view>鼓掌</view>
+  </view>
+  <view class="sound-btn {{activeSound === '铃声' ? 'active' : ''}}" data-name="铃声" bindtap="handlePlay">
+    <image class="sound-icon" src="/static/icons/icon-sound-bell.png" mode="aspectFit" /><view>铃声</view>
+  </view>
+  <view class="sound-btn {{activeSound === '主题' ? 'active' : ''}}" data-name="主题" bindtap="handlePlay">
+    <image class="sound-icon" src="/static/icons/icon-sound-theme.png" mode="aspectFit" /><view>主题</view>
+  </view>
+</view>

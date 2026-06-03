@@ -1,0 +1,152 @@
+.sub-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 200rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+  background: #F5F6FA;
+  color: #1F2433;
+}
+
+.sub-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  height: 176rpx;
+  box-sizing: border-box;
+  padding: 88rpx 32rpx 0;
+  background: #F5F6FA;
+}
+
+.sub-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  color: #3A3F4B;
+  font-size: 50rpx;
+  line-height: 1;
+}
+
+.sub-title {
+  position: absolute;
+  left: 96rpx;
+  right: 96rpx;
+  overflow: hidden;
+  color: #111827;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub-section {
+  margin-top: 28rpx;
+}
+
+.sub-card {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border-radius: 22rpx;
+  background: #FFFFFF;
+  box-shadow: 0 18rpx 42rpx rgba(31, 36, 51, 0.07);
+}
+
+.sub-heading {
+  color: #111827;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.sub-copy {
+  margin-top: 12rpx;
+  color: #8A8F99;
+  font-size: 26rpx;
+  line-height: 1.55;
+}
+
+.field-label {
+  margin: 24rpx 0 12rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.field-input,
+.field-area {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2rpx solid #E6E8EF;
+  border-radius: 18rpx;
+  background: #FFFFFF;
+  color: #1F2433;
+  font-size: 28rpx;
+}
+
+.field-input {
+  height: 82rpx;
+  padding: 0 22rpx;
+}
+
+.field-area {
+  min-height: 180rpx;
+  padding: 22rpx;
+}
+
+.primary-btn,
+.secondary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  margin-top: 24rpx;
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.primary-btn {
+  background: #4A7CF7;
+  color: #FFFFFF;
+}
+
+.secondary-btn {
+  background: #F0F3FA;
+  color: #4A5568;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  min-height: 96rpx;
+  border-bottom: 1rpx solid #EEF0F5;
+}
+
+.list-row:last-child {
+  border-bottom: 0;
+}
+
+.row-main {
+  flex: 1;
+}
+
+.row-title {
+  color: #1F2433;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.row-desc {
+  margin-top: 6rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+}
+
+.row-extra {
+  color: #8A8F99;
+  font-size: 24rpx;
+}

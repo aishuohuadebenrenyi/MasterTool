@@ -1,0 +1,61 @@
+@import "../../../styles/subpage.wxss";
+
+.help-section {
+  margin-top: 26rpx;
+}
+
+.section-title {
+  color: #111827;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.faq-card {
+  padding: 0 28rpx;
+}
+
+.faq-item {
+  border-bottom: 1rpx solid #EEF0F5;
+}
+
+.faq-item:last-child {
+  border-bottom: 0;
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  min-height: 104rpx;
+}
+
+.faq-title {
+  flex: 1;
+  color: #1F2433;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.faq-arrow {
+  width: 18rpx;
+  height: 18rpx;
+  transition: transform 0.2s ease;
+}
+
+.faq-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.faq-answer {
+  padding: 0 36rpx 28rpx 0;
+  color: #8A8F99;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.field-count {
+  margin-top: 10rpx;
+  color: #A0A4AD;
+  font-size: 22rpx;
+  text-align: right;
+}

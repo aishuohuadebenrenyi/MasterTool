@@ -1,0 +1,134 @@
+@import "../../../styles/subpage.wxss";
+
+.review-center-page {
+  min-height: 100vh;
+  background: #F5F6FA;
+}
+
+.review-scroll {
+  height: 100vh;
+}
+
+.review-body {
+  padding: 212rpx 28rpx 64rpx;
+}
+
+.filter-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 22rpx;
+}
+
+.filter-chip {
+  height: 60rpx;
+  padding: 0 28rpx;
+  border-radius: 999rpx;
+  background: #FFFFFF;
+  color: #8A8F99;
+  font-size: 26rpx;
+  font-weight: 800;
+  line-height: 60rpx;
+}
+
+.filter-chip.active {
+  background: #4778F5;
+  color: #FFFFFF;
+}
+
+.review-card,
+.empty-card {
+  margin-bottom: 20rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 22rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.07);
+}
+
+.empty-card {
+  color: #8A8F99;
+  font-size: 27rpx;
+  text-align: center;
+}
+
+.review-card-header {
+  display: flex;
+  align-items: center;
+}
+
+.review-title {
+  flex: 1;
+  min-width: 0;
+  color: #151827;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.status-badge {
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: #FFF7E6;
+  color: #FA8C16;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.status-badge.done {
+  background: #EAF8EF;
+  color: #25A244;
+}
+
+.review-meta {
+  margin-top: 14rpx;
+  color: #8A8F99;
+  font-size: 25rpx;
+}
+
+.review-info-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.review-info-chip {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #F4F7FF;
+  color: #4A7CF7;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.review-flow {
+  margin-top: 18rpx;
+  color: #6B7280;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.review-activities {
+  margin-top: 12rpx;
+  white-space: pre-wrap;
+  color: #4B5563;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.review-action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22rpx;
+}
+
+.review-action-btn {
+  min-width: 196rpx;
+  height: 68rpx;
+  padding: 0 28rpx;
+  border-radius: 18rpx;
+  background: #4778F5;
+  color: #FFFFFF;
+  font-size: 27rpx;
+  font-weight: 900;
+  line-height: 68rpx;
+  text-align: center;
+}

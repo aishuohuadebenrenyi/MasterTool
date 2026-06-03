@@ -1,0 +1,14 @@
+<view class="entry-card">
+  <view class="entry-icon-box">
+    <image class="entry-icon" src="{{icon}}" mode="aspectFit" />
+  </view>
+  <view class="entry-title">{{title}}</view>
+  <image wx:if="{{codeUrl}}" class="entry-code-image" src="{{codeUrl}}" mode="aspectFit" />
+  <view wx:else class="entry-empty-hint">{{emptyHint}}</view>
+  <view class="entry-path">{{path}}</view>
+  <view class="entry-actions">
+    <view wx:if="{{secondaryText}}" class="entry-btn secondary" bindtap="handleSecondary">{{secondaryText}}</view>
+    <view wx:if="{{tertiaryText}}" class="entry-btn secondary" bindtap="handleTertiary">{{tertiaryText}}</view>
+    <view wx:if="{{primaryText}}" class="entry-btn primary" bindtap="handlePrimary">{{primaryText}}</view>
+  </view>
+</view>

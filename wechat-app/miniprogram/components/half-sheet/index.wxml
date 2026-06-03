@@ -1,0 +1,16 @@
+<view wx:if="{{visible}}" class="sheet-mask" catchtap="handleMaskTap">
+  <view class="half-sheet {{compact ? 'compact' : ''}} {{sheetClass}}" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-header">
+      <slot name="header-prefix"></slot>
+      <view class="sheet-title">{{title}}</view>
+      <view class="sheet-close" catchtap="handleClose">
+        <image class="sheet-close-img" src="/static/icons/icon-state-close.png" mode="aspectFit" />
+      </view>
+    </view>
+    <slot name="header-extra"></slot>
+    <view class="sheet-body {{bodyClass}}">
+      <slot></slot>
+    </view>
+  </view>
+</view>

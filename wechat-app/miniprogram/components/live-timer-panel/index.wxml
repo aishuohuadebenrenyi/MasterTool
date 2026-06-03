@@ -1,0 +1,18 @@
+<view class="pick-tabs">
+  <view class="pick-tab {{standaloneMode === 'countup' ? 'active' : ''}}" data-mode="countup" bindtap="handleSetMode">正计时</view>
+  <view class="pick-tab {{standaloneMode === 'countdown' ? 'active' : ''}}" data-mode="countdown" bindtap="handleSetMode">倒计时</view>
+</view>
+<view wx:if="{{standaloneMode === 'countdown'}}" class="timer-preset-wrap">
+  <view class="sheet-label">常用倒计时</view>
+  <view class="timer-preset-grid">
+    <view
+      wx:for="{{countdownPresets}}"
+      wx:key="seconds"
+      class="timer-preset-chip {{selectedCountdownSeconds === item.seconds ? 'active' : ''}}"
+      data-seconds="{{item.seconds}}"
+      bindtap="handleSetPreset"
+    >{{item.label}}</view>
+  </view>
+</view>
+<view class="standalone-time">{{standaloneDisplay}}</view>
+<view class="standalone-hint">{{standaloneHint}}</view>

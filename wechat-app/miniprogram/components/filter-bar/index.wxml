@@ -1,0 +1,11 @@
+<scroll-view class="filter-scroll {{scrollClass}}" scroll-x>
+  <view class="filter-row">
+    <view
+      wx:for="{{items}}"
+      wx:key="*this"
+      class="filter-item {{active === item ? 'active' : ''}}"
+      data-value="{{item}}"
+      bindtap="handleTap"
+    >{{item}}</view>
+  </view>
+</scroll-view>

@@ -1,0 +1,20 @@
+.empty-state-card {
+  padding: 36rpx 28rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 12rpx 30rpx rgba(31, 36, 51, 0.06);
+  text-align: center;
+}
+
+.empty-state-title {
+  color: #1F2433;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.empty-state-desc {
+  margin-top: 10rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+  line-height: 1.6;
+}

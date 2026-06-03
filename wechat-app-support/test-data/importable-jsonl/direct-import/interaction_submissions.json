@@ -1,0 +1,2 @@
+{"_id": "seed-interaction-submission-001", "interactionId": "seed-interaction-vote", "sessionId": "seed-session-ended", "type": "vote", "openid": "manual:seed-001", "name": "梨花", "content": "", "optionIndex": 1, "createdAt": 1764500320000}
+{"_id": "seed-interaction-submission-002", "interactionId": "seed-interaction-wordcloud", "sessionId": "seed-session-ended", "type": "wordcloud", "openid": "manual:seed-002", "name": "王明", "content": "协作", "optionIndex": -1, "createdAt": 1764500520000}

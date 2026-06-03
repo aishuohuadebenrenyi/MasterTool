@@ -1,0 +1,413 @@
+.activity-page {
+  min-height: 100vh;
+  background: #F5F5F7;
+  color: #1A1A2E;
+}
+
+.detail-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  height: 176rpx;
+  box-sizing: border-box;
+  padding: 88rpx 32rpx 0;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+
+.detail-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  color: #3A3F4B;
+  font-size: 50rpx;
+  line-height: 1;
+}
+
+.detail-title {
+  position: absolute;
+  right: 130rpx;
+  left: 130rpx;
+  color: #111827;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.detail-edit {
+  margin-left: auto;
+  margin-right: 152rpx;
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: #F4F7FF;
+  color: #4A7CF7;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.detail-status {
+  margin-left: auto;
+  margin-right: 32rpx;
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: #EEF3FF;
+  color: #4A7CF7;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.detail-scroll {
+  height: 100vh;
+}
+
+.detail-content {
+  padding: 200rpx 32rpx 180rpx;
+}
+
+.detail-card {
+  margin-bottom: 24rpx;
+  padding: 32rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 16rpx 40rpx rgba(31, 36, 51, 0.07);
+}
+
+.activity-name {
+  margin-bottom: 18rpx;
+  color: #1A1A2E;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.tag-row,
+.meta-row,
+.expand-header,
+.expand-title-wrap,
+.bottom-bar,
+.add-btn {
+  display: flex;
+  align-items: center;
+}
+
+.tag-row {
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+}
+
+.scene-tag,
+.difficulty-tag {
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.scene-tag {
+  background: #EAF1FF;
+  color: #4A7CF7;
+}
+
+.difficulty-tag {
+  background: #FFF3E0;
+  color: #F59E0B;
+}
+
+.meta-row {
+  gap: 10rpx;
+  color: #8E8E93;
+  font-size: 26rpx;
+}
+
+.card-title,
+.expand-title {
+  color: #1A1A2E;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.card-body,
+.expand-body {
+  margin-top: 16rpx;
+  color: #6B7280;
+  font-size: 27rpx;
+  line-height: 1.62;
+}
+
+.review-status-line {
+  margin-top: 16rpx;
+  color: #4A7CF7;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.session-meta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.session-meta-chip {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #F4F6FB;
+  color: #5B6475;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.session-flow {
+  margin-top: 18rpx;
+  color: #6B7280;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.session-phase-list {
+  margin-top: 18rpx;
+}
+
+.session-phase-item + .session-phase-item {
+  margin-top: 16rpx;
+}
+
+.session-phase-name {
+  color: #1A1A2E;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.session-activity-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.session-activity-chip {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #F4F7FF;
+  color: #4A7CF7;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.session-phase-empty {
+  margin-top: 10rpx;
+  color: #8E8E93;
+  font-size: 24rpx;
+}
+
+.expand-header {
+  justify-content: space-between;
+  min-height: 48rpx;
+}
+
+.inline-icon {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 12rpx;
+}
+
+.expand-arrow {
+  width: 18rpx;
+  height: 18rpx;
+  transition: transform 0.2s ease;
+}
+
+.expand-arrow.open {
+  transform: rotate(90deg);
+}
+
+.bottom-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  box-sizing: border-box;
+  gap: 20rpx;
+  padding: 20rpx 32rpx calc(28rpx + env(safe-area-inset-bottom));
+  background: #FFFFFF;
+  border-top: 1rpx solid #F0F0F5;
+}
+
+.favorite-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  background: #F4F7FF;
+}
+
+.favorite-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.add-btn {
+  flex: 1;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 22rpx;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.review-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 88rpx;
+  border-radius: 22rpx;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.add-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 12rpx;
+}
+
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.half-sheet {
+  width: 100%;
+  max-height: 76vh;
+  border-radius: 36rpx 36rpx 0 0;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  margin: 16rpx auto 0;
+  border-radius: 4rpx;
+  background: #D6D8DE;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx 24rpx;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+
+.sheet-title {
+  color: #1A1A2E;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #F4F5F8;
+}
+
+.sheet-close-img {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.sheet-body {
+  max-height: 58vh;
+  box-sizing: border-box;
+  padding: 24rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.detail-sheet-body {
+  padding: 0;
+}
+
+.detail-sheet-content {
+  max-height: 58vh;
+  box-sizing: border-box;
+  padding: 24rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.plan-select-card,
+.phase-select-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #F7F8FC;
+}
+
+.plan-select-name,
+.phase-select-name {
+  color: #1A1A2E;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.plan-select-meta,
+.phase-select-time {
+  margin-top: 8rpx;
+  color: #8E8E93;
+  font-size: 24rpx;
+}
+
+.back-to-plans {
+  margin-bottom: 20rpx;
+  color: #4A7CF7;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.phase-badge {
+  flex-shrink: 0;
+  width: 52rpx;
+  height: 52rpx;
+  margin-right: 18rpx;
+  border-radius: 50%;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 52rpx;
+  text-align: center;
+}
+
+.empty {
+  padding: 40rpx 0;
+  color: #A0A4AD;
+  font-size: 26rpx;
+  text-align: center;
+}

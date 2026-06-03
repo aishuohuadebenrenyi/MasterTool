@@ -1,0 +1,44 @@
+<sub-page-layout
+  page-class="feedback-page"
+  title="反馈收集"
+  scroll-class="feedback-scroll"
+  content-class="feedback-body"
+  bindback="goBack"
+>
+  <entry-code-card
+    title="参与者提交反馈"
+    code-url="{{feedbackCodeUrl}}"
+    path="{{feedbackPath}}"
+    empty-hint="生成正式反馈小程序码"
+    primary-text="打开预览"
+    secondary-text="{{feedbackCodeLoading ? '生成中...' : (feedbackCodeUrl ? '重新生成' : '生成小程序码')}}"
+    tertiary-text="复制入口"
+    bindprimarytap="openSubmitPreview"
+    bindsecondarytap="generateEntryCode"
+    bindtertiarytap="copyEntry"
+  />
+
+  <view class="stats-grid">
+    <view class="stat-card"><view class="stat-value">{{stats.count}}</view><view class="stat-label">反馈数量</view></view>
+    <view class="stat-card"><view class="stat-value">{{stats.avgSatisfaction}}</view><view class="stat-label">满意度</view></view>
+    <view class="stat-card"><view class="stat-value">{{stats.nps}}</view><view class="stat-label">NPS</view></view>
+    <view class="stat-card"><view class="stat-value">{{stats.responseRate}}</view><view class="stat-label">回收率</view></view>
+  </view>
+
+  <view class="setting-card" bindtap="toggleAnonymous">
+    <view>
+      <view class="setting-title">匿名反馈</view>
+      <view class="setting-desc">开启后参与者无需展示姓名</view>
+    </view>
+    <view class="switch {{anonymousEnabled ? 'active' : ''}}"><view></view></view>
+  </view>
+
+  <view class="list-card">
+    <view class="section-title">反馈列表</view>
+    <list-status-view wx:if="{{requestState.loading || requestState.hasError || requestState.isEmpty}}" request-state="{{requestState}}" bindretry="loadFeedback" />
+    <view wx:for="{{feedbackList}}" wx:key="time" class="feedback-item">
+      <view class="feedback-content">“{{item.content}}”</view>
+      <view class="feedback-meta">{{item.rating}} 分 · {{item.time}}</view>
+    </view>
+  </view>
+</sub-page-layout>

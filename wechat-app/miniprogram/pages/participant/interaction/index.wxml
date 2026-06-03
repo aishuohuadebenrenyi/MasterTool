@@ -1,0 +1,30 @@
+<view class="interaction-page">
+  <view class="participant-nav">
+    <view class="participant-back" bindtap="goBack">‹</view>
+    <view class="participant-title">互动提交</view>
+  </view>
+
+  <list-status-view wx:if="{{requestState.loading || requestState.hasError}}" request-state="{{requestState}}" bindretry="loadInteraction" />
+
+  <view wx:elif="{{interaction}}" class="submit-card">
+    <view class="submit-title">{{interaction.title}}</view>
+    <view class="submit-desc">{{interaction.status === 'open' ? '请完成本次互动提交' : '互动已关闭'}}</view>
+
+    <view wx:if="{{interaction.type === 'vote'}}" class="vote-options">
+      <view
+        wx:for="{{interaction.options}}"
+        wx:key="*this"
+        class="vote-option {{selectedOption === index ? 'active' : ''}}"
+        data-index="{{index}}"
+        bindtap="chooseOption"
+      >{{item}}</view>
+    </view>
+
+    <view wx:else>
+      <textarea class="feedback-input" value="{{content}}" placeholder="{{interaction.type === 'promise' ? '写下你的行动承诺' : '输入一个关键词'}}" bindinput="handleInput" />
+    </view>
+
+    <input class="name-input" value="{{name}}" placeholder="昵称，可不填" bindinput="handleName" />
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="submit">{{submitting ? '提交中...' : '提交'}}</view>
+  </view>
+</view>

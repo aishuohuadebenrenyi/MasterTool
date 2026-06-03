@@ -1,0 +1,33 @@
+<view class="sub-page">
+  <view class="sub-nav">
+    <view class="sub-back" bindtap="goBack">‹</view>
+    <view class="sub-title">{{title}}</view>
+  </view>
+
+  <view class="legal-hero sub-card">
+    <view class="sub-heading">{{title}}</view>
+    <view class="sub-copy">{{subtitle}}</view>
+    <view class="legal-meta">最近更新：{{updatedAt}}</view>
+  </view>
+
+  <block wx:for="{{sections}}" wx:for-item="section" wx:key="title">
+    <view class="sub-card legal-section">
+      <view class="legal-title">{{section.title}}</view>
+
+      <block wx:if="{{section.paragraphs}}">
+        <block wx:for="{{section.paragraphs}}" wx:for-item="paragraph" wx:key="*this">
+          <view class="legal-paragraph">{{paragraph}}</view>
+        </block>
+      </block>
+
+      <block wx:if="{{section.bullets}}">
+        <block wx:for="{{section.bullets}}" wx:for-item="bullet" wx:key="*this">
+          <view class="legal-bullet">
+            <view class="bullet-dot"></view>
+            <view class="bullet-text">{{bullet}}</view>
+          </view>
+        </block>
+      </block>
+    </view>
+  </block>
+</view>

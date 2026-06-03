@@ -1,0 +1,32 @@
+<view class="records-page">
+  <view class="sub-nav">
+    <view class="sub-back" bindtap="goBack">‹</view>
+    <view class="sub-title">{{title}}</view>
+  </view>
+
+  <scroll-view class="record-scroll" scroll-y>
+    <view class="record-body">
+      <scroll-view class="filter-scroll" scroll-x>
+        <view class="filter-row">
+          <view wx:for="{{filters}}" wx:key="*this" class="filter-chip {{activeFilter === item ? 'active' : ''}}" data-filter="{{item}}" bindtap="setFilter">{{item}}</view>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{records.length === 0}}" class="empty-card">暂无符合条件的培训记录</view>
+      <view wx:for="{{records}}" wx:key="name" class="record-card">
+        <view class="record-header">
+          <view class="record-title">{{item.name}}</view>
+          <view class="record-tag">{{item.category}}</view>
+        </view>
+        <view class="record-date">{{item.date}}</view>
+        <view class="record-stats">
+          <view class="record-stat"><view class="record-value">{{item.participants}}</view><view class="record-label">参与人数</view></view>
+          <view class="record-divider"></view>
+          <view class="record-stat"><view class="record-value">{{item.satisfaction}}</view><view class="record-label">满意度</view></view>
+          <view class="record-divider"></view>
+          <view class="record-stat"><view class="record-value">{{item.nps}}</view><view class="record-label">NPS</view></view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

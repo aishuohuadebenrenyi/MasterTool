@@ -1,0 +1,10 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index",
+    "filter-bar": "/components/filter-bar/index",
+    "half-sheet": "/components/half-sheet/index",
+    "search-bar": "/components/search-bar/index",
+    "swipe-action-item": "/components/swipe-action-item/index"
+  }
+}

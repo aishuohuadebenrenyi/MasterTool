@@ -1,0 +1,61 @@
+@import "../../../styles/subpage.wxss";
+
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 28rpx;
+  padding: 44rpx 34rpx;
+  text-align: center;
+}
+
+.app-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 28rpx;
+  background: #F4F7FF;
+}
+
+.app-mark-icon {
+  width: 54rpx;
+  height: 54rpx;
+}
+
+.app-name {
+  margin-top: 24rpx;
+  color: #111827;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.app-version {
+  margin-top: 8rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+}
+
+.app-desc {
+  margin-top: 20rpx;
+  color: #6B7280;
+  font-size: 26rpx;
+  line-height: 1.55;
+}
+
+.about-list {
+  padding: 0 28rpx;
+}
+
+.about-arrow {
+  width: 18rpx;
+  height: 18rpx;
+}
+
+.about-footer {
+  margin-top: 44rpx;
+  color: #B0B4BD;
+  font-size: 24rpx;
+  text-align: center;
+}

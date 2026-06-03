@@ -1,0 +1,59 @@
+{
+  "pages": [
+    "pages/home/index/index",
+    "pages/prepare/index/index",
+    "pages/mine/index/index",
+    "pages/plan/edit/index",
+    "pages/plan/preview/index",
+    "pages/plan/activity-edit/index",
+    "pages/plan/activity-detail/index",
+    "pages/live/index/index",
+    "pages/live/end/index",
+    "pages/review/index/index",
+    "pages/review/detail/index",
+    "pages/feedback/index/index",
+    "pages/mine/records/index",
+    "pages/mine/data/index",
+    "pages/mine/settings/index",
+    "pages/mine/help/index",
+    "pages/mine/about/index",
+    "pages/mine/legal/index",
+    "pages/participant/checkin/index",
+    "pages/participant/feedback/index",
+    "pages/participant/interaction/index"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#F5F6FA",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8A8F99",
+    "selectedColor": "#4778F5",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index/index",
+        "text": "首页",
+        "iconPath": "static/icons/icon-tab-home.png",
+        "selectedIconPath": "static/icons/icon-tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/prepare/index/index",
+        "text": "备课",
+        "iconPath": "static/icons/icon-tab-prepare.png",
+        "selectedIconPath": "static/icons/icon-tab-prepare-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index/index",
+        "text": "我的",
+        "iconPath": "static/icons/icon-tab-mine.png",
+        "selectedIconPath": "static/icons/icon-tab-mine-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

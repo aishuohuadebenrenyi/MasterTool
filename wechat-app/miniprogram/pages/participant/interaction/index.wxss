@@ -1,0 +1,88 @@
+@import "../../../styles/subpage.wxss";
+
+.interaction-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 180rpx 32rpx 48rpx;
+  background: #F5F6FA;
+}
+
+.submit-card {
+  padding: 34rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+
+.submit-title {
+  color: #1A1A2E;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.submit-desc {
+  margin-top: 10rpx;
+  color: #8E8E93;
+  font-size: 26rpx;
+}
+
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 32rpx;
+}
+
+.vote-option {
+  min-height: 92rpx;
+  box-sizing: border-box;
+  padding: 0 28rpx;
+  border: 2rpx solid #EEF0F5;
+  border-radius: 18rpx;
+  color: #1A1A2E;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 92rpx;
+}
+
+.vote-option.active {
+  border-color: #4A7CF7;
+  background: #EAF0FF;
+  color: #4A7CF7;
+}
+
+.feedback-input,
+.name-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 28rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: #F6F7FB;
+  color: #1A1A2E;
+  font-size: 28rpx;
+}
+
+.feedback-input {
+  min-height: 220rpx;
+}
+
+.name-input {
+  height: 88rpx;
+}
+
+.submit-btn {
+  height: 92rpx;
+  margin-top: 32rpx;
+  border-radius: 22rpx;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 31rpx;
+  font-weight: 900;
+  line-height: 92rpx;
+  text-align: center;
+}
+
+.disabled {
+  opacity: 0.7;
+}

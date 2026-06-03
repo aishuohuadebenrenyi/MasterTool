@@ -1,0 +1,61 @@
+<sub-page-layout
+  page-class="review-page"
+  title="复盘详情"
+  scroll-class="review-scroll"
+  content-class="review-body"
+  bindback="goBack"
+>
+  <view class="review-state-card">
+    <view class="section-title">{{sessionName}}</view>
+    <view class="review-state-meta">当前状态：{{reviewStatusText}}</view>
+    <view wx:if="{{activitySummaryText}}" class="review-activity-summary">{{activitySummaryText}}</view>
+  </view>
+
+  <view wx:if="{{phaseActivities.length > 0}}" class="summary-card">
+    <view class="section-title">环节活动</view>
+    <view wx:for="{{phaseActivities}}" wx:for-item="phase" wx:key="name" class="phase-activity-block">
+      <view class="phase-activity-title">{{phase.name}}</view>
+      <view wx:if="{{phase.activities.length > 0}}" class="phase-activity-list">
+        <view wx:for="{{phase.activities}}" wx:for-item="activity" wx:key="activityId" class="phase-activity-chip">{{activity.name}}</view>
+      </view>
+      <view wx:else class="phase-activity-empty">当前环节未关联活动</view>
+    </view>
+  </view>
+
+  <view class="summary-card">
+    <view class="section-title">反馈摘要</view>
+    <view wx:if="{{feedbackSummary.length === 0}}" class="quote-item">暂无反馈摘要</view>
+    <view wx:for="{{feedbackSummary}}" wx:key="*this" class="quote-item">“{{item}}”</view>
+  </view>
+
+  <view wx:if="{{!isReviewLocked}}" class="review-card">
+    <view class="section-title">结构化反思</view>
+    <view class="framework-tabs">
+      <view
+        wx:for="{{frameworks}}"
+        wx:key="*this"
+        class="framework-tab {{activeFramework === item ? 'active' : ''}}"
+        data-framework="{{item}}"
+        bindtap="setFramework"
+      >{{item}}</view>
+    </view>
+
+    <view class="question-card">
+      <view class="question-index">{{questionIndexText}}</view>
+      <view class="question-title">{{questionText}}</view>
+      <textarea class="answer-input" value="{{answer}}" placeholder="记录你的思考..." bindinput="handleInput" />
+    </view>
+
+    <view class="two-actions">
+      <view class="secondary-btn" bindtap="prevQuestion">‹ 上一题</view>
+      <view class="primary-btn" bindtap="nextQuestion">下一题 ›</view>
+    </view>
+  </view>
+
+  <view wx:if="{{isReviewLocked}}" class="review-card">
+    <view class="section-title">已保存复盘</view>
+    <view class="completed-review-content">{{completedContent || '暂无复盘内容'}}</view>
+  </view>
+
+  <view wx:if="{{!isReviewLocked}}" class="finish-btn" bindtap="completeReview">完成复盘</view>
+</sub-page-layout>

@@ -1,0 +1,31 @@
+<view class="sub-page">
+  <view class="sub-nav">
+    <view class="sub-back" bindtap="goBack">‹</view>
+    <view class="sub-title">帮助与反馈</view>
+  </view>
+
+  <view class="help-section">
+    <view class="section-title">常见问题</view>
+    <view class="sub-card faq-card">
+      <view wx:for="{{faqList}}" wx:key="question" class="faq-item">
+        <view class="faq-question" bindtap="toggleFaq" data-index="{{index}}">
+          <view class="faq-title">{{item.question}}</view>
+          <image class="faq-arrow {{item.expanded ? 'expanded' : ''}}" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+        </view>
+        <view wx:if="{{item.expanded}}" class="faq-answer">{{item.answer}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="help-section">
+    <view class="section-title">联系与反馈</view>
+    <view class="sub-card">
+      <view class="field-label">联系方式</view>
+      <input class="field-input" value="{{contact}}" placeholder="微信 / 手机号 / 邮箱（选填）" bindinput="handleContactInput" />
+      <view class="field-label">问题反馈</view>
+      <textarea class="field-area" value="{{content}}" maxlength="500" placeholder="描述你遇到的问题或建议" bindinput="handleInput" />
+      <view class="field-count">{{contentCount}}</view>
+    </view>
+    <view class="primary-btn" bindtap="submitFeedback">提交反馈</view>
+  </view>
+</view>

@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index",
+    "sub-page-layout": "/components/sub-page-layout/index"
+  }
+}

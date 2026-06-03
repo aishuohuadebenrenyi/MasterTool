@@ -1,0 +1,20 @@
+<block wx:if="{{requestState && requestState.loading}}">
+  <view class="status-card">
+    <view class="status-title">{{loadingText}}</view>
+  </view>
+</block>
+
+<block wx:elif="{{requestState && requestState.hasError}}">
+  <view class="status-card">
+    <view class="status-title">{{requestState.errorTitle || '加载失败'}}</view>
+    <view class="status-desc">{{requestState.errorDesc || requestState.error}}</view>
+    <view class="status-action" bindtap="handleRetry">{{retryText}}</view>
+  </view>
+</block>
+
+<block wx:elif="{{requestState && requestState.isEmpty}}">
+  <view class="status-card">
+    <view class="status-title">{{requestState.emptyTitle || '暂无内容'}}</view>
+    <view class="status-desc">{{requestState.emptyDesc}}</view>
+  </view>
+</block>

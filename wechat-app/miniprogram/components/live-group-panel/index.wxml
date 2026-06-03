@@ -1,0 +1,22 @@
+<view class="sheet-label">分组方式</view>
+<view class="group-method-row">
+  <view class="group-method-btn {{groupMethod === 'average' ? 'active' : ''}}" data-method="average" bindtap="handleMethodTap">按人数均分</view>
+  <view class="group-method-btn {{groupMethod === 'random' ? 'active' : ''}}" data-method="random" bindtap="handleMethodTap">随机分组</view>
+</view>
+<view class="sheet-label">队伍数量</view>
+<view class="group-count-row">
+  <view class="group-count-btn" data-delta="-1" bindtap="handleTeamCount">−</view>
+  <view class="group-count-value">{{teamCount}}</view>
+  <view class="group-count-btn" data-delta="1" bindtap="handleTeamCount">+</view>
+</view>
+<view class="sheet-label">分组结果</view>
+<view wx:for="{{groups}}" wx:key="groupId" class="group-result-item">
+  <view class="group-color-dot" style="background-color: {{item.color}};"></view>
+  <view class="group-result-main">
+    <view class="group-result-heading">
+      <view class="group-result-name">{{item.name}}</view>
+      <view class="group-result-count">{{item.members.length}}人</view>
+    </view>
+    <view class="group-member-list">{{item.membersText}}</view>
+  </view>
+</view>

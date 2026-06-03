@@ -1,0 +1,50 @@
+@import "../../../styles/subpage.wxss";
+
+.legal-hero {
+  margin-top: 28rpx;
+}
+
+.legal-meta {
+  margin-top: 18rpx;
+  color: #A0A4AD;
+  font-size: 22rpx;
+}
+
+.legal-section {
+  margin-top: 24rpx;
+}
+
+.legal-title {
+  color: #111827;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.legal-paragraph {
+  margin-top: 16rpx;
+  color: #4B5563;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.legal-bullet {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 16rpx;
+}
+
+.bullet-dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin: 14rpx 16rpx 0 0;
+  border-radius: 50%;
+  background: #4778F5;
+  flex-shrink: 0;
+}
+
+.bullet-text {
+  flex: 1;
+  color: #4B5563;
+  font-size: 26rpx;
+  line-height: 1.7;
+}

@@ -1,0 +1,39 @@
+<view class="interact-options">
+  <view class="pick-tabs">
+    <view class="pick-tab {{interactionType === 'wordcloud' ? 'active' : ''}}" data-type="wordcloud" bindtap="handleChangeType">词云</view>
+    <view class="pick-tab {{interactionType === 'vote' ? 'active' : ''}}" data-type="vote" bindtap="handleChangeType">投票</view>
+    <view class="pick-tab {{interactionType === 'promise' ? 'active' : ''}}" data-type="promise" bindtap="handleChangeType">承诺</view>
+  </view>
+  <input class="manual-checkin-input" value="{{interactionTitle}}" placeholder="互动标题" bindinput="handleTitleInput" />
+  <textarea wx:if="{{interactionType === 'vote'}}" class="note-input compact" value="{{voteOptionsText}}" placeholder="每行一个投票选项" bindinput="handleVoteOptions" />
+  <view class="sheet-footer-btn primary inline-action" bindtap="handleCreate">创建互动入口</view>
+
+  <view class="checkin-list-title">互动列表</view>
+  <view wx:for="{{interactions}}" wx:key="_id" class="interact-card">
+    <view class="interact-card-name">{{item.title}}</view>
+    <view class="interact-card-desc">{{item.type}} · {{item.status}} · {{item.joinCode}}</view>
+    <view class="interact-actions">
+      <view class="mini-action" data-id="{{item._id}}" data-event-name="copyinteractionentry" bindtap="handleCardAction">复制入口</view>
+      <view class="mini-action" data-id="{{item._id}}" data-event-name="generateinteractioncode" bindtap="handleCardAction">{{interactionCodeLoadingId === item._id ? '生成中...' : '小程序码'}}</view>
+      <view class="mini-action" data-id="{{item._id}}" data-event-name="showinteractionstats" bindtap="handleCardAction">看统计</view>
+      <view class="mini-action danger" data-id="{{item._id}}" data-event-name="closeinteraction" bindtap="handleCardAction">关闭</view>
+    </view>
+  </view>
+
+  <view wx:if="{{entryPreviewUrl}}" class="entry-preview-card">
+    <view class="checkin-list-title">{{entryPreviewTitle}}</view>
+    <image class="entry-code-image" src="{{entryPreviewUrl}}" mode="aspectFit" />
+    <view wx:if="{{entryPreviewJoinCode}}" class="entry-preview-meta">入口码：{{entryPreviewJoinCode}}</view>
+    <view class="entry-preview-meta">{{entryPreviewPath}}</view>
+    <view class="entry-inline-actions">
+      <view class="mini-action" data-path="{{entryPreviewPath}}" bindtap="handlePreviewPath">页面预览</view>
+    </view>
+  </view>
+
+  <view wx:if="{{interactionStats}}" class="stats-panel">
+    <view class="checkin-list-title">提交 {{interactionStats.count}} 条</view>
+    <view wx:for="{{interactionStats.optionStats}}" wx:key="label" class="distribution-line">{{item.label}}：{{item.count}}</view>
+    <view wx:for="{{interactionStats.words}}" wx:key="text" class="distribution-line">{{item.text}}：{{item.count}}</view>
+    <view wx:for="{{interactionStats.submissions}}" wx:key="_id" class="distribution-line">{{item.content}}</view>
+  </view>
+</view>

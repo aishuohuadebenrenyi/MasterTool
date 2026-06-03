@@ -1,0 +1,67 @@
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.half-sheet {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 36rpx 36rpx 0 0;
+  background: #FFFFFF;
+  box-shadow: 0 -8rpx 40rpx rgba(15, 23, 42, 0.12);
+}
+
+.half-sheet.compact {
+  height: 62vh;
+  min-height: 620rpx;
+}
+
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  margin: 16rpx auto 0;
+  border-radius: 4rpx;
+  background: #D6D8DE;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx 24rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.sheet-title {
+  color: #1A1A2E;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #F4F5F8;
+}
+
+.sheet-close-img {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.sheet-body {
+  box-sizing: border-box;
+  padding: 24rpx 32rpx 44rpx;
+}

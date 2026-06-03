@@ -1,0 +1,13 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "live-checkin-panel": "/components/live-checkin-panel/index",
+    "live-group-panel": "/components/live-group-panel/index",
+    "live-interact-panel": "/components/live-interact-panel/index",
+    "live-note-panel": "/components/live-note-panel/index",
+    "live-random-panel": "/components/live-random-panel/index",
+    "live-sound-panel": "/components/live-sound-panel/index",
+    "live-score-panel": "/components/live-score-panel/index",
+    "live-timer-panel": "/components/live-timer-panel/index"
+  }
+}

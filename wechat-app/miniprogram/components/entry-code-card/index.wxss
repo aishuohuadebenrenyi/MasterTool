@@ -1,0 +1,80 @@
+.entry-card {
+  padding: 30rpx 28rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 18rpx 42rpx rgba(31, 36, 51, 0.07);
+}
+
+.entry-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  height: 96rpx;
+  margin: 0 auto 18rpx;
+  border-radius: 24rpx;
+  background: #F0F3FA;
+}
+
+.entry-icon {
+  width: 42rpx;
+  height: 42rpx;
+}
+
+.entry-title {
+  color: #1F2433;
+  font-size: 30rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.entry-code-image {
+  width: 320rpx;
+  height: 320rpx;
+  margin: 20rpx auto 0;
+}
+
+.entry-empty-hint {
+  margin-top: 20rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.entry-path {
+  margin-top: 16rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+  line-height: 1.6;
+  text-align: center;
+  word-break: break-all;
+}
+
+.entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  justify-content: center;
+  margin-top: 22rpx;
+}
+
+.entry-btn {
+  min-width: 184rpx;
+  height: 72rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+  line-height: 72rpx;
+  text-align: center;
+}
+
+.entry-btn.primary {
+  background: #4A7CF7;
+  color: #FFFFFF;
+}
+
+.entry-btn.secondary {
+  background: #F0F3FA;
+  color: #4A5568;
+}

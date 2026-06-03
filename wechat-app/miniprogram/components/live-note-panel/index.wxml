@@ -1,0 +1,7 @@
+<view class="note-phase-tag">{{phaseTitle}}</view>
+<textarea class="note-input" value="{{noteContent}}" placeholder="记录本环节要点..." bindinput="handleInput" />
+<view wx:for="{{notes}}" wx:key="createdAt" class="note-saved-item">
+  <view class="note-saved-phase">{{item.phaseName}}</view>
+  <view class="note-saved-content">{{item.content}}</view>
+  <view class="note-saved-time">{{item.createdAt}}</view>
+</view>

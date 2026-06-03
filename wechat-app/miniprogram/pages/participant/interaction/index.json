@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "list-status-view": "/components/list-status-view/index"
+  }
+}

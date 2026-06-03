@@ -1,0 +1,4 @@
+<view class="empty-state-card">
+  <view class="empty-state-title">{{title}}</view>
+  <view wx:if="{{desc}}" class="empty-state-desc">{{desc}}</view>
+</view>

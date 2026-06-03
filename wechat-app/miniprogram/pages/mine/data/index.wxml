@@ -1,0 +1,42 @@
+<view class="data-page">
+  <view class="sub-nav">
+    <view class="sub-back" bindtap="goBack">‹</view>
+    <view class="sub-title">{{title}}</view>
+  </view>
+
+  <scroll-view class="data-scroll" scroll-y>
+    <view class="data-body">
+      <view class="summary-card">
+        <view class="summary-title">{{sessionText}}</view>
+        <view class="summary-desc">{{isSessionMode ? '只展示当前结束活动的数据' : '展示培训趋势与场景分布'}}</view>
+      </view>
+
+      <view wx:if="{{!isSessionMode}}" class="range-toggle">
+        <view wx:for="{{ranges}}" wx:key="*this" class="range-chip {{rangeType === item ? 'active' : ''}}" data-range="{{item}}" bindtap="setRange">{{item}}</view>
+      </view>
+
+      <view class="metric-grid">
+        <view wx:for="{{metrics}}" wx:key="label" class="metric-card">
+          <view class="metric-value">{{item.value}}</view>
+          <view class="metric-label">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="chart-card">
+        <view wx:for="{{trends}}" wx:key="name" class="chart-row">
+          <view class="chart-title">{{item.name}}</view>
+          <view class="chart-empty">{{item.value}}</view>
+        </view>
+      </view>
+
+      <view class="chart-card">
+        <view class="chart-title">{{distributionTitle}}</view>
+        <view wx:for="{{distribution}}" wx:key="name" class="distribution-row">
+          <view class="distribution-name">{{item.name}}</view>
+          <view class="distribution-bar"><view class="distribution-fill" style="width: {{item.width}}rpx;"></view></view>
+          <view class="distribution-count">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,18 @@
+<view class="participant-feedback-page">
+  <view class="participant-nav">
+    <view class="participant-back" bindtap="goBack">‹</view>
+    <view class="participant-title">提交反馈</view>
+  </view>
+
+  <view class="submit-card">
+    <view class="submit-title">提交反馈</view>
+    <view class="submit-desc">你的反馈会帮助培训师优化后续设计。</view>
+    <view class="field-label">满意度</view>
+    <view class="rating-row">
+      <view wx:for="{{ratings}}" wx:key="*this" class="rating-item {{rating === item ? 'active' : ''}}" data-rating="{{item}}" bindtap="setRating">{{item}}</view>
+    </view>
+    <view class="field-label">反馈内容</view>
+    <textarea class="feedback-input" value="{{content}}" placeholder="请输入你的反馈..." bindinput="handleInput" />
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="submitFeedback">{{submitting ? '提交中...' : '提交反馈'}}</view>
+  </view>
+</view>

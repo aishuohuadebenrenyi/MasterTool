@@ -1,0 +1,256 @@
+.mine-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 184rpx 32rpx 52rpx;
+  background: #F5F5F7;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  min-height: 144rpx;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 92rpx;
+  text-align: center;
+}
+
+.profile-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-title {
+  overflow: hidden;
+  color: #1A1A2E;
+  font-size: 34rpx;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-desc {
+  margin-top: 6rpx;
+  color: #8E8E93;
+  font-size: 26rpx;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64rpx;
+  padding: 0 22rpx;
+  border-radius: 18rpx;
+  background: #F4F7FF;
+  color: #4A7CF7;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.edit-arrow {
+  width: 16rpx;
+  height: 16rpx;
+  margin-left: 8rpx;
+}
+
+.stats-card {
+  display: flex;
+  align-items: center;
+  min-height: 120rpx;
+  margin-bottom: 24rpx;
+  padding: 0 16rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  color: #4A7CF7;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.stat-label {
+  margin-top: 6rpx;
+  color: #8E8E93;
+  font-size: 22rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: #F0F0F5;
+}
+
+.menu-card {
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  border-radius: 24rpx;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  min-height: 104rpx;
+  box-sizing: border-box;
+  padding: 0 32rpx;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+
+.menu-row:last-child {
+  border-bottom: 0;
+}
+
+.menu-row.active {
+  background: #FAFCFF;
+}
+
+.menu-icon-img {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 24rpx;
+}
+
+.menu-title {
+  flex: 1;
+  color: #1A1A2E;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.menu-extra {
+  color: #8E8E93;
+  font-size: 26rpx;
+}
+
+.menu-arrow {
+  width: 18rpx;
+  height: 18rpx;
+}
+
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.half-sheet {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 36rpx 36rpx 0 0;
+  background: #FFFFFF;
+  box-shadow: 0 -8rpx 40rpx rgba(15, 23, 42, 0.12);
+}
+
+.half-sheet.compact {
+  min-height: 430rpx;
+}
+
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  margin: 16rpx auto 0;
+  border-radius: 4rpx;
+  background: #D6D8DE;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx 24rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.sheet-title {
+  color: #1A1A2E;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #F4F5F8;
+}
+
+.sheet-close-img {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.sheet-body {
+  padding: 28rpx 32rpx 40rpx;
+}
+
+.profile-edit-label {
+  margin-bottom: 16rpx;
+  color: #1A1A2E;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.profile-edit-input {
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  background: #F6F7FB;
+  color: #1A1A2E;
+  font-size: 28rpx;
+}
+
+.sheet-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20rpx 32rpx 44rpx;
+  border-top: 1rpx solid #F0F0F0;
+}
+
+.profile-save-btn {
+  min-width: 180rpx;
+  height: 76rpx;
+  padding: 0 34rpx;
+  border-radius: 20rpx;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 76rpx;
+  text-align: center;
+}

@@ -1,0 +1,34 @@
+<sub-page-layout
+  page-class="review-center-page"
+  title="复盘中心"
+  scroll-class="review-scroll"
+  content-class="review-body"
+  bindback="goBack"
+>
+  <view class="filter-row">
+    <view wx:for="{{filters}}" wx:key="*this" class="filter-chip {{activeFilter === item ? 'active' : ''}}" data-filter="{{item}}" bindtap="setFilter">{{item}}</view>
+  </view>
+  <empty-state
+    wx:if="{{requestState.isEmpty}}"
+    title="{{requestState.emptyTitle}}"
+    desc="{{requestState.emptyDesc}}"
+  />
+  <view wx:for="{{filteredSessions}}" wx:key="_id" class="review-card" data-id="{{item._id}}" bindtap="goDetail">
+    <view class="review-card-header">
+      <view class="review-title">{{item.title}}</view>
+      <view class="status-badge {{item.status === 'reviewed' ? 'done' : ''}}">{{item.statusText}}</view>
+    </view>
+    <view class="review-meta">{{item.typeText}} · {{item.dateText}}</view>
+    <view class="review-info-grid">
+      <view class="review-info-chip">{{item.customerText}}</view>
+      <view class="review-info-chip">{{item.participantsText}}</view>
+      <view class="review-info-chip">{{item.durationText}}</view>
+      <view class="review-info-chip">{{item.phaseText}}</view>
+    </view>
+    <view class="review-flow">{{item.flowText}}</view>
+    <view wx:if="{{item.activitySummaryText}}" class="review-activities">{{item.activitySummaryText}}</view>
+    <view class="review-action-row">
+      <view class="review-action-btn">{{item.status === 'reviewed' ? '查看详情' : '去复盘'}}</view>
+    </view>
+  </view>
+</sub-page-layout>

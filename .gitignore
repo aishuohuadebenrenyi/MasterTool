@@ -2,8 +2,20 @@
 
 # Workspace metadata
 .trae/
+.agents/
+.claude/
+skills-lock.json
 .idea/
 .vscode/
+.codex/
+.mcp.json
+.mcp-runtime/
+.mcporter/
+.cloudbase-mcp/
+.npm/
+config/mcporter.json
+/archive/
+docs/source-materials/
 
 # Python
 .venv/
@@ -24,13 +36,26 @@ frontend/.hbuilderx/
 frontend/coverage/
 frontend/tests/__uts_mirror__/
 frontend/project.private.config.json
-
-# Backend build artifacts
-backend/dist/
+wechat-app/miniprogram/miniprogram_npm/
+wechat-app/project.private.config.json
+wechat-app/miniprogram/project.private.config.json
+wechat-app/miniprogram/.hbuilderx/
+wechat-app/node_modules/
+wechat-app/coverage/
+wechat-app/dist/
+wechat-app/cloudfunctions/**/node_modules/
+wechat-app/cloudfunctions/**/dist/
 
 # Local env files
-backend/.env
+*.env
+*.env.*
 frontend/.env
 frontend/.env.development
 frontend/.env.local
 frontend/.env.*.local
+wechat-app/.env
+wechat-app/.env.*
+wechat-app/miniprogram/.env
+wechat-app/miniprogram/.env.*
+wechat-app/cloudfunctions/**/.env
+wechat-app/cloudfunctions/**/.env.*

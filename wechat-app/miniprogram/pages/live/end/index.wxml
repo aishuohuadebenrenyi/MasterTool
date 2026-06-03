@@ -1,0 +1,41 @@
+<view class="page end-page">
+  <view class="end-nav">
+    <view class="back" bindtap="goBack">‹</view>
+    <view class="nav-title">培训结束</view>
+  </view>
+
+  <view class="end-main">
+    <image class="end-icon" src="/static/icons/icon-phase-summary.png" mode="aspectFit" />
+    <view class="end-title">培训已结束</view>
+    <view class="end-subtitle">{{title}}</view>
+
+    <view class="stats-card">
+      <view class="stat-item">
+        <view class="stat-value">{{participants}}</view>
+        <view class="stat-label">参与人数</view>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <view class="stat-value">{{durationText}}</view>
+        <view class="stat-label">培训时长</view>
+      </view>
+    </view>
+
+    <view class="primary-action" bindtap="collectFeedback">
+      <image class="primary-action-icon" src="/static/icons/icon-tool-note.png" mode="aspectFit" />
+      <view>收集反馈</view>
+    </view>
+
+    <view class="action-row" bindtap="startReview">
+      <image class="action-icon" src="/static/icons/icon-todo-review.png" mode="aspectFit" />
+      <view class="action-text">开始复盘</view>
+    </view>
+
+    <view class="action-row" bindtap="viewData">
+      <image class="action-icon" src="/static/icons/mine-stats.png" mode="aspectFit" />
+      <view class="action-text">查看数据</view>
+    </view>
+
+    <view class="home-link" bindtap="goHome">返回首页</view>
+  </view>
+</view>

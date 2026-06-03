@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "entry-code-card": "/components/entry-code-card/index"
+  }
+}

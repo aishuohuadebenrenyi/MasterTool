@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index",
+    "entry-code-card": "/components/entry-code-card/index",
+    "list-status-view": "/components/list-status-view/index",
+    "sub-page-layout": "/components/sub-page-layout/index"
+  }
+}

@@ -1,0 +1,13 @@
+<view class="page checkin-page">
+  <view class="participant-nav">
+    <view class="participant-back" bindtap="goBack">‹</view>
+    <view class="participant-title">签到</view>
+  </view>
+
+  <view class="card checkin-panel">
+    <view class="title">{{session ? session.title : '参与者签到'}}</view>
+    <view class="subtitle">{{session && session.customerName ? session.customerName : '请填写姓名完成签到'}}</view>
+    <input class="input" value="{{name}}" placeholder="请输入姓名" bindinput="handleNameInput" />
+    <view class="primary-button {{submitting ? 'disabled' : ''}}" bindtap="submitCheckin">{{submitting ? '提交中...' : '签到'}}</view>
+  </view>
+</view>

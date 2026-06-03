@@ -1,0 +1,276 @@
+{
+  "README": {
+    "usage": "手动导入前，先在 users 集合找到当前培训师用户的 _id。`templates` 中 `visibility=public` 的公共模板不需要替换 ownerId；私有模板、方案和联调用数据里的 `REPLACE_WITH_USER_ID` 需要替换为真实用户 _id。",
+    "collections": ["templates", "plans", "activities", "live_sessions", "participants", "interactions", "interaction_submissions", "feedback"],
+    "note": "这些数据只用于联调和验收，不应由小程序代码在生产运行时自动回退读取。"
+  },
+  "templates": [
+    {
+      "_id": "seed-template-corporate",
+      "ownerId": "system",
+      "visibility": "public",
+      "name": "企业培训模板",
+      "type": "企业培训",
+      "phaseCount": 5,
+      "flowText": "开场 -> 活动 -> 复盘 -> 提炼 -> 承诺",
+      "phases": [
+        { "name": "开场连接", "duration": 15, "type": "开场连接", "reminders": ["建立安全感", "说明目标和节奏"] },
+        { "name": "主题导入", "duration": 20, "type": "主题导入", "reminders": ["连接业务场景", "抛出核心问题"] },
+        { "name": "深度探索", "duration": 40, "type": "深度探索", "reminders": ["观察参与度", "记录典型表达"] },
+        { "name": "实践应用", "duration": 30, "type": "实践应用", "reminders": ["让小组产出行动", "控制展示节奏"] },
+        { "name": "总结收束", "duration": 15, "type": "总结收束", "reminders": ["提炼共识", "明确后续承诺"] }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-template-improv",
+      "ownerId": "system",
+      "visibility": "public",
+      "name": "即兴训练模板",
+      "type": "即兴培训",
+      "phaseCount": 3,
+      "tagText": "自由组合",
+      "flowText": "热身 -> 技能训练 -> 综合练习",
+      "phases": [
+        { "name": "热身练习", "duration": 10, "type": "热身练习", "reminders": ["快速破冰", "鼓励所有人开口"] },
+        { "name": "技能训练", "duration": 30, "type": "技能训练", "reminders": ["先示范再练习", "给出明确反馈"] },
+        { "name": "综合练习", "duration": 30, "type": "综合练习", "reminders": ["保留复盘时间", "沉淀可迁移经验"] }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-template-teambuilding",
+      "ownerId": "system",
+      "visibility": "public",
+      "name": "团建活动模板",
+      "type": "团建活动",
+      "phaseCount": 3,
+      "tagText": "三段式",
+      "flowText": "破冰 -> 团队挑战 -> 轻松复盘",
+      "phases": [
+        { "name": "破冰热身", "duration": 20, "type": "开场连接", "reminders": ["快速拉近距离", "让成员进入轻松状态"] },
+        { "name": "团队挑战", "duration": 60, "type": "实践应用", "reminders": ["明确挑战规则", "观察协作分工与投入度"] },
+        { "name": "分享庆祝", "duration": 20, "type": "总结收束", "reminders": ["鼓励各组分享亮点", "用轻松复盘收束"] }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-template-improv-show",
+      "ownerId": "system",
+      "visibility": "public",
+      "name": "即兴演出模板",
+      "type": "即兴演出",
+      "phaseCount": 4,
+      "tagText": "游戏轮",
+      "flowText": "暖场 -> 即兴表演 -> 观众互动 -> 谢幕",
+      "phases": [
+        { "name": "暖场互动", "duration": 10, "type": "开场连接", "reminders": ["快速调动现场气氛", "让参与者轻松进入状态"] },
+        { "name": "即兴表演", "duration": 40, "type": "实践应用", "reminders": ["控制轮次节奏", "及时给出演出提示"] },
+        { "name": "观众互动", "duration": 15, "type": "深度探索", "reminders": ["引导观众表达感受", "放大精彩瞬间"] },
+        { "name": "谢幕总结", "duration": 5, "type": "总结收束", "reminders": ["感谢参与者", "收束情绪并完成结束动作"] }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-template-private-demo",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "visibility": "private",
+      "name": "我的主持节奏模板",
+      "type": "企业培训",
+      "phaseCount": 4,
+      "flowText": "开场 -> 体验 -> 讨论 -> 收束",
+      "phases": [
+        { "name": "开场破冰", "duration": 10, "type": "开场连接" },
+        { "name": "体验活动", "duration": 25, "type": "实践应用" },
+        { "name": "分组讨论", "duration": 20, "type": "深度探索" },
+        { "name": "总结承诺", "duration": 10, "type": "总结收束" }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    }
+  ],
+  "plans": [
+    {
+      "_id": "seed-plan-confirmed",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "name": "企业培训演示方案",
+      "customerName": "示例客户",
+      "type": "企业培训",
+      "status": "confirmed",
+      "participantCount": 22,
+      "durationMinutes": 120,
+      "phases": [
+        { "name": "开场连接", "duration": 15, "type": "开场连接", "reminders": ["建立安全感", "说明目标和节奏"] },
+        { "name": "主题导入", "duration": 20, "type": "主题导入", "reminders": ["连接业务场景", "抛出核心问题"] },
+        { "name": "深度探索", "duration": 40, "type": "深度探索", "reminders": ["观察参与度", "记录典型表达"] },
+        { "name": "实践应用", "duration": 30, "type": "实践应用", "reminders": ["让小组产出行动", "控制展示节奏"] },
+        { "name": "总结收束", "duration": 15, "type": "总结收束", "reminders": ["提炼共识", "明确后续承诺"] }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-plan-draft",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "name": "即兴训练草稿",
+      "customerName": "",
+      "type": "即兴培训",
+      "status": "draft",
+      "participantCount": 16,
+      "durationMinutes": 70,
+      "phases": [
+        { "name": "热身练习", "duration": 10, "type": "热身练习" },
+        { "name": "技能训练", "duration": 30, "type": "技能训练" },
+        { "name": "综合练习", "duration": 30, "type": "综合练习" }
+      ],
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    }
+  ],
+  "activities": [
+    {
+      "_id": "seed-activity-warmup",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "name": "暖场互动",
+      "scenes": ["团队融合"],
+      "category": "团队融合",
+      "difficulty": "简单",
+      "peopleRange": "8-30人",
+      "durationMinutes": 10,
+      "objective": "快速建立连接，激活参与者表达。",
+      "rules": "培训师给出题目，参与者轮流回应；每次回应保持简短。",
+      "reviewQuestions": "刚才哪些回应让你印象最深？团队节奏发生了什么变化？",
+      "leaderTips": "控制节奏，及时鼓励，避免过早评价答案质量。",
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    },
+    {
+      "_id": "seed-activity-role-relay",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "name": "角色接力",
+      "scenes": ["协作沟通"],
+      "category": "协作沟通",
+      "difficulty": "中等",
+      "peopleRange": "6-24人",
+      "durationMinutes": 15,
+      "objective": "训练倾听、接续和临场表达。",
+      "rules": "每位参与者承接上一位的设定并推进情境。",
+      "reviewQuestions": "哪些信息被有效承接？哪里发生了断裂？",
+      "leaderTips": "提醒参与者先接住伙伴，再贡献新信息。",
+      "createdAt": 1764500000000,
+      "updatedAt": 1764500000000
+    }
+  ],
+  "live_sessions": [
+    {
+      "_id": "seed-session-ended",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "planId": "seed-plan-confirmed",
+      "planSnapshot": {
+        "planId": "seed-plan-confirmed",
+        "name": "已结束培训演示场次",
+        "type": "企业培训",
+        "participantCount": 22,
+        "customerName": "示例客户",
+        "phases": [
+          { "name": "开场连接", "duration": 15, "type": "开场连接" },
+          { "name": "主题导入", "duration": 20, "type": "主题导入" }
+        ],
+        "confirmedAt": 1764500000000
+      },
+      "status": "ended",
+      "currentPhaseIndex": 1,
+      "allowRepeatPick": false,
+      "startedAt": 1764500000000,
+      "endedAt": 1764503600000
+    }
+  ],
+  "participants": [
+    {
+      "_id": "seed-participant-001",
+      "sessionId": "seed-session-ended",
+      "openid": "manual:seed-001",
+      "name": "梨花",
+      "checkedInAt": 1764500100000
+    },
+    {
+      "_id": "seed-participant-002",
+      "sessionId": "seed-session-ended",
+      "openid": "manual:seed-002",
+      "name": "王明",
+      "checkedInAt": 1764500200000
+    }
+  ],
+  "interactions": [
+    {
+      "_id": "seed-interaction-vote",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "sessionId": "seed-session-ended",
+      "type": "vote",
+      "title": "今天最有收获的部分",
+      "options": ["开场连接", "主题导入", "小组讨论"],
+      "status": "closed",
+      "joinCode": "SEED01",
+      "createdAt": 1764500300000,
+      "updatedAt": 1764500400000
+    },
+    {
+      "_id": "seed-interaction-wordcloud",
+      "ownerId": "REPLACE_WITH_USER_ID",
+      "sessionId": "seed-session-ended",
+      "type": "wordcloud",
+      "title": "一个关键词总结今天",
+      "options": [],
+      "status": "closed",
+      "joinCode": "SEED02",
+      "createdAt": 1764500500000,
+      "updatedAt": 1764500600000
+    }
+  ],
+  "interaction_submissions": [
+    {
+      "_id": "seed-interaction-submission-001",
+      "interactionId": "seed-interaction-vote",
+      "sessionId": "seed-session-ended",
+      "type": "vote",
+      "openid": "manual:seed-001",
+      "name": "梨花",
+      "content": "",
+      "optionIndex": 1,
+      "createdAt": 1764500320000
+    },
+    {
+      "_id": "seed-interaction-submission-002",
+      "interactionId": "seed-interaction-wordcloud",
+      "sessionId": "seed-session-ended",
+      "type": "wordcloud",
+      "openid": "manual:seed-002",
+      "name": "王明",
+      "content": "协作",
+      "optionIndex": -1,
+      "createdAt": 1764500520000
+    }
+  ],
+  "feedback": [
+    {
+      "_id": "seed-feedback-001",
+      "sessionId": "seed-session-ended",
+      "openid": "manual:seed-001",
+      "rating": 5,
+      "content": "互动很充分，能马上用到工作里。",
+      "createdAt": 1764500800000
+    },
+    {
+      "_id": "seed-feedback-002",
+      "sessionId": "seed-session-ended",
+      "openid": "manual:seed-002",
+      "rating": 4,
+      "content": "节奏清晰，希望案例时间再多一点。",
+      "createdAt": 1764500900000
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "sub-page-layout": "/components/sub-page-layout/index"
+  }
+}

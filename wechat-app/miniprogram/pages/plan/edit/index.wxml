@@ -1,0 +1,145 @@
+<view class="plan-edit-page">
+  <view class="edit-nav">
+    <view class="edit-back" bindtap="goBack">‹</view>
+    <view class="edit-title">{{pageTitle}}</view>
+    <view class="preview-btn" bindtap="goPreview">预览</view>
+  </view>
+
+  <scroll-view class="edit-scroll" scroll-y>
+    <view class="edit-content">
+      <view class="edit-card">
+        <view class="form-item">
+          <view class="form-label">方案名称</view>
+          <input class="form-input" value="{{name}}" placeholder="请输入方案名称" bindinput="handleNameInput" />
+        </view>
+
+        <view class="form-row">
+          <view class="form-item form-half">
+            <view class="form-label">参与人数</view>
+            <view class="number-input">
+              <view class="number-btn" bindtap="decrementPeople">−</view>
+              <view class="number-value">{{participantCount}}</view>
+              <view class="number-btn" bindtap="incrementPeople">+</view>
+            </view>
+          </view>
+          <view class="form-item form-half">
+            <view class="form-label">客户名称</view>
+            <input class="form-input" value="{{customerName}}" placeholder="请输入客户名称" bindinput="handleCustomerInput" />
+          </view>
+        </view>
+
+        <view class="form-item last">
+          <view class="form-label">方案类型</view>
+          <view class="type-tag">{{type}}</view>
+        </view>
+      </view>
+
+      <view class="edit-card">
+        <view class="section-header">
+          <view class="section-title">环节设置</view>
+          <view class="section-actions">
+            <view class="section-action" bindtap="showAddPhase">+ 添加环节</view>
+          </view>
+        </view>
+
+        <view wx:if="{{phases.length > 0}}" class="phase-list">
+          <view wx:for="{{phases}}" wx:key="name" class="phase-item">
+            <view class="phase-badge" style="background-color: {{item.color}};">{{index + 1}}</view>
+            <view class="phase-delete-btn" data-index="{{index}}" bindtap="removePhase">×</view>
+            <view class="phase-info">
+              <view class="phase-name-row">
+                <view class="phase-name">{{item.name}}</view>
+                <view wx:if="{{item.hasActivities}}" class="phase-source-tag">{{item.activityCount}}个活动</view>
+              </view>
+              <view class="phase-duration">{{item.duration}}分钟</view>
+              <view class="phase-subtitle">本环节可挂多个活动</view>
+              <view wx:if="{{item.activities.length > 0}}" class="phase-activity-list">
+                <view wx:for="{{item.activities}}" wx:for-item="activity" wx:for-index="activityIndex" wx:key="activityId" class="phase-activity-item">
+                  <view class="phase-activity-main">
+                    <view class="phase-activity-name">{{activity.name}}</view>
+                    <view class="phase-activity-meta">{{activity.category}} · {{activity.durationMinutes}}分钟</view>
+                  </view>
+                  <view class="phase-activity-remove" data-phase-index="{{index}}" data-activity-id="{{activity.activityId}}" bindtap="removePhaseActivity">移除</view>
+                </view>
+              </view>
+              <view wx:else class="phase-activity-empty">还没有选择活动</view>
+            </view>
+            <view class="phase-actions">
+              <view class="phase-actions-inline">
+                <view class="phase-action pick" data-index="{{index}}" bindtap="openPhaseActivityPicker">选活动</view>
+                <view class="phase-action {{!item.canMoveUp ? 'disabled' : ''}}" data-index="{{index}}" data-delta="-1" bindtap="movePhase">↑</view>
+                <view class="phase-action {{!item.canMoveDown ? 'disabled' : ''}}" data-index="{{index}}" data-delta="1" bindtap="movePhase">↓</view>
+              </view>
+            </view>
+          </view>
+          <view class="phase-total">共 {{phases.length}} 个环节，预计 {{totalDuration}} 分钟</view>
+        </view>
+
+        <view wx:else class="phase-empty">暂无环节，点击上方添加</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="bottom-bar">
+    <view wx:if="{{status !== 'confirmed'}}" class="bottom-btn tertiary" bindtap="saveDraft">保存草稿</view>
+    <view wx:if="{{status === 'confirmed'}}" class="bottom-btn tertiary template" bindtap="saveAsTemplate">{{savingTemplate ? '保存中...' : '设为个人模板'}}</view>
+    <view wx:if="{{status !== 'confirmed'}}" class="bottom-btn secondary" bindtap="confirmPlan">确认方案</view>
+    <view class="bottom-btn primary" bindtap="startTraining">开始培训</view>
+  </view>
+
+  <view wx:if="{{addPhaseVisible}}" class="sheet-mask" catchtap="hideAddPhase">
+    <view class="half-sheet" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <view class="sheet-title">添加环节</view>
+        <view class="sheet-close" catchtap="hideAddPhase">×</view>
+      </view>
+      <view class="sheet-body">
+        <view class="phase-type-grid">
+          <view
+            wx:for="{{phaseTypeList}}"
+            wx:key="name"
+            class="phase-type-item {{newPhaseName === item.name ? 'active' : ''}}"
+            data-name="{{item.name}}"
+            bindtap="selectPhaseType"
+          >
+            <image class="phase-type-icon" src="{{item.icon}}" mode="aspectFit" />
+            <view class="phase-type-name">{{item.name}}</view>
+          </view>
+        </view>
+        <view class="popup-form">
+          <view class="form-label">环节名称</view>
+          <input class="form-input" value="{{newPhaseName}}" placeholder="请输入或选择环节类型" bindinput="handlePhaseNameInput" />
+          <view class="form-label popup-label">时长(分钟)</view>
+          <input class="form-input" type="number" value="{{newPhaseDuration}}" placeholder="10" bindinput="handlePhaseDurationInput" />
+        </view>
+      </view>
+      <view class="sheet-footer">
+        <view class="sheet-primary" bindtap="confirmAddPhase">确认添加</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showActivityPicker}}" class="sheet-mask" catchtap="hideActivityPicker">
+    <view class="half-sheet" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <view class="sheet-title">从活动库添加</view>
+        <view class="sheet-close" catchtap="hideActivityPicker">×</view>
+      </view>
+      <view class="sheet-body">
+        <input class="form-input" value="{{activitySearch}}" placeholder="搜索活动名称或分类" bindinput="handleActivitySearch" />
+        <view class="activity-picker-list">
+          <view wx:for="{{filteredActivities}}" wx:key="_id" class="activity-picker-item" data-id="{{item._id}}" bindtap="selectActivityPhase">
+            <view class="activity-picker-main">
+              <view class="activity-picker-name">{{item.name}}</view>
+              <view class="activity-picker-meta">{{item.typeText}} · {{item.durationText}} · {{item.peopleText}}</view>
+            </view>
+            <view class="activity-picker-action">添加</view>
+          </view>
+          <view wx:if="{{filteredActivities.length === 0}}" class="activity-picker-empty">暂无可添加的活动</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

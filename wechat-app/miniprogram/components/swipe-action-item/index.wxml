@@ -1,0 +1,21 @@
+<view class="swipe-container">
+  <view wx:if="{{actions.length > 0}}" class="swipe-actions" style="width: {{swipeWidth}}rpx;">
+    <view
+      wx:for="{{actions}}"
+      wx:key="action"
+      class="swipe-btn {{item.className}}"
+      data-action="{{item.action}}"
+      catchtap="onActionTap"
+    >{{item.text}}</view>
+  </view>
+
+  <view
+    class="swipe-item-content"
+    style="transform: translateX({{opened ? -swipeWidth : 0}}rpx);"
+    bindtap="onItemTap"
+    bindtouchstart="onTouchStart"
+    bindtouchend="onTouchEnd"
+  >
+    <slot></slot>
+  </view>
+</view>

@@ -1,0 +1,183 @@
+.activity-edit-page {
+  min-height: 100vh;
+  background: #F5F5F7;
+  color: #1A1A2E;
+}
+
+.edit-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  height: 184rpx;
+  box-sizing: border-box;
+  padding: 88rpx 32rpx 0;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid #F0F0F5;
+}
+
+.edit-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  color: #333333;
+  font-size: 50rpx;
+  line-height: 1;
+}
+
+.edit-title {
+  position: absolute;
+  left: 128rpx;
+  right: 128rpx;
+  color: #000000;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.activity-scroll {
+  height: 100vh;
+}
+
+.activity-body {
+  padding: 212rpx 32rpx 96rpx;
+}
+
+.form-card {
+  padding: 32rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-group.last {
+  margin-bottom: 0;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.form-label {
+  margin-bottom: 16rpx;
+  color: #1A1A2E;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.label-row .form-label {
+  margin-bottom: 0;
+}
+
+.required {
+  margin-left: 4rpx;
+  color: #FF3B30;
+  font-size: 28rpx;
+}
+
+.form-row {
+  display: flex;
+  gap: 24rpx;
+}
+
+.form-half {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-input {
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 24rpx;
+  border: 1rpx solid #E5E5EA;
+  border-radius: 18rpx;
+  background: #F8F9FE;
+  color: #1A1A2E;
+  font-size: 28rpx;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 220rpx;
+  box-sizing: border-box;
+  padding: 24rpx;
+  border: 1rpx solid #E5E5EA;
+  border-radius: 18rpx;
+  background: #F8F9FE;
+  color: #1A1A2E;
+  font-size: 28rpx;
+}
+
+.form-textarea.small {
+  min-height: 160rpx;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.tag-item {
+  min-height: 58rpx;
+  padding: 0 28rpx;
+  border: 1rpx solid #E5E5EA;
+  border-radius: 999rpx;
+  background: #FFFFFF;
+  color: #8E8E93;
+  font-size: 26rpx;
+  line-height: 58rpx;
+}
+
+.tag-item.active {
+  border-color: #4A7CF7;
+  background: #4A7CF7;
+  color: #FFFFFF;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.delete-btn,
+.save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220rpx;
+  height: 80rpx;
+  padding: 0 32rpx;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.delete-btn {
+  background: #FFF1F2;
+  color: #E5484D;
+}
+
+.save-btn {
+  background: #4A7CF7;
+  color: #FFFFFF;
+}
+
+.action-icon {
+  width: 26rpx;
+  height: 26rpx;
+  margin-right: 12rpx;
+}

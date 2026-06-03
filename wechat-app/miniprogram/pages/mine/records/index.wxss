@@ -1,0 +1,114 @@
+@import "../../../styles/subpage.wxss";
+
+.records-page {
+  min-height: 100vh;
+  background: #F5F5F7;
+}
+
+.record-scroll {
+  height: 100vh;
+}
+
+.record-body {
+  padding: 212rpx 24rpx 64rpx;
+}
+
+.filter-scroll {
+  width: 100%;
+  margin-bottom: 20rpx;
+  white-space: nowrap;
+}
+
+.filter-row {
+  display: inline-flex;
+  gap: 16rpx;
+  padding: 0 8rpx 8rpx;
+}
+
+.filter-chip {
+  height: 60rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 999rpx;
+  background: #FFFFFF;
+  color: #666666;
+  font-size: 26rpx;
+  line-height: 60rpx;
+}
+
+.filter-chip.active {
+  border-color: #4A7CF7;
+  background: #4A7CF7;
+  color: #FFFFFF;
+}
+
+.record-card,
+.empty-card {
+  margin-bottom: 20rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 2rpx 24rpx rgba(0, 0, 0, 0.08);
+}
+
+.empty-card {
+  color: #8E8E93;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.record-header {
+  display: flex;
+  align-items: center;
+}
+
+.record-title {
+  flex: 1;
+  color: #1A1A2E;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.record-tag {
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: #EAF0FF;
+  color: #4A7CF7;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.record-date {
+  margin-top: 12rpx;
+  color: #8E8E93;
+  font-size: 24rpx;
+}
+
+.record-stats {
+  display: flex;
+  align-items: center;
+  margin-top: 22rpx;
+}
+
+.record-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.record-value {
+  color: #4A7CF7;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.record-label {
+  margin-top: 6rpx;
+  color: #8E8E93;
+  font-size: 22rpx;
+}
+
+.record-divider {
+  width: 1rpx;
+  height: 58rpx;
+  background: #F0F0F5;
+}

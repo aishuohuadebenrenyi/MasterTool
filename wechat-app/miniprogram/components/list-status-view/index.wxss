@@ -1,0 +1,36 @@
+.status-card {
+  margin-top: 20rpx;
+  padding: 36rpx 28rpx;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  text-align: center;
+  box-shadow: 0 10rpx 32rpx rgba(31, 36, 51, 0.06);
+}
+
+.status-title {
+  color: #1A1A2E;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.status-desc {
+  margin-top: 12rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.status-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160rpx;
+  height: 64rpx;
+  margin-top: 24rpx;
+  padding: 0 28rpx;
+  border-radius: 18rpx;
+  background: #F4F7FF;
+  color: #4A7CF7;
+  font-size: 24rpx;
+  font-weight: 800;
+}

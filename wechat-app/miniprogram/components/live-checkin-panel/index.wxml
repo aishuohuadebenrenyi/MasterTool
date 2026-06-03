@@ -1,0 +1,22 @@
+<view class="checkin-stats">已签到 {{participants.length}} / 预计 {{peopleCount}} 人</view>
+<entry-code-card
+  title="参与者签到入口"
+  code-url="{{checkinCodeUrl}}"
+  path="{{checkinPath}}"
+  empty-hint="生成正式签到小程序码，发给参与者扫码签到"
+  secondary-text="{{checkinCodeLoading ? '生成中...' : (checkinCodeUrl ? '重新生成' : '生成小程序码')}}"
+  tertiary-text="复制入口"
+  bindsecondarytap="handleLoadCode"
+  bindtertiarytap="handleCopyEntry"
+/>
+<view class="checkin-entry-tip">请让参与者扫码签到；培训师可在下方手动补录。</view>
+<view class="manual-checkin">
+  <input class="manual-checkin-input" value="{{participantName}}" placeholder="手动补录姓名" bindinput="handleNameInput" />
+  <view class="manual-checkin-btn" bindtap="handleManualCheckin">签到</view>
+</view>
+<view class="checkin-list-title">最近签到</view>
+<view wx:for="{{participants}}" wx:key="_id" class="checkin-item">
+  <view class="checkin-avatar">{{item.avatarText}}</view>
+  <view class="checkin-name">{{item.name}}</view>
+  <view class="checkin-time">{{item.checkedInAtText}}</view>
+</view>

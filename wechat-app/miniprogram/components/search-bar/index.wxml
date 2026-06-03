@@ -1,0 +1,10 @@
+<view class="search-input-wrap {{wrapClass}}">
+  <input
+    class="search-input {{inputClass}}"
+    value="{{value}}"
+    placeholder="{{placeholder}}"
+    bindinput="handleInput"
+    bindconfirm="handleConfirm"
+  />
+  <image class="search-icon" src="/static/icons/icon-state-search.png" mode="aspectFit" />
+</view>

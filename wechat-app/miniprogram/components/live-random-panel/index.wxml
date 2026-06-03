@@ -1,0 +1,24 @@
+<view class="pick-tabs">
+  <view class="pick-tab {{randomTab === 'actor' ? 'active' : ''}}" data-tab="actor" bindtap="handleSetTab">抽演员</view>
+  <view class="pick-tab {{randomTab === 'audience' ? 'active' : ''}}" data-tab="audience" bindtap="handleSetTab">抽观众</view>
+  <view class="pick-tab {{randomTab === 'topic' ? 'active' : ''}}" data-tab="topic" bindtap="handleSetTab">抽题目</view>
+</view>
+<view wx:if="{{randomTab !== 'topic'}}" class="pick-repeat-row" bindtap="handleToggleRepeat">
+  <view class="pick-switch {{allowRepeatPick ? 'active' : ''}}"><view></view></view>
+  <view class="pick-repeat-copy">
+    <view class="pick-repeat-title">允许重复抽取</view>
+    <view class="pick-repeat-desc">{{allowRepeatPick ? '每次都从全部已签到参与者中抽取' : '默认排除本轮已经抽中过的人'}}</view>
+  </view>
+</view>
+<view class="pick-action-area">
+  <view wx:if="{{!pickedName}}" class="pick-start-btn" bindtap="handlePick">开始抽取</view>
+  <view wx:else class="pick-result-area">
+    <view class="pick-result-text">{{pickedName}}</view>
+    <view class="pick-retry-btn" bindtap="handlePick">再抽一次</view>
+  </view>
+</view>
+<view wx:if="{{pickedIds.length > 0 && !allowRepeatPick}}" class="pick-history-reset" bindtap="handleResetHistory">重置抽取记录</view>
+<view wx:if="{{pickHistory.length > 0}}" class="history-card">
+  <view class="checkin-list-title">最近抽取</view>
+  <view wx:for="{{pickHistory}}" wx:key="pickedAt" class="history-line">{{item.name}} · {{item.type === 'topic' ? '题目' : '参与者'}}</view>
+</view>

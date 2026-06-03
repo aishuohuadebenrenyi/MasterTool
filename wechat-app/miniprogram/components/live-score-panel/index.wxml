@@ -1,0 +1,52 @@
+<view class="sheet-label">积分模式</view>
+<view class="group-method-row">
+  <view class="group-method-btn {{scoreMode === 'simple' ? 'active' : ''}}" data-mode="simple" bindtap="handleScoreMode">简化模式</view>
+  <view class="group-method-btn {{scoreMode === 'detailed' ? 'active' : ''}}" data-mode="detailed" bindtap="handleScoreMode">详细模式</view>
+</view>
+<view class="sheet-label">队伍积分</view>
+<view wx:if="{{!isGrouped}}" class="empty-hint">请先完成分组</view>
+<block wx:if="{{isGrouped && scoreMode === 'simple'}}">
+  <view wx:for="{{groups}}" wx:key="groupId" class="score-item">
+    <view class="score-color-dot" style="background-color: {{item.color}};"></view>
+    <view class="score-name">{{item.name}}</view>
+    <view class="score-value">{{item.score}}</view>
+    <view class="score-btn minus" data-index="{{index}}" data-delta="-1" bindtap="handleChangeScore">−</view>
+    <view class="score-btn plus" data-index="{{index}}" data-delta="1" bindtap="handleChangeScore">+</view>
+  </view>
+</block>
+<block wx:if="{{isGrouped && scoreMode === 'detailed'}}">
+  <view wx:for="{{groups}}" wx:key="groupId" class="score-detail-card">
+    <view class="score-detail-header">
+      <view class="score-detail-title-wrap">
+        <view class="score-color-dot" style="background-color: {{item.color}};"></view>
+        <view class="score-name">{{item.name}}</view>
+      </view>
+      <view class="score-value">{{item.score}}</view>
+    </view>
+    <view class="score-members-label">组员</view>
+    <view class="score-members-text">{{item.membersText}}</view>
+    <input
+      class="score-reason-input"
+      value="{{scoreReasonInputs[item.groupId] || ''}}"
+      placeholder="填写本次加减分原因"
+      data-group-id="{{item.groupId}}"
+      bindinput="handleReasonInput"
+    />
+    <view class="score-detail-actions">
+      <view class="score-btn minus wide" data-index="{{index}}" data-delta="-1" bindtap="handleDetailedScore">-1</view>
+      <view class="score-btn plus wide" data-index="{{index}}" data-delta="1" bindtap="handleDetailedScore">+1</view>
+      <view class="score-btn plus wide" data-index="{{index}}" data-delta="5" bindtap="handleDetailedScore">+5</view>
+    </view>
+    <view class="score-history-title">积分流水</view>
+    <view wx:if="{{scoreDetails[item.groupId] && scoreDetails[item.groupId].length > 0}}">
+      <view wx:for="{{scoreDetails[item.groupId]}}" wx:for-item="entry" wx:key="createdAt" class="score-history-item">
+        <view class="score-history-main">
+          <view class="score-history-delta {{entry.delta > 0 ? 'plus' : 'minus'}}">{{entry.deltaText}}</view>
+          <view class="score-history-reason">{{entry.reason}}</view>
+        </view>
+        <view class="score-history-time">{{entry.timeText}}</view>
+      </view>
+    </view>
+    <view wx:else class="score-history-empty">还没有积分记录</view>
+  </view>
+</block>

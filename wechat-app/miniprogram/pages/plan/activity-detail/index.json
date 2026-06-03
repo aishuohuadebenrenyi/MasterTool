@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "half-sheet": "/components/half-sheet/index"
+  }
+}

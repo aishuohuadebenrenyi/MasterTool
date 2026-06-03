@@ -1,0 +1,47 @@
+.swipe-container {
+  position: relative;
+  margin-bottom: 16rpx;
+  overflow: hidden;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+}
+
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-radius: 24rpx;
+}
+
+.swipe-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.swipe-btn.delete {
+  background: #F1F3F7;
+  color: #8E8E93;
+}
+
+.swipe-btn.pin {
+  background: #FF9F0A;
+}
+
+.swipe-btn.fav {
+  background: #FF2D55;
+}
+
+.swipe-item-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s ease;
+}

@@ -1,0 +1,156 @@
+<view class="page prepare-page">
+  <view class="segmented">
+    <view class="segment {{activeTab === 'plans' ? 'active' : ''}}" data-tab="plans" bindtap="switchTab">{{firstTabText}}</view>
+    <view
+      class="segment {{activeTab === secondTabKey ? 'active' : ''}}"
+      data-tab="{{secondTabKey}}"
+      bindtap="switchTab"
+    >{{secondTabText}}</view>
+  </view>
+
+  <view wx:if="{{activeTab === 'plans'}}" class="content">
+    <view class="section-header-row">
+      <view></view>
+      <view class="section-action" bindtap="goPlanCreate">+ 新建方案</view>
+    </view>
+
+    <search-bar value="{{planSearch}}" placeholder="搜索方案/模板名称或客户名" bindinput="handlePlanSearch" />
+    <filter-bar items="{{planKindFilters}}" active="{{planKindFilter}}" bindchange="setPlanKindFilter" />
+    <filter-bar items="{{planTypeFilters}}" active="{{planTypeFilter}}" bindchange="setPlanTypeFilter" />
+    <filter-bar
+      wx:if="{{planKindFilter !== '个人模板' && planKindFilter !== '公共模板' && planKindFilter !== '收藏'}}"
+      items="{{planStatusFilters}}"
+      active="{{planStatusFilter}}"
+      bindchange="setPlanStatusFilter"
+    />
+
+    <view class="list-stack">
+      <swipe-action-item
+        wx:for="{{filteredPlans}}"
+        wx:key="_id"
+        item-id="{{item._id}}"
+        opened="{{item._id === openedPlanId}}"
+        swipe-width="{{item.swipeWidth}}"
+        actions="{{item.swipeActions}}"
+        binditemtap="handlePlanTap"
+        bindactiontap="handleSwipeAction"
+        bindopenchange="handlePlanOpenChange"
+      >
+        <view class="plan-card">
+          <view class="plan-card-row">
+            <view class="plan-name">{{item.name}}</view>
+            <view wx:if="{{item.isFavorite}}" class="favorite-badge">★</view>
+            <view wx:if="{{item.contentKind === 'template'}}" class="plan-source-badge">{{item.badgeText}}</view>
+            <view class="plan-type-badge">{{item.typeText}}</view>
+          </view>
+          <view class="plan-meta">{{item.metaText}}</view>
+          <view wx:if="{{item.status === 'delivered' || item.status === 'reviewed'}}" class="plan-flow-text">{{item.flowText || '暂无环节信息'}}</view>
+          <view class="plan-card-footer">
+            <view class="status-tag {{item.status}}">{{item.statusText}}</view>
+            <view
+              wx:if="{{item.contentKind === 'template' || item.showPrimaryAction}}"
+              class="card-action"
+              data-id="{{item._id}}"
+              catchtap="handlePlanAction"
+            >{{item.contentKind === 'template' ? '应用' : item.actionText}} ›</view>
+          </view>
+        </view>
+      </swipe-action-item>
+      <empty-state
+        wx:if="{{planRequestState.isEmpty}}"
+        title="{{planRequestState.emptyTitle}}"
+        desc="{{planRequestState.emptyDesc}}"
+      />
+    </view>
+  </view>
+
+  <view wx:if="{{activeTab === 'templates'}}" class="content">
+    <view class="search-input-wrap">
+      <input class="search-input" value="{{planSearch}}" placeholder="搜索模板名称" bindinput="handlePlanSearch" />
+      <image class="search-icon" src="/static/icons/icon-state-search.png" mode="aspectFit" />
+    </view>
+    <view class="list-stack">
+      <view wx:for="{{filteredTemplates}}" wx:key="_id" class="template-option-card" data-id="{{item._id}}" bindtap="handleTemplateTap">
+        <view class="template-option-icon-box">
+          <image class="template-option-icon" src="{{item.icon}}" mode="aspectFit" />
+        </view>
+        <view class="template-option-info">
+          <view class="template-option-row">
+            <view class="template-option-name">{{item.name}}</view>
+            <view class="template-option-tag">{{item.templateTagText}}</view>
+          </view>
+          <view class="template-option-desc">{{item.flowText}}</view>
+        </view>
+        <image class="template-option-chevron" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+      </view>
+      <view wx:if="{{filteredTemplates.length === 0}}" class="empty">暂无个人模板</view>
+    </view>
+  </view>
+
+  <view wx:if="{{activeTab === 'activities'}}" class="content">
+    <view class="section-header-row">
+      <view></view>
+      <view class="section-action" bindtap="goActivityCreate">+ 新建活动</view>
+    </view>
+
+    <search-bar value="{{activitySearch}}" placeholder="搜索活动名称或关键词" bindinput="handleActivitySearch" />
+    <filter-bar items="{{activityKindFilters}}" active="{{activityKindFilter}}" bindchange="setActivityKindFilter" />
+    <filter-bar items="{{activityScenes}}" active="{{activitySceneFilter}}" bindchange="setActivitySceneFilter" />
+
+    <view class="list-stack">
+      <swipe-action-item
+        wx:for="{{filteredActivities}}"
+        wx:key="_id"
+        item-id="{{item._id}}"
+        opened="{{item._id === openedActivityId}}"
+        swipe-width="{{item.swipeWidth}}"
+        actions="{{item.swipeActions}}"
+        binditemtap="handleActivityTap"
+        bindactiontap="handleActivitySwipeAction"
+        bindopenchange="handleActivityOpenChange"
+      >
+        <view class="activity-card">
+          <view class="activity-card-header">
+            <view class="activity-name">{{item.name}}</view>
+            <view wx:if="{{item.isFavorite}}" class="favorite-badge">★</view>
+            <view class="difficulty-tag">{{item.difficultyText}}</view>
+          </view>
+          <view class="activity-meta">{{item.durationText}}</view>
+          <view class="activity-tag-row">
+            <view class="activity-tag">{{item.sceneText}}</view>
+            <view wx:if="{{item.isPinned}}" class="activity-pinned-tag">已置顶</view>
+          </view>
+        </view>
+      </swipe-action-item>
+      <empty-state
+        wx:if="{{activityRequestState.isEmpty}}"
+        title="{{activityRequestState.emptyTitle}}"
+        desc="{{activityRequestState.emptyDesc}}"
+      />
+    </view>
+  </view>
+
+  <half-sheet visible="{{showCreateTemplateSelect}}" title="选择方案模板" compact="{{true}}" body-class="prepare-sheet-body" bindclose="closeCreateTemplateSelect">
+    <scroll-view class="prepare-sheet-scroll" scroll-y>
+        <view
+          wx:for="{{createTemplateOptions}}"
+          wx:key="_id"
+          class="template-option-card sheet-template-option-card"
+          data-id="{{item._id}}"
+          catchtap="selectCreateTemplate"
+        >
+          <view class="template-option-icon-box">
+            <image class="template-option-icon" src="{{item.icon}}" mode="aspectFit" />
+          </view>
+          <view class="template-option-info">
+            <view class="template-option-row">
+              <view class="template-option-name">{{item.name}}</view>
+              <view class="template-option-tag">{{item.templateTagText}}</view>
+            </view>
+            <view class="template-option-desc">{{item.flowText}}</view>
+          </view>
+          <image class="template-option-chevron" src="/static/icons/icon-state-chevron-right.png" mode="aspectFit" />
+        </view>
+    </scroll-view>
+  </half-sheet>
+</view>

@@ -1,0 +1,147 @@
+.end-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 104rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+  background: #F5F6FA;
+  color: #1F2433;
+}
+
+.end-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  color: #3A3F4B;
+  font-size: 50rpx;
+  line-height: 1;
+}
+
+.nav-title {
+  position: absolute;
+  left: 96rpx;
+  right: 96rpx;
+  color: #111827;
+  font-size: 32rpx;
+  font-weight: 800;
+  text-align: center;
+}
+
+.end-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120rpx;
+}
+
+.end-icon {
+  width: 64rpx;
+  height: 64rpx;
+  margin-bottom: 28rpx;
+}
+
+.end-title {
+  color: #111827;
+  font-size: 44rpx;
+  font-weight: 900;
+}
+
+.end-subtitle {
+  margin-top: 16rpx;
+  color: #8A8F99;
+  font-size: 28rpx;
+}
+
+.stats-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 56rpx;
+  padding: 34rpx 20rpx;
+  border-radius: 20rpx;
+  background: #FFFFFF;
+  box-shadow: 0 18rpx 42rpx rgba(31, 36, 51, 0.08);
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  color: #4A7CF7;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.stat-label {
+  margin-top: 12rpx;
+  color: #8A8F99;
+  font-size: 24rpx;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 72rpx;
+  background: #EEF0F5;
+}
+
+.primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 88rpx;
+  margin-top: 36rpx;
+  border-radius: 18rpx;
+  background: #4A7CF7;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.primary-action-icon {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 14rpx;
+  filter: brightness(0) invert(1);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 86rpx;
+  margin-top: 18rpx;
+  border-radius: 18rpx;
+  background: #FFFFFF;
+  box-shadow: 0 12rpx 32rpx rgba(31, 36, 51, 0.06);
+}
+
+.action-icon {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 14rpx;
+}
+
+.action-text {
+  color: #1F2433;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.home-link {
+  margin-top: 36rpx;
+  color: #8A8F99;
+  font-size: 30rpx;
+  font-weight: 800;
+}

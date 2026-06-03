@@ -1,0 +1,48 @@
+page {
+  min-height: 100vh;
+  background: #F5F6FA;
+  color: #151827;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 32rpx;
+}
+
+.section-title {
+  margin: 40rpx 0 20rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #151827;
+}
+
+.card {
+  box-sizing: border-box;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  box-shadow: 0 16rpx 48rpx rgba(21, 24, 39, 0.06);
+}
+
+.primary-button {
+  min-height: 88rpx;
+  border-radius: 20rpx;
+  background: #4778F5;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 88rpx;
+  text-align: center;
+}
+
+.secondary-button {
+  min-height: 88rpx;
+  border-radius: 20rpx;
+  background: #EEF2FF;
+  color: #4778F5;
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 88rpx;
+  text-align: center;
+}

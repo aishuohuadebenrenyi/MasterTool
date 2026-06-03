@@ -1,0 +1,202 @@
+<view class="page live-page" bindtouchstart="handleTouchStart" bindtouchend="handleTouchEnd">
+  <view class="live-nav">
+    <view class="back" bindtap="goBack">‹</view>
+    <view class="nav-title">{{title}}</view>
+  </view>
+
+  <view class="live-body {{activeSheet ? 'sheet-open' : ''}}">
+    <view class="phase-progress-wrap">
+      <view class="progress-text">环节 {{phaseIndex + 1}}/{{phaseTotal}}</view>
+      <view class="progress-bar"><view class="progress-inner" style="width: {{progressPercent}}%;"></view></view>
+    </view>
+
+    <view class="current-phase-section">
+      <view class="phase-title">{{phaseTitle}}</view>
+    </view>
+
+    <view class="phase-activity-section">
+      <view class="phase-activity-header">
+        <view class="phase-activity-title">本环节活动</view>
+        <view class="phase-activity-summary">{{phaseActivitySummary}}</view>
+      </view>
+      <view wx:if="{{phaseActivities.length > 0}}" class="phase-activity-list">
+        <view wx:for="{{phaseActivities}}" wx:key="name" class="phase-activity-chip">{{item.name}}</view>
+      </view>
+    </view>
+
+    <view class="timer-section" bindtap="handleTimerTap">
+      <view class="timer-display">
+        <view class="timer-time {{timerRunning ? 'active' : ''}}">{{timerDisplay}}</view>
+        <view class="timer-progress"><view class="timer-progress-fill" style="width: {{timerProgress}}%;"></view></view>
+      </view>
+      <view class="timer-hint">{{timerHint}}</view>
+    </view>
+
+    <view class="reminders-section">
+      <view class="reminders-header">
+        <image class="reminders-icon" src="/static/icons/icon-phase-summary.png" mode="aspectFit" />
+        <view class="reminders-title">关键提醒</view>
+      </view>
+      <view wx:for="{{phaseReminders}}" wx:key="*this" class="reminder-item">
+        <view class="reminder-bullet">•</view>
+        <view class="reminder-text">{{item}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!activeSheet}}" class="bottom-action-section">
+    <view class="toolbar-grid">
+      <view wx:for="{{quickTools}}" wx:key="key" class="quick-tool" data-key="{{item.key}}" bindtap="openTool">
+        <image class="quick-tool-icon" src="{{item.icon}}" mode="aspectFit" />
+        <view class="quick-tool-name">{{item.name}}</view>
+      </view>
+    </view>
+
+    <view class="nav-buttons">
+      <view class="nav-btn nav-btn-prev {{phaseIndex === 0 ? 'disabled' : ''}}" bindtap="prevPhase">
+        <view class="nav-btn-text">上一环节</view>
+      </view>
+      <view class="nav-btn nav-btn-next" bindtap="nextPhase">
+        <view class="nav-btn-text">{{phaseIndex < phaseTotal - 1 ? '下一环节' : '结束培训'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{activeSheet}}" class="sheet-mask" catchtap="closeSheet">
+    <view class="half-sheet {{activeSheet === 'toolbox' ? 'toolbox-sheet' : ''}}" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <view class="sheet-title">{{sheetTitle}}</view>
+        <view class="sheet-close" catchtap="closeSheet">×</view>
+      </view>
+
+      <scroll-view class="sheet-body" scroll-y>
+        <!-- entry-code-card -->
+        <live-checkin-panel
+          wx:if="{{activeSheet === 'checkin'}}"
+          participants="{{participants}}"
+          people-count="{{peopleCount}}"
+          checkin-code-url="{{checkinCodeUrl}}"
+          checkin-path="{{checkinPath}}"
+          checkin-code-loading="{{checkinCodeLoading}}"
+          participant-name="{{participantName}}"
+          bindloadcode="loadCheckinCode"
+          bindcopyentry="copyCheckinEntry"
+          bindnameinput="handleNameInput"
+          bindmanualcheckin="manualCheckin"
+        />
+
+        <live-group-panel
+          wx:if="{{activeSheet === 'group'}}"
+          group-method="{{groupMethod}}"
+          team-count="{{teamCount}}"
+          groups="{{groups}}"
+          bindchangegroupmethod="changeGroupMethod"
+          bindchangeteamcount="changeTeamCount"
+        />
+
+        <!-- 积分流水 -->
+        <live-score-panel
+          wx:if="{{activeSheet === 'score'}}"
+          score-mode="{{scoreMode}}"
+          is-grouped="{{isGrouped}}"
+          groups="{{groups}}"
+          score-details="{{scoreDetails}}"
+          score-reason-inputs="{{scoreReasonInputs}}"
+          bindsetscoremode="setScoreMode"
+          bindchangescore="changeScore"
+          bindscorereasoninput="handleScoreReasonInput"
+          bindapplydetailedscore="applyDetailedScore"
+        />
+
+        <live-random-panel
+          wx:if="{{activeSheet === 'random'}}"
+          random-tab="{{randomTab}}"
+          allow-repeat-pick="{{allowRepeatPick}}"
+          picked-name="{{pickedName}}"
+          picked-ids="{{pickedIds}}"
+          pick-history="{{pickHistory}}"
+          bindsetrandomtab="setRandomTab"
+          bindtogglerepeatpick="toggleRepeatPick"
+          bindpickparticipant="pickParticipant"
+          bindresetpickhistory="resetPickHistory"
+        />
+
+        <live-interact-panel
+          wx:if="{{activeSheet === 'interact'}}"
+          interaction-type="{{interactionType}}"
+          interaction-title="{{interactionTitle}}"
+          vote-options-text="{{voteOptionsText}}"
+          interactions="{{interactions}}"
+          interaction-code-loading-id="{{interactionCodeLoadingId}}"
+          entry-preview-title="{{entryPreviewTitle}}"
+          entry-preview-url="{{entryPreviewUrl}}"
+          entry-preview-path="{{entryPreviewPath}}"
+          entry-preview-join-code="{{entryPreviewJoinCode}}"
+          interaction-stats="{{interactionStats}}"
+          bindchangeinteractiontype="changeInteractionType"
+          bindinteractiontitleinput="handleInteractionTitle"
+          bindvoteoptionsinput="handleVoteOptions"
+          bindcreateinteraction="createInteraction"
+          bindcopyinteractionentry="copyInteractionEntry"
+          bindgenerateinteractioncode="generateInteractionCode"
+          bindshowinteractionstats="showInteractionStats"
+          bindcloseinteraction="closeInteraction"
+          bindpreviewentrypath="previewEntryPath"
+        />
+
+        <live-sound-panel
+          wx:if="{{activeSheet === 'sound'}}"
+          active-sound="{{activeSound}}"
+          bindplaysound="playSound"
+        />
+
+        <live-timer-panel
+          wx:if="{{activeSheet === 'timer'}}"
+          standalone-mode="{{standaloneMode}}"
+          countdown-presets="{{countdownPresets}}"
+          selected-countdown-seconds="{{selectedCountdownSeconds}}"
+          standalone-display="{{standaloneDisplay}}"
+          standalone-hint="{{standaloneHint}}"
+          bindsetstandalonemode="setStandaloneMode"
+          bindsetcountdownpreset="setCountdownPreset"
+        />
+
+        <live-note-panel
+          wx:if="{{activeSheet === 'note'}}"
+          phase-title="{{phaseTitle}}"
+          note-content="{{noteContent}}"
+          notes="{{notes}}"
+          bindnoteinput="handleNoteInput"
+        />
+
+        <view wx:if="{{activeSheet === 'toolbox'}}" class="toolbox-grid">
+          <view wx:for="{{allTools}}" wx:key="key" class="toolbox-item" data-key="{{item.key}}" bindtap="openToolFromToolbox">
+            <view class="toolbox-item-icon-box">
+              <image class="toolbox-item-icon" src="{{item.icon}}" mode="aspectFit" />
+            </view>
+            <view class="toolbox-item-name">{{item.name}}</view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{activeSheet === 'checkin'}}" class="sheet-footer">
+        <view class="sheet-footer-btn secondary" bindtap="closeSheet">结束签到</view>
+      </view>
+      <view wx:if="{{activeSheet === 'group'}}" class="sheet-footer row">
+        <view class="sheet-footer-btn secondary" bindtap="generateGroups">生成分组</view>
+        <view class="sheet-footer-btn primary" bindtap="confirmGroups">确认分组</view>
+      </view>
+      <view wx:if="{{activeSheet === 'score' && isGrouped}}" class="sheet-footer">
+        <view class="sheet-footer-btn danger" bindtap="resetScores">重置积分</view>
+      </view>
+      <view wx:if="{{activeSheet === 'timer'}}" class="sheet-footer row">
+        <view class="sheet-footer-btn secondary" bindtap="resetStandaloneTimer">重置</view>
+        <view class="sheet-footer-btn primary" bindtap="toggleStandaloneTimer">{{standaloneRunning ? '暂停' : '开始'}}</view>
+      </view>
+      <view wx:if="{{activeSheet === 'note'}}" class="sheet-footer">
+        <view class="sheet-footer-btn primary" bindtap="saveNote">保存笔记</view>
+      </view>
+    </view>
+  </view>
+</view>
