@@ -78,6 +78,7 @@
           people-count="{{peopleCount}}"
           checkin-code-url="{{checkinCodeUrl}}"
           checkin-path="{{checkinPath}}"
+          checkin-entry-link="{{checkinEntryLink}}"
           checkin-code-loading="{{checkinCodeLoading}}"
           participant-name="{{participantName}}"
           bindloadcode="loadCheckinCode"
@@ -128,10 +129,13 @@
           interaction-title="{{interactionTitle}}"
           vote-options-text="{{voteOptionsText}}"
           interactions="{{interactions}}"
+          interaction-creating="{{interactionCreating}}"
+          closing-interaction-id="{{closingInteractionId}}"
           interaction-code-loading-id="{{interactionCodeLoadingId}}"
           entry-preview-title="{{entryPreviewTitle}}"
           entry-preview-url="{{entryPreviewUrl}}"
           entry-preview-path="{{entryPreviewPath}}"
+          entry-preview-link="{{entryPreviewLink}}"
           entry-preview-join-code="{{entryPreviewJoinCode}}"
           interaction-stats="{{interactionStats}}"
           bindchangeinteractiontype="changeInteractionType"
@@ -143,6 +147,7 @@
           bindshowinteractionstats="showInteractionStats"
           bindcloseinteraction="closeInteraction"
           bindpreviewentrypath="previewEntryPath"
+          bindcopyentrylink="copyEntryLink"
         />
 
         <live-sound-panel

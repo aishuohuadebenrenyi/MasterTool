@@ -22,6 +22,7 @@ Page({
     reviewStatus: '',
     reviewStatusText: '',
     isReviewLocked: false,
+    reviewSubmitting: false,
     completedContent: '',
     activeFramework: 'ORID',
     frameworks: ['ORID', '4F', 'SSC'],

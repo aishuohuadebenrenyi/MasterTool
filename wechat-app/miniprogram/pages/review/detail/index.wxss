@@ -125,6 +125,10 @@
   text-align: center;
 }
 
+.finish-btn.disabled {
+  opacity: 0.58;
+}
+
 .review-state-meta {
   color: #4A7CF7;
   font-size: 24rpx;

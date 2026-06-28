@@ -7,6 +7,7 @@ const { buildPublicEntryState, createRequestState, getInputValue, withPending } 
 Page({
   data: {
     interactionId: '',
+    entryKey: '',
     code: '',
     loading: true,
     submitting: false,
@@ -20,7 +21,8 @@ Page({
   onLoad(query) {
     const params = resolveSceneParams(query, {
       interactionId: ['interactionId', 'iid'],
-      code: ['code']
+      entryKey: ['entryKey', 'k'],
+      code: ['code', 'c']
     })
     this.setData({
       ...params,
@@ -30,7 +32,7 @@ Page({
   },
 
   async loadInteraction() {
-    if (!this.data.interactionId || !this.data.code) {
+    if ((!this.data.interactionId && !this.data.entryKey) || !this.data.code) {
       showInfo('互动入口无效，请联系培训师')
       this.setData({
         loading: false,
@@ -43,6 +45,7 @@ Page({
     }
     const response = await callAction('participant-api', 'getInteractionPublicInfo', {
       interactionId: this.data.interactionId,
+      entryKey: this.data.entryKey,
       code: this.data.code
     })
     if (response.code !== 0 || !response.data) {
@@ -81,7 +84,7 @@ Page({
 
   async submit() {
     await withPending(this, 'submitting', async () => {
-      if (!this.data.interactionId || !this.data.code) {
+      if ((!this.data.interactionId && !this.data.entryKey) || !this.data.code) {
         showInfo('互动入口无效，请联系培训师')
         return
       }
@@ -100,6 +103,7 @@ Page({
       }
       const response = await callAction('participant-api', 'submitInteraction', {
         interactionId: this.data.interactionId,
+        entryKey: this.data.entryKey,
         code: this.data.code,
         optionIndex: this.data.selectedOption,
         content: this.data.content.trim(),

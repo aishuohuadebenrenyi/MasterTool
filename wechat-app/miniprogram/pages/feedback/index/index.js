@@ -14,6 +14,7 @@ Page({
     sessionId: '',
     feedbackPath: '',
     feedbackCodeUrl: '',
+    feedbackEntryLink: '',
     feedbackCodeLoading: false,
     anonymousEnabled: true,
     requestState: createRequestState(),

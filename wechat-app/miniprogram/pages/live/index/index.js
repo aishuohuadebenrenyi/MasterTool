@@ -1,5 +1,5 @@
 const { callAction } = require('../../../services/cloud')
-const { showInfo } = require('../../../utils/page')
+const { showInfo, showSuccess } = require('../../../utils/page')
 const {
   copyCheckinEntry: copyCheckinEntryModule,
   loadCheckinCode: loadCheckinCodeModule,
@@ -87,6 +87,7 @@ Page({
     checkinPath: '',
     checkinCodeUrl: '',
     checkinCodeFileId: '',
+    checkinEntryLink: '',
     checkinCodeLoading: false,
     teamCount: 2,
     groupMethod: 'average',
@@ -116,11 +117,16 @@ Page({
     voteOptionsText: '选项A\n选项B\n选项C',
     activeInteractionId: '',
     interactionStats: null,
+    interactionCreating: false,
+    closingInteractionId: '',
     interactionCodeLoadingId: '',
     entryPreviewTitle: '',
     entryPreviewUrl: '',
     entryPreviewPath: '',
+    entryPreviewLink: '',
     entryPreviewJoinCode: '',
+    endingSession: false,
+    abandoningSession: false,
     touchStartX: 0,
     touchStartY: 0
   },
@@ -171,6 +177,7 @@ Page({
   },
 
   goBack() {
+    if (this.data.abandoningSession || this.data.endingSession) return
     wx.showModal({
       title: '确认返回',
       content: '返回后不会保留本次现场数据，方案会回退到已确认状态，确定继续吗？',
@@ -178,8 +185,10 @@ Page({
       cancelText: '继续',
       success: async (res) => {
         if (!res.confirm) return
+        this.setData({ abandoningSession: true })
         const response = await callAction('live-api', 'abandonSession', { sessionId: this.data.sessionId })
         if (response.code !== 0) {
+          this.setData({ abandoningSession: false })
           showInfo(response.message || '返回失败，请稍后重试')
           return
         }
@@ -367,6 +376,18 @@ Page({
   previewEntryPath(event) {
     const path = event.detail.path || event.currentTarget.dataset.path
     return previewEntryPathModule(this, path)
+  },
+
+  copyEntryLink(event) {
+    const link = event.detail.link || event.currentTarget.dataset.link
+    if (!link) {
+      showInfo('请先生成入口链接')
+      return
+    }
+    wx.setClipboardData({
+      data: link,
+      success: () => showSuccess('链接已复制')
+    })
   },
 
   async createInteraction() {

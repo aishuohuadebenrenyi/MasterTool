@@ -310,6 +310,10 @@
   line-height: 64rpx;
 }
 
+.card-action.disabled {
+  opacity: 0.58;
+}
+
 .template-card,
 .template-option-card {
   display: flex;

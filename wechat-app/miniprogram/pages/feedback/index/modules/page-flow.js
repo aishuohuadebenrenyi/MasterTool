@@ -29,7 +29,7 @@ function buildErrorState(message) {
     errorDesc: '请稍后重试。',
     items: [],
     emptyTitle: '暂无反馈',
-    emptyDesc: '复制入口发给参与者后，反馈会展示在这里。'
+    emptyDesc: '复制链接发给参与者后，反馈会展示在这里。'
   })
 }
 
@@ -37,7 +37,7 @@ function buildSuccessState(feedbackList) {
   return buildRequestState({
     items: feedbackList,
     emptyTitle: '暂无反馈',
-    emptyDesc: '复制入口发给参与者后，反馈会展示在这里。'
+    emptyDesc: '复制链接发给参与者后，反馈会展示在这里。'
   })
 }
 
@@ -79,13 +79,22 @@ function toggleAnonymous(page) {
 }
 
 function copyEntry(page) {
+  if (!page.data.feedbackEntryLink) {
+    showInfo('请先生成反馈入口')
+    return
+  }
   wx.setClipboardData({
-    data: page.data.feedbackPath,
-    success: () => showSuccess('入口已复制')
+    data: page.data.feedbackEntryLink,
+    success: () => showSuccess('反馈链接已复制')
   })
 }
 
 async function generateEntryCode(page) {
+  if (page.data.feedbackCodeLoading) return
+  if (!page.data.sessionId) {
+    showInfo('当前场次缺失，暂时无法生成反馈码')
+    return
+  }
   page.setData({ feedbackCodeLoading: true })
   const response = await callAction('live-api', 'getSessionEntryCode', {
     sessionId: page.data.sessionId,
@@ -97,8 +106,11 @@ async function generateEntryCode(page) {
     showInfo(response.message || '反馈小程序码生成失败')
     return
   }
-  page.setData({ feedbackCodeUrl: response.data.tempFileURL || '' })
-  showSuccess('反馈小程序码已生成')
+  page.setData({
+    feedbackCodeUrl: response.data.tempFileURL || '',
+    feedbackEntryLink: response.data.urlLink || ''
+  })
+  showSuccess(response.data.urlLink ? '反馈入口已生成' : '反馈小程序码已生成')
 }
 
 function openSubmitPreview(page) {

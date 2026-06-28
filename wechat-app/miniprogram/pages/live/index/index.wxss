@@ -344,7 +344,7 @@
 }
 
 .sheet-body {
-  max-height: 62vh;
+  height: 62vh;
   box-sizing: border-box;
   padding: 24rpx 32rpx 36rpx;
 }

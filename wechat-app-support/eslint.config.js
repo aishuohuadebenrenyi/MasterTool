@@ -5,7 +5,6 @@ module.exports = [
     ignores: ['**/node_modules/**']
   },
   {
-    files: ['miniprogram/**/*.js', 'cloudfunctions/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',

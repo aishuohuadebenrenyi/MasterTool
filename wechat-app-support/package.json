@@ -1,0 +1,19 @@
+{
+  "name": "wechat-app-support",
+  "private": true,
+  "scripts": {
+    "lint": "cd .. && wechat-app-support/node_modules/.bin/eslint --config wechat-app-support/eslint.config.js \"wechat-app/miniprogram/**/*.js\" \"wechat-app/cloudfunctions/**/*.js\"",
+    "format": "prettier --write \"../wechat-app/miniprogram/**/*.{js,json,wxml,wxss}\" \"../wechat-app/cloudfunctions/**/*.js\"",
+    "format:check": "prettier --check \"../wechat-app/miniprogram/**/*.{js,json,wxml,wxss}\" \"../wechat-app/cloudfunctions/**/*.js\"",
+    "test": "npm run test:unit",
+    "test:unit": "node --test tests/unit/*.js",
+    "syntax-check": "node tests/verify-wechat-app.js",
+    "verify": "npm run lint && npm run syntax-check",
+    "verify:all": "npm run lint && npm test && npm run syntax-check"
+  },
+  "devDependencies": {
+    "eslint": "^9.28.0",
+    "globals": "^15.15.0",
+    "prettier": "^3.5.3"
+  }
+}

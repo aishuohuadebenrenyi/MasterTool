@@ -1,15 +1,23 @@
 const { callAction } = require('../../../services/cloud')
 const { navigateTo, showInfo, showSuccess } = require('../../../utils/page')
 
+const PROFILE_CACHE_KEY = 'trainerProfile'
+
+function cacheProfile(displayName) {
+  try {
+    wx.setStorageSync(PROFILE_CACHE_KEY, { displayName })
+  } catch {}
+}
+
 Page({
   data: {
     displayName: '张老师',
     editName: '张老师',
     avatarText: '张',
     roleText: '认证培训师',
-    totalSessions: 7,
-    avgSatisfaction: 0,
-    totalParticipants: 0,
+    totalSessions: '--',
+    avgSatisfaction: '--',
+    totalParticipants: '--',
     showProfileEdit: false
   },
 
@@ -35,16 +43,24 @@ Page({
         editName: displayName,
         avatarText: displayName.slice(0, 1)
       })
+      cacheProfile(displayName)
     }
   },
 
   async loadStats() {
     const response = await callAction('trainer-api', 'getDataOverview')
-    if (response.code !== 0 || !response.data) return
+    if (response.code !== 0 || !response.data) {
+      this.setData({
+        totalSessions: '--',
+        totalParticipants: '--',
+        avgSatisfaction: '--'
+      })
+      return
+    }
     const metrics = response.data.metrics || []
     this.setData({
-      totalSessions: Number((metrics[0] && metrics[0].value) || 0),
-      totalParticipants: Number((metrics[1] && metrics[1].value) || 0),
+      totalSessions: (metrics[0] && metrics[0].value) || '0',
+      totalParticipants: (metrics[1] && metrics[1].value) || '0',
       avgSatisfaction: (metrics[2] && metrics[2].value) || '--'
     })
   },
@@ -82,6 +98,7 @@ Page({
         avatarText: displayName.slice(0, 1),
         showProfileEdit: false
       })
+      cacheProfile(displayName)
       wx.showTabBar({ animation: false })
       showSuccess('资料已保存')
       return

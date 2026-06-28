@@ -1,6 +1,6 @@
 # 培训师工具箱小程序功能、交互与数据链路核对
 
-> 历史文档：保留旧审计过程，当前正式实现请以 `wechat-app/` 目录、`specs/cloudbase-rebuild/` 和 `docs/release-checklist.md` 为准。
+> 历史文档：保留旧审计过程，当前正式实现请以 `wechat-app/` 目录、`docs/archive/cloudbase-rebuild/` 和 `docs/release-checklist.md` 为准。
 
 日期：2026-05-26
 

@@ -26,6 +26,6 @@
       <textarea class="field-area" value="{{content}}" maxlength="500" placeholder="描述你遇到的问题或建议" bindinput="handleInput" />
       <view class="field-count">{{contentCount}}</view>
     </view>
-    <view class="primary-btn" bindtap="submitFeedback">提交反馈</view>
+    <view class="primary-btn {{submitting ? 'disabled' : ''}}" bindtap="submitFeedback">{{submitting ? '提交中...' : '提交反馈'}}</view>
   </view>
 </view>

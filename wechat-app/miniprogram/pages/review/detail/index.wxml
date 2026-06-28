@@ -57,5 +57,5 @@
     <view class="completed-review-content">{{completedContent || '暂无复盘内容'}}</view>
   </view>
 
-  <view wx:if="{{!isReviewLocked}}" class="finish-btn" bindtap="completeReview">完成复盘</view>
+  <view wx:if="{{!isReviewLocked}}" class="finish-btn {{reviewSubmitting ? 'disabled' : ''}}" bindtap="completeReview">{{reviewSubmitting ? '提交中...' : '完成复盘'}}</view>
 </sub-page-layout>

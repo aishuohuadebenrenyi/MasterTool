@@ -34,18 +34,21 @@ function previewEntryPath(_page, path) {
 }
 
 async function createInteraction(page) {
+  if (page.data.interactionCreating) return
   const title = page.data.interactionTitle.trim()
   if (!title) {
     showInfo('请输入互动标题')
     return
   }
   const options = page.data.voteOptionsText.split('\n').map((item) => item.trim()).filter(Boolean)
+  page.setData({ interactionCreating: true })
   const response = await callAction('live-api', 'createInteraction', {
     sessionId: page.data.sessionId,
     type: page.data.interactionType,
     title,
     options
   })
+  page.setData({ interactionCreating: false })
   if (response.code !== 0 || !response.data) {
     showInfo(response.message || '创建失败')
     return
@@ -63,18 +66,46 @@ async function showInteractionStats(page, interactionId) {
   page.setData({ activeInteractionId: interactionId, interactionStats: response.data })
 }
 
-function copyInteractionEntry(page, interactionId) {
+async function copyInteractionEntry(page, interactionId) {
   const item = page.data.interactions.find((it) => it._id === interactionId)
   if (!item) return
-  const path = `/pages/participant/interaction/index?interactionId=${interactionId}&code=${item.joinCode}`
+  if (page.data.interactionCodeLoadingId) return
+  page.setData({ interactionCodeLoadingId: interactionId })
+  const response = await callAction(
+    'live-api',
+    'getInteractionEntryCode',
+    {
+      interactionId,
+      envVersion: getMiniProgramEnvVersion()
+    },
+    { timeoutMs: 15000 }
+  )
+  page.setData({ interactionCodeLoadingId: '' })
+
+  if (response.code !== 0 || !response.data) {
+    showInfo(response.message || '互动链接生成失败')
+    return
+  }
+  page.setData({
+    entryPreviewTitle: `${item.title} 参与入口`,
+    entryPreviewUrl: response.data.tempFileURL || '',
+    entryPreviewPath: response.data.path || '',
+    entryPreviewLink: response.data.urlLink || '',
+    entryPreviewJoinCode: response.data.joinCode || ''
+  })
+  if (!response.data.urlLink) {
+    showInfo('互动链接暂不可用，请使用小程序码')
+    return
+  }
   wx.setClipboardData({
-    data: path,
-    success: () => showSuccess('互动入口已复制')
+    data: response.data.urlLink,
+    success: () => showSuccess('互动链接已复制')
   })
 }
 
 async function generateInteractionCode(page, interactionId) {
   const item = page.data.interactions.find((it) => it._id === interactionId)
+  if (page.data.interactionCodeLoadingId) return
   if (!interactionId || !item) return
 
   page.setData({ interactionCodeLoadingId: interactionId })
@@ -98,13 +129,18 @@ async function generateInteractionCode(page, interactionId) {
     entryPreviewTitle: `${item.title} 参与入口`,
     entryPreviewUrl: response.data.tempFileURL || '',
     entryPreviewPath: response.data.path || '',
+    entryPreviewLink: response.data.urlLink || '',
     entryPreviewJoinCode: response.data.joinCode || ''
   })
-  showSuccess('互动小程序码已生成')
+  showSuccess(response.data.urlLink ? '互动入口已生成' : '互动小程序码已生成')
 }
 
 async function closeInteraction(page, interactionId) {
+  if (page.data.closingInteractionId) return
+  if (!interactionId) return
+  page.setData({ closingInteractionId: interactionId })
   const response = await callAction('live-api', 'closeInteraction', { interactionId })
+  page.setData({ closingInteractionId: '' })
   if (response.code !== 0) {
     showInfo(response.message || '关闭失败')
     return

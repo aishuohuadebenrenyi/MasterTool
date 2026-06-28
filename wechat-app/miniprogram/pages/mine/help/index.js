@@ -23,7 +23,8 @@ Page({
     ],
     contact: '',
     content: '',
-    contentCount: '0/500'
+    contentCount: '0/500',
+    submitting: false
   },
 
   goBack() {
@@ -52,15 +53,18 @@ Page({
   },
 
   async submitFeedback() {
+    if (this.data.submitting) return
     if (!this.data.content.trim()) {
       wx.showToast({ title: '请描述问题', icon: 'none', duration: 2200 })
       return
     }
 
+    this.setData({ submitting: true })
     const response = await callAction('trainer-api', 'saveSupportFeedback', {
       contact: this.data.contact,
       content: this.data.content
     })
+    this.setData({ submitting: false })
     if (response.code !== 0) {
       showInfo(response.message || '提交失败')
       return

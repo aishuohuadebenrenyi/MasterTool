@@ -15,7 +15,7 @@ Page({
 
   onLoad(query) {
     const { sessionId } = resolveSceneParams(query, {
-      sessionId: ['sessionId', 'sid', '*']
+      sessionId: ['sessionId', 'sid', 'session', 'id', '*']
     })
     this.setData({ sessionId })
   },

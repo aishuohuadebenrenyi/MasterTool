@@ -8,6 +8,14 @@ skills-lock.json
 .idea/
 .vscode/
 .codex/
+!.codex/
+.codex/*
+!.codex/rules/
+!.codex/rules/**
+!.codex/memory/
+!.codex/memory/**
+!.codex/tasks/
+!.codex/tasks/**
 .mcp.json
 .mcp-runtime/
 .mcporter/
@@ -41,6 +49,7 @@ wechat-app/project.private.config.json
 wechat-app/miniprogram/project.private.config.json
 wechat-app/miniprogram/.hbuilderx/
 wechat-app/node_modules/
+wechat-app-support/node_modules/
 wechat-app/coverage/
 wechat-app/dist/
 wechat-app/cloudfunctions/**/node_modules/

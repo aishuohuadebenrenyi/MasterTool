@@ -19,6 +19,14 @@ Component({
       type: Array,
       value: []
     },
+    interactionCreating: {
+      type: Boolean,
+      value: false
+    },
+    closingInteractionId: {
+      type: String,
+      value: ''
+    },
     interactionCodeLoadingId: {
       type: String,
       value: ''
@@ -32,6 +40,10 @@ Component({
       value: ''
     },
     entryPreviewPath: {
+      type: String,
+      value: ''
+    },
+    entryPreviewLink: {
       type: String,
       value: ''
     },
@@ -67,6 +79,11 @@ Component({
     handlePreviewPath(event) {
       this.triggerEvent('previewentrypath', {
         path: event.currentTarget.dataset.path
+      })
+    },
+    handleCopyLink(event) {
+      this.triggerEvent('copyentrylink', {
+        link: event.currentTarget.dataset.path
       })
     }
   }

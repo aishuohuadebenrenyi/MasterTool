@@ -101,13 +101,22 @@ async function submitFeedback(request) {
     return fail(ErrorCode.NOT_FOUND, '反馈已关闭', request.requestId)
   }
 
+  const feedback = db.collection('feedback')
+  const existed = await feedback
+    .where({ sessionId: sessionId.value, openid })
+    .limit(1)
+    .get()
+  if (existed.data.length > 0) {
+    return ok({ feedbackId: existed.data[0]._id, duplicated: true }, request.requestId)
+  }
+
   const result = await withIdempotency(
     request.requestId,
     'participant.submitFeedback',
     openid,
     sessionId.value,
     async () => {
-      const created = await db.collection('feedback').add({
+      const created = await feedback.add({
         data: {
           sessionId: sessionId.value,
           openid,
@@ -124,31 +133,36 @@ async function submitFeedback(request) {
 }
 
 async function getInteractionPublicInfo(request) {
-  const interactionId = requiredText(request.payload, 'interactionId', '互动')
   const code = requiredText(request.payload, 'code', '入口码')
-  if (!interactionId.valid) return fail(ErrorCode.INVALID_ARGUMENT, interactionId.message, request.requestId)
   if (!code.valid) return fail(ErrorCode.INVALID_ARGUMENT, code.message, request.requestId)
 
-  const result = await db.collection('interactions').doc(interactionId.value).get()
-  if (!result.data || result.data.joinCode !== code.value) {
+  const interactionId = typeof request.payload.interactionId === 'string' ? request.payload.interactionId.trim() : ''
+  const entryKey = typeof request.payload.entryKey === 'string' ? request.payload.entryKey.trim() : ''
+  if (!interactionId && !entryKey) {
+    return fail(ErrorCode.INVALID_ARGUMENT, '请输入互动', request.requestId)
+  }
+
+  const result = interactionId
+    ? await db.collection('interactions').doc(interactionId).get()
+    : await db.collection('interactions').where({ entryKey }).limit(1).get()
+  const interaction = interactionId ? result.data : (result.data && result.data[0])
+  if (!interaction || interaction.joinCode !== code.value) {
     return fail(ErrorCode.NOT_FOUND, '互动入口不存在', request.requestId)
   }
 
   return ok({
     interaction: {
-      _id: interactionId.value,
-      type: result.data.type,
-      title: result.data.title,
-      options: result.data.options || [],
-      status: result.data.status
+      _id: interaction._id || interactionId,
+      type: interaction.type,
+      title: interaction.title,
+      options: interaction.options || [],
+      status: interaction.status
     }
   }, request.requestId)
 }
 
 async function submitInteraction(request) {
-  const interactionId = requiredText(request.payload, 'interactionId', '互动')
   const code = requiredText(request.payload, 'code', '入口码')
-  if (!interactionId.valid) return fail(ErrorCode.INVALID_ARGUMENT, interactionId.message, request.requestId)
   if (!code.valid) return fail(ErrorCode.INVALID_ARGUMENT, code.message, request.requestId)
 
   const context = getWxContext()
@@ -157,16 +171,26 @@ async function submitInteraction(request) {
     return fail(ErrorCode.UNAUTHENTICATED, '请在微信中提交互动')
   }
 
-  const interaction = await db.collection('interactions').doc(interactionId.value).get()
-  if (!interaction.data || interaction.data.joinCode !== code.value || interaction.data.status !== 'open') {
+  const interactionId = typeof request.payload.interactionId === 'string' ? request.payload.interactionId.trim() : ''
+  const entryKey = typeof request.payload.entryKey === 'string' ? request.payload.entryKey.trim() : ''
+  if (!interactionId && !entryKey) {
+    return fail(ErrorCode.INVALID_ARGUMENT, '请输入互动', request.requestId)
+  }
+
+  const interactionResult = interactionId
+    ? await db.collection('interactions').doc(interactionId).get()
+    : await db.collection('interactions').where({ entryKey }).limit(1).get()
+  const interaction = interactionId ? interactionResult.data : (interactionResult.data && interactionResult.data[0])
+  const resolvedInteractionId = interaction ? (interaction._id || interactionId) : ''
+  if (!interaction || interaction.joinCode !== code.value || interaction.status !== 'open') {
     return fail(ErrorCode.CONFLICT, '互动已关闭', request.requestId)
   }
 
-  const type = interaction.data.type
+  const type = interaction.type
   const content = typeof request.payload.content === 'string' ? request.payload.content.trim() : ''
   const optionIndex = Number(request.payload.optionIndex)
   if (type === 'vote') {
-    const options = interaction.data.options || []
+    const options = interaction.options || []
     if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= options.length) {
       return fail(ErrorCode.INVALID_ARGUMENT, '请选择投票选项')
     }
@@ -174,16 +198,25 @@ async function submitInteraction(request) {
     return fail(ErrorCode.INVALID_ARGUMENT, '请输入提交内容')
   }
 
+  const submissions = db.collection('interaction_submissions')
+  const existed = await submissions
+    .where({ interactionId: resolvedInteractionId, openid })
+    .limit(1)
+    .get()
+  if (existed.data.length > 0) {
+    return ok({ submissionId: existed.data[0]._id, duplicated: true }, request.requestId)
+  }
+
   const result = await withIdempotency(
     request.requestId,
     'participant.submitInteraction',
     openid,
-    interactionId.value,
+    resolvedInteractionId,
     async () => {
-      const created = await db.collection('interaction_submissions').add({
+      const created = await submissions.add({
         data: {
-          interactionId: interactionId.value,
-          sessionId: interaction.data.sessionId,
+          interactionId: resolvedInteractionId,
+          sessionId: interaction.sessionId,
           type,
           openid,
           name: typeof request.payload.name === 'string' ? request.payload.name.trim() : '',

@@ -64,15 +64,18 @@ async function getHomeSummary(request) {
   const ownerId = auth.identity.userId
   const plans = db.collection('plans')
   const sessions = db.collection('live_sessions')
+  const profiles = db.collection('trainer_profiles')
 
   const confirmed = await plans.where({ ownerId, status: 'confirmed' }).count()
   const drafts = await plans.where({ ownerId, status: 'draft' }).count()
   const ended = await sessions.where({ ownerId, status: 'ended' }).count()
+  const profile = await profiles.where({ userId: ownerId }).limit(1).get()
 
   return ok({
     pendingStartCount: confirmed.total,
     draftPlanCount: drafts.total,
-    pendingReviewCount: ended.total
+    pendingReviewCount: ended.total,
+    profile: profile.data[0] || null
   }, request.requestId)
 }
 
@@ -123,7 +126,7 @@ async function listTrainingRecords(request) {
     .limit(50)
     .get()
 
-  const visibleSessions = result.data.filter((session) => session.status !== 'abandoned')
+  const visibleSessions = result.data.filter((session) => session.status === 'ended' || session.status === 'reviewed')
   const records = await Promise.all(visibleSessions.map(async (session) => {
     const stats = await getSessionStats(session._id)
     const snapshot = session.planSnapshot || {}
@@ -182,11 +185,12 @@ async function getDataOverview(request) {
   }
 
   const sessions = await db.collection('live_sessions').where({ ownerId }).orderBy('startedAt', 'desc').limit(100).get()
-  const allStats = await Promise.all(sessions.data.map((session) => getSessionStats(session._id)))
+  const completedSessions = sessions.data.filter((session) => session.status === 'ended' || session.status === 'reviewed')
+  const allStats = await Promise.all(completedSessions.map((session) => getSessionStats(session._id)))
   const totalParticipants = allStats.reduce((sum, item) => sum + item.participantCount, 0)
   const feedbackItems = allStats.flatMap((item) => item.feedback)
   const sceneCount = {}
-  sessions.data.forEach((session) => {
+  completedSessions.forEach((session) => {
     const type = (session.planSnapshot || {}).type || '未分类'
     sceneCount[type] = (sceneCount[type] || 0) + 1
   })
@@ -195,14 +199,14 @@ async function getDataOverview(request) {
   return ok({
     mode: 'all',
     metrics: [
-      { value: `${sessions.data.length}`, label: '总培训场次' },
+      { value: `${completedSessions.length}`, label: '总培训场次' },
       { value: `${totalParticipants}`, label: '累计参与人数' },
       { value: feedbackItems.length > 0 ? averageRating(feedbackItems).toFixed(1) : '--', label: '平均满意度' },
       { value: feedbackItems.length > 0 ? `${npsScore(feedbackItems)}` : '--', label: '平均 NPS' }
     ],
     trends: [
       { name: '反馈总量', value: `${feedbackItems.length} 条` },
-      { name: '已复盘场次', value: `${sessions.data.filter((item) => item.status === 'reviewed').length} 场` }
+      { name: '已复盘场次', value: `${completedSessions.filter((item) => item.status === 'reviewed').length} 场` }
     ],
     distributionTitle: '场景分布',
     distribution: Object.keys(sceneCount).map((name) => ({
@@ -282,16 +286,26 @@ async function saveSupportFeedback(request) {
   const content = requiredText(request.payload, 'content', '反馈内容')
   if (!content.valid) return fail(ErrorCode.INVALID_ARGUMENT, content.message, request.requestId)
   const contact = typeof request.payload.contact === 'string' ? request.payload.contact.trim() : ''
-  const created = await db.collection('support_feedback').add({
-    data: {
-      ownerId: auth.identity.userId,
-      contact,
-      content: content.value,
-      status: 'open',
-      createdAt: Date.now()
+  const ownerId = auth.identity.userId
+  const result = await withIdempotency(
+    request.requestId,
+    'trainer.saveSupportFeedback',
+    ownerId,
+    content.value,
+    async () => {
+      const created = await db.collection('support_feedback').add({
+        data: {
+          ownerId,
+          contact,
+          content: content.value,
+          status: 'open',
+          createdAt: Date.now()
+        }
+      })
+      return { feedbackId: created._id }
     }
-  })
-  return ok({ feedbackId: created._id }, request.requestId)
+  )
+  return ok(result, request.requestId)
 }
 
 async function listPlans(request) {

@@ -174,7 +174,12 @@ Page({
 
   goEdit() {
     if (this.data.isReviewMode) return
-    navigateTo(`/pages/plan/activity-edit/index?id=${this.data.id || this.data.activity._id}`)
+    const id = this.data.id || this.data.activity._id
+    if (!id) {
+      showInfo('活动信息缺失，无法编辑')
+      return
+    }
+    navigateTo(`/pages/plan/activity-edit/index?id=${id}`)
   },
 
   goReview() {

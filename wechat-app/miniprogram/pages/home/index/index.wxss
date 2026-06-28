@@ -82,7 +82,7 @@
   position: absolute;
   z-index: 2;
   top: 44rpx;
-  right: 260rpx;
+  right: 180rpx;
   width: 104rpx;
   height: 104rpx;
   border-radius: 28rpx;

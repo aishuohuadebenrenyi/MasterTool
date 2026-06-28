@@ -1,8 +1,8 @@
 <view class="page home-page">
   <view class="home-header">
     <view class="user-left">
-      <view class="avatar">张</view>
-      <view class="greeting">张老师，早上好</view>
+      <view class="avatar">{{avatarText}}</view>
+      <view class="greeting">{{greetingText}}</view>
     </view>
     <view class="date-text">{{currentDate}}</view>
   </view>

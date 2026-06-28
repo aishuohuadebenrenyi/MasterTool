@@ -12,7 +12,7 @@
     empty-hint="生成正式反馈小程序码"
     primary-text="打开预览"
     secondary-text="{{feedbackCodeLoading ? '生成中...' : (feedbackCodeUrl ? '重新生成' : '生成小程序码')}}"
-    tertiary-text="复制入口"
+    tertiary-text="{{feedbackEntryLink ? '复制链接' : ''}}"
     bindprimarytap="openSubmitPreview"
     bindsecondarytap="generateEntryCode"
     bindtertiarytap="copyEntry"

@@ -2,6 +2,8 @@ const { callAction } = require('../../../services/cloud')
 const { navigateTo, showInfo, switchTabWithState } = require('../../../utils/page')
 
 const TEMPLATE_ORDER = ['企业培训', '团建活动', '即兴演出', '即兴培训']
+const DEFAULT_DISPLAY_NAME = '张老师'
+const PROFILE_CACHE_KEY = 'trainerProfile'
 
 function templateBadge(item) {
   if (item.tagText) return item.tagText
@@ -15,10 +17,52 @@ function formatHomeDate() {
   return `${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`
 }
 
+function greetingByHour(hour) {
+  if (hour < 12) return '早上好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+}
+
+function normalizeDisplayName(profile) {
+  const displayName = profile && typeof profile.displayName === 'string'
+    ? profile.displayName.trim()
+    : ''
+  return displayName || DEFAULT_DISPLAY_NAME
+}
+
+function buildHomeProfile(profile, date = new Date()) {
+  const displayName = normalizeDisplayName(profile)
+  return {
+    displayName,
+    avatarText: displayName.slice(0, 1),
+    greetingText: `${displayName}，${greetingByHour(date.getHours())}`
+  }
+}
+
+function profileFromStorageValue(value) {
+  if (value && typeof value.displayName === 'string') {
+    return { displayName: value.displayName }
+  }
+  if (typeof value === 'string') {
+    return { displayName: value }
+  }
+  return null
+}
+
+function readCachedProfile() {
+  try {
+    return profileFromStorageValue(wx.getStorageSync(PROFILE_CACHE_KEY))
+  } catch {
+    return null
+  }
+}
+
 Page({
   data: {
     loading: false,
     currentDate: formatHomeDate(),
+    avatarText: buildHomeProfile(null).avatarText,
+    greetingText: buildHomeProfile(null).greetingText,
     pendingReviewDesc: '暂无待复盘事项',
     summary: {
       pendingStartCount: 0,
@@ -31,15 +75,30 @@ Page({
   },
 
   onShow() {
+    this.applyProfile(readCachedProfile())
     this.loadSummary()
+  },
+
+  applyProfile(profile) {
+    const homeProfile = buildHomeProfile(profile)
+    this.setData({
+      avatarText: homeProfile.avatarText,
+      greetingText: homeProfile.greetingText
+    })
   },
 
   async loadSummary() {
     this.setData({ loading: true })
-    const [summaryResponse, templateResponse] = await Promise.all([
+    const [summaryResponse, templateResponse, profileResponse] = await Promise.all([
       callAction('trainer-api', 'getHomeSummary'),
-      callAction('trainer-api', 'listTemplates')
+      callAction('trainer-api', 'listTemplates'),
+      callAction('trainer-api', 'getProfile')
     ])
+
+    const profile = profileResponse.code === 0 && profileResponse.data && profileResponse.data.profile
+      ? profileResponse.data.profile
+      : (summaryResponse.data && summaryResponse.data.profile)
+    this.applyProfile(profile)
 
     if (summaryResponse.code === 0 && summaryResponse.data) {
       const pendingStartCount = Number(summaryResponse.data.pendingStartCount || 0)
@@ -148,3 +207,12 @@ Page({
     navigateTo('/pages/review/index/index?filter=pending')
   }
 })
+
+module.exports = {
+  __testables: {
+    buildHomeProfile,
+    greetingByHour,
+    normalizeDisplayName,
+    profileFromStorageValue
+  }
+}

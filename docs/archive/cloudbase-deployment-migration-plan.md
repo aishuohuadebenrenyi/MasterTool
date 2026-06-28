@@ -1,6 +1,6 @@
 # CloudBase 原生重构与多端演进计划
 
-> 历史文档：保留迁移决策背景，当前规范以 `specs/cloudbase-rebuild/` 和 `docs/release-checklist.md` 为准。
+> 历史文档：保留迁移决策背景，当前规范以 `docs/archive/cloudbase-rebuild/` 和 `docs/release-checklist.md` 为准。
 
 ## 结论
 
@@ -335,9 +335,9 @@ iOS 端：
 
 ### Phase 0：规格冻结
 
-- 输出 `specs/cloudbase-rebuild/requirements.md`。
-- 输出 `specs/cloudbase-rebuild/design.md`。
-- 输出 `specs/cloudbase-rebuild/tasks.md`。
+- 输出 `docs/archive/cloudbase-rebuild/requirements.md`。
+- 输出 `docs/archive/cloudbase-rebuild/design.md`。
+- 输出 `docs/archive/cloudbase-rebuild/tasks.md`。
 - 明确 MVP 范围、非目标和验收标准。
 
 ### Phase 1：CloudBase 基座

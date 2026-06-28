@@ -15,6 +15,10 @@ Component({
       type: String,
       value: ''
     },
+    checkinEntryLink: {
+      type: String,
+      value: ''
+    },
     checkinPath: {
       type: String,
       value: ''
@@ -30,6 +34,7 @@ Component({
   },
   methods: {
     handleLoadCode() {
+      if (this.properties.checkinCodeLoading) return
       this.triggerEvent('loadcode')
     },
     handleCopyEntry() {

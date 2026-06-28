@@ -2,9 +2,10 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 
 const {
+  generateEntryCode,
   __testables,
   loadFeedback
-} = require('../../miniprogram/pages/feedback/index/modules/page-flow')
+} = require('../../../wechat-app/miniprogram/pages/feedback/index/modules/page-flow')
 
 const {
   buildErrorState,
@@ -72,7 +73,7 @@ test('buildErrorState keeps the custom message while using the shared fallback c
   assert.equal(state.errorTitle, '反馈加载失败')
   assert.equal(state.errorDesc, '请稍后重试。')
   assert.equal(state.emptyTitle, '暂无反馈')
-  assert.equal(state.emptyDesc, '复制入口发给参与者后，反馈会展示在这里。')
+  assert.equal(state.emptyDesc, '复制链接发给参与者后，反馈会展示在这里。')
 })
 
 test('buildSuccessState marks a feedback list as data-present and not empty', () => {
@@ -92,4 +93,28 @@ test('loadFeedback uses the unavailable request state when sessionId is missing'
   assert.equal(page.data.requestState.error, '缺少场次信息')
   assert.equal(page.data.requestState.errorTitle, '反馈入口不可用')
   assert.equal(page.data.requestState.hasError, true)
+})
+
+test('generateEntryCode returns without changing loading state when already loading', async () => {
+  const page = createFakePage({ feedbackCodeLoading: true })
+
+  await generateEntryCode(page)
+
+  assert.equal(page.data.feedbackCodeLoading, true)
+})
+
+test('generateEntryCode does not enter loading state without a session id', async () => {
+  const originalWx = global.wx
+  global.wx = {
+    showToast() {}
+  }
+  const page = createFakePage({ feedbackCodeLoading: false })
+
+  try {
+    await generateEntryCode(page)
+  } finally {
+    global.wx = originalWx
+  }
+
+  assert.equal(page.data.feedbackCodeLoading, false)
 })

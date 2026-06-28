@@ -81,6 +81,7 @@ Page({
     showCreateTemplateSelect: false,
     openedPlanId: '',
     openedActivityId: '',
+    startingPlanId: '',
     loading: false,
     planRequestState: createRequestState(),
     activityRequestState: createRequestState()
@@ -189,7 +190,7 @@ Page({
   },
 
   async startTraining(plan) {
-    return startTrainingModule(plan)
+    return startTrainingModule(this, plan)
   },
 
   handleTemplateTap(event) {

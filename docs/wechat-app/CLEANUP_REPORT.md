@@ -1,56 +1,40 @@
 # wechat-app 清理报告
 
-本文档记录 `wechat-app/` 当前已完成的高确定性清理结果，便于后续维护和继续瘦身。
+本文档记录 `wechat-app/` 当前目录边界。当前目标是让 `wechat-app/` 只保留微信开发者工具导入、预览、上传和云函数部署需要的内容。
 
 ## 当前保留边界
 
+- `project.config.json`
+  - 微信开发者工具工程配置入口。
 - `miniprogram/`
   - 当前小程序前端运行目录。
 - `cloudfunctions/`
-  - 当前保留的云函数目录仅包含：
-    - `trainer-api/`
-    - `live-api/`
-    - `participant-api/`
-    - `review-api/`
-- `cloudfunctions/*/_shared.js`
-  - 当前云函数复用通过各目录下本地 `_shared.js` 完成。
+  - 当前 CloudBase 云函数目录，包含 `trainer-api/`、`live-api/`、`participant-api/`、`review-api/`。
+- `cloudfunctions/*/package.json`
+  - 云函数依赖声明，CloudBase 部署需要保留。
+- `project.private.config.json`
+  - 微信开发者工具本地私有配置，已被 `.gitignore` 忽略，不属于提交内容。
+
+## 已迁出内容
+
+- `package.json`、`package-lock.json`
+  - 已迁至 `wechat-app-support/`，作为测试、Lint、格式化和校验脚本入口。
+- `eslint.config.js`、`.prettierrc.json`
+  - 已迁至 `wechat-app-support/`。
 - `tests/unit/`
-  - 当前最小自动化回归测试目录。
+  - 已迁至 `wechat-app-support/tests/unit/`。
 
 ## 已删除内容
 
-- `cloudfunctions/scheduled-jobs/`
-  - 无控制台触发器，且 `daily_metrics` 无页面或云函数消费。
-- `cloudfunctions/export-api/`
-  - 无运行时代码调用，导出能力由前端本地处理。
-- `cloudfunctions/_shared/`
-  - 顶层共享目录无运行时代码引用，职责已被各云函数本地 `_shared.js` 覆盖。
-- `shared/`
-  - 无运行时引用，仅残留在文档与脚本中。
-- `miniprogram/project.private.config.json`
-  - 冗余私有工程配置副本。
-- 未引用静态资源：
-  - `miniprogram/static/icons/home-start.png`
-  - `miniprogram/static/icons/icon-sound-error.png`
-  - `miniprogram/static/icons/icon-state-arrow-right.png`
-  - `miniprogram/static/icons/icon-state-check.png`
-  - `miniprogram/static/icons/icon-state-cloud.png`
-  - `miniprogram/static/icons/icon-state-promise.png`
-  - `miniprogram/static/icons/icon-state-tag.png`
-  - `miniprogram/static/icons/icon-todo-draft.png`
-  - `miniprogram/static/icons/icon-todo-pending.png`
-- 冗余页面级组件声明：
-  - `miniprogram/pages/live/index/index.json` 中多余的 `entry-code-card`
-
-## 本轮关键结论
-
-- 顶层 `cloudfunctions/_shared/` 不在当前运行主链路中。
-- 4 个业务云函数入口都依赖各自目录下的本地 `./_shared.js`。
-- 文档和目录结构应以“本地 `_shared.js`”为当前事实，而不是顶层共享目录。
+- `wechat-app/node_modules/`
+  - 本地开发依赖目录，后续在 `wechat-app-support/` 下安装。
+- `wechat-app/.DS_Store`
+  - 本地系统文件。
+- 历史清理中已删除的非主线云函数、共享目录和未引用静态资源，继续以当前 Git 历史为准。
 
 ## 验证方式
 
-建议在 `wechat-app/` 下执行：
+在 `wechat-app-support/` 下执行：
 
 ```bash
 npm run lint
@@ -61,6 +45,6 @@ npm run verify:all
 
 当前统一校验基线：
 
-- `npm run verify:all` 应通过
-- `npm test` 应通过全部 `tests/unit`
-- `npm run syntax-check` 应输出 `release contract ok`
+- `npm run verify:all` 应通过。
+- `npm test` 应通过全部 `tests/unit`。
+- `npm run syntax-check` 应输出 `release contract ok`。

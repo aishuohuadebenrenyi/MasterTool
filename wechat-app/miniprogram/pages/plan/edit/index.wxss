@@ -393,6 +393,10 @@
   background: #34C759;
 }
 
+.bottom-btn.disabled {
+  opacity: 0.58;
+}
+
 .sheet-mask {
   position: fixed;
   z-index: 1000;

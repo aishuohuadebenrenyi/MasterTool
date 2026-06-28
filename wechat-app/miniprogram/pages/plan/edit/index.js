@@ -62,6 +62,7 @@ Page({
     id: '',
     pageTitle: '方案编辑',
     savingTemplate: false,
+    isStartingTraining: false,
     contentKind: 'plan',
     isTemplate: false,
     isReadonly: false,
@@ -428,40 +429,55 @@ Page({
     return planId || this.data.id
   },
 
+  async launchTraining(planId) {
+    const response = await callAction('live-api', 'startSession', { planId })
+    if (response.code !== 0 || !response.data || !response.data.sessionId) {
+      showInfo(response.message || '开课失败')
+      return false
+    }
+    const sessionId = response.data.sessionId
+    navigateTo(`/pages/live/index/index?sessionId=${sessionId}&title=${encodeURIComponent(this.data.name)}`)
+    return true
+  },
+
   async startTraining() {
     if (!this.validatePlan()) return
+    if (this.data.isStartingTraining) return
     if (this.data.status === 'confirmed') {
       if (!this.data.id) {
         showInfo('请先确认方案')
         return
       }
-      const response = await callAction('live-api', 'startSession', { planId: this.data.id })
-      if (response.code !== 0 || !response.data || !response.data.sessionId) {
-        showInfo(response.message || '开课失败')
-        return
+      this.setData({ isStartingTraining: true })
+      try {
+        await this.launchTraining(this.data.id)
+      } finally {
+        this.setData({ isStartingTraining: false })
       }
-      const sessionId = response.data.sessionId
-      navigateTo(`/pages/live/index/index?sessionId=${sessionId}&title=${encodeURIComponent(this.data.name)}`)
       return
     }
+    this.setData({ isStartingTraining: true })
     wx.showModal({
       title: '确认并开始培训',
       content: '将先确认当前方案，然后进入培训现场。',
       confirmText: '开始培训',
       cancelText: '再看看',
       success: async (res) => {
-        if (!res.confirm) return
-        const planId = await this.confirmPlan()
-        if (planId) {
-          const response = await callAction('live-api', 'startSession', { planId })
-          if (response.code !== 0 || !response.data || !response.data.sessionId) {
-            showInfo(response.message || '开课失败')
-            return
-          }
-          const sessionId = response.data.sessionId
-          navigateTo(`/pages/live/index/index?sessionId=${sessionId}&title=${encodeURIComponent(this.data.name)}`)
+        if (!res.confirm) {
+          this.setData({ isStartingTraining: false })
           return
         }
+        try {
+          const planId = await this.confirmPlan()
+          if (planId) {
+            await this.launchTraining(planId)
+          }
+        } finally {
+          this.setData({ isStartingTraining: false })
+        }
+      },
+      fail: () => {
+        this.setData({ isStartingTraining: false })
       }
     })
   }

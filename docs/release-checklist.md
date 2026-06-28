@@ -1,5 +1,15 @@
 # 上线发布检查清单
 
+## 版本管理
+
+- `1.0.0` 已作为正式上线版本，后续本地修改不得继续归入 `1.0.0`。
+- 补丁版使用 `1.0.x`，仅修线上问题、稳定性、文案和小范围体验问题。
+- 小版本使用 `1.x.0`，用于向后兼容的新功能或明显体验增强。
+- 大版本使用 `2.0.0` 起，必须单独评估主流程、数据结构和用户操作变化。
+- `CHANGELOG.md` 已记录本次版本，补丁项放在 `Fixed` 下。
+- `miniprogram/config/version.js` 的 `appVersion`、关于页显示、微信开发者工具上传版本号保持一致。
+- 正式发布对应的 Git tag 使用 `vX.Y.Z` 格式；`1.0.0` 对应 `v1.0.0`，`1.0.1` 对应 `v1.0.1`。
+
 ## 数据准备
 
 - 已在 CloudBase 创建集合：`users`、`trainer_profiles`、`templates`、`plans`、`activities`、`live_sessions`、`participants`、`feedback`、`reviews`、`session_notes`、`interactions`、`interaction_submissions`、`support_feedback`、`operation_logs`。
@@ -52,10 +62,18 @@
 
 ## 发布前验证
 
-- 运行 `node wechat-app-support/tests/verify-wechat-app.js` 通过。
+- 运行 `npm run verify:all` 通过，工作目录为 `wechat-app-support/`。
+- 运行 `node tests/verify-wechat-app.js` 通过，工作目录为 `wechat-app-support/`。
 - 使用微信开发者工具完成一次完整端到端演练。
 - 使用真机扫码完成参与者签到和反馈。
 - 使用真机验证 `wxacode.getUnlimited` 生成的小程序码能直接进入签到、反馈、互动页面。
 - 从公共模板进入方案编辑后，确认方案与开始培训都会先落一条当前用户自己的 `plan`。
 - 关闭网络或删除云函数权限时，页面出现明确错误提示，不出现假成功。
 - 小程序隐私、用户数据、反馈数据说明已准备。
+
+## 发布后巡检
+
+- 检查 4 个云函数日志，确认没有新增高频错误。
+- 检查帮助与反馈入口，确认线上用户反馈能写入 `support_feedback`。
+- 确认正式版关于页显示本次版本号。
+- 记录是否需要继续开 `1.0.2` 紧急补丁。

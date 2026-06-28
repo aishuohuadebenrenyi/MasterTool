@@ -172,12 +172,14 @@ function closeSheet(page) {
     entryPreviewTitle: '',
     entryPreviewUrl: '',
     entryPreviewPath: '',
+    entryPreviewLink: '',
     entryPreviewJoinCode: '',
     interactionCodeLoadingId: ''
   })
 }
 
 async function endSession(page) {
+  if (page.data.endingSession || page.data.abandoningSession) return
   wx.showModal({
     title: '结束培训',
     content: '结束后可收集反馈、开始复盘或查看本场数据。',
@@ -186,9 +188,11 @@ async function endSession(page) {
     confirmColor: '#FF5A5F',
     success: async (res) => {
       if (!res.confirm) return
+      page.setData({ endingSession: true })
       if (page.timer) clearInterval(page.timer)
       const response = await callAction('live-api', 'endSession', { sessionId: page.data.sessionId })
       if (response.code !== 0) {
+        page.setData({ endingSession: false })
         showInfo(response.message || '结束失败')
         return
       }

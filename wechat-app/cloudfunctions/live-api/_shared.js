@@ -192,6 +192,35 @@ async function generateMiniCode({ page, scene, envVersion = 'release', cloudPath
   }
 }
 
+function resolveUrlLinkGenerator() {
+  const openapi = cloud.openapi || {}
+  if (openapi.urlLink && typeof openapi.urlLink.generate === 'function') {
+    return openapi.urlLink.generate.bind(openapi.urlLink)
+  }
+  if (openapi.urllink && typeof openapi.urllink.generate === 'function') {
+    return openapi.urllink.generate.bind(openapi.urllink)
+  }
+  return null
+}
+
+async function generateUrlLink({ path, query, envVersion = 'release' }) {
+  const generate = resolveUrlLinkGenerator()
+  if (!generate) {
+    throw new Error('urlLink.generate is not available')
+  }
+  const result = await generate({
+    path,
+    query,
+    env_version: envVersion,
+    is_expire: false
+  })
+  const urlLink = result && (result.url_link || result.urlLink || result.url)
+  if (!urlLink) {
+    throw new Error('urlLink.generate returned empty link')
+  }
+  return urlLink
+}
+
 async function route(event, handlers) {
   const request = parseEvent(event)
   const handler = handlers[request.action]
@@ -215,6 +244,7 @@ module.exports = {
   db,
   fail,
   generateMiniCode,
+  generateUrlLink,
   getCurrentIdentity,
   getWxContext,
   isRecord,

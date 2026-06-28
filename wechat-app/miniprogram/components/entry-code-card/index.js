@@ -19,6 +19,10 @@ Component({
       type: String,
       value: ''
     },
+    showPath: {
+      type: Boolean,
+      value: false
+    },
     emptyHint: {
       type: String,
       value: '生成正式小程序码'

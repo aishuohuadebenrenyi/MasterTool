@@ -7,7 +7,12 @@ const {
   persistCurrentAnswer,
   prevQuestion,
   setFramework
-} = require('../../miniprogram/pages/review/detail/modules/question-flow')
+} = require('../../../wechat-app/miniprogram/pages/review/detail/modules/question-flow')
+const {
+  __testables: reviewPageFlowTestables
+} = require('../../../wechat-app/miniprogram/pages/review/detail/modules/page-flow')
+
+const { buildReviewContent } = reviewPageFlowTestables
 
 function createFakePage(initialData = {}) {
   return {
@@ -133,4 +138,13 @@ test('setFramework persists the current answer before switching to another frame
   assert.equal(page.data.questionText, 'Facts：现场发生了什么？')
   assert.equal(page.data.answer, '新框架首题答案')
   assert.equal(page.data.answers['R-感受：哪些瞬间让你有情绪或能量变化？'], '原框架第二题')
+})
+
+test('buildReviewContent joins answered questions and trims the final payload', () => {
+  const content = buildReviewContent({
+    'O-客观：刚才的活动中，你观察到了什么？': '学员主动发言',
+    'D-决定：下一次你会调整什么？': ''
+  })
+
+  assert.equal(content, 'O-客观：刚才的活动中，你观察到了什么？\n学员主动发言\n\nD-决定：下一次你会调整什么？')
 })

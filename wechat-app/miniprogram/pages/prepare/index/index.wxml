@@ -49,10 +49,10 @@
             <view class="status-tag {{item.status}}">{{item.statusText}}</view>
             <view
               wx:if="{{item.contentKind === 'template' || item.showPrimaryAction}}"
-              class="card-action"
+              class="card-action {{startingPlanId === item._id ? 'disabled' : ''}}"
               data-id="{{item._id}}"
               catchtap="handlePlanAction"
-            >{{item.contentKind === 'template' ? '应用' : item.actionText}} ›</view>
+            >{{startingPlanId === item._id ? '开课中...' : (item.contentKind === 'template' ? '应用' : item.actionText)}} ›</view>
           </view>
         </view>
       </swipe-action-item>

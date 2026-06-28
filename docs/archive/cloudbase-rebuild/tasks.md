@@ -3,17 +3,17 @@
 ## 0. 规格与项目准备
 
 - [x] 0.1 生成 CloudBase 原生重构需求文档
-  - 输出 `specs/cloudbase-rebuild/requirements.md`
+  - 输出 `docs/archive/cloudbase-rebuild/requirements.md`
   - 明确 MVP 范围、非目标和验收标准
   - _Requirement: R1-R10_
 
 - [x] 0.2 生成 CloudBase 原生重构技术设计
-  - 输出 `specs/cloudbase-rebuild/design.md`
+  - 输出 `docs/archive/cloudbase-rebuild/design.md`
   - 明确技术栈、数据模型、云函数边界和多端演进方案
   - _Requirement: R1, R10_
 
 - [x] 0.3 生成实施任务计划
-  - 输出 `specs/cloudbase-rebuild/tasks.md`
+  - 输出 `docs/archive/cloudbase-rebuild/tasks.md`
   - 将任务绑定到需求编号
   - _Requirement: R1-R10_
 
@@ -24,7 +24,7 @@
   - 新建 `wechat-app/miniprogram/`
   - 新建 `wechat-app/cloudfunctions/`
   - 移除旧 Python `backend/`
-  - 旧 `archive/frontend-uniapp-x/` 仅作为迁移期参考
+  - 旧跨端前端仅保留历史清单说明
   - _Requirement: R1_
 
 - [x] 1.2 建立基础领域约束和常量

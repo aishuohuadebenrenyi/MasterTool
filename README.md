@@ -38,17 +38,22 @@ ImprovTool/
 ├── wechat-app/               # 微信开发者工具导入目录
 │   ├── project.config.json
 │   ├── miniprogram/          # 微信原生小程序
-│   ├── cloudfunctions/       # CloudBase 云函数
-│   └── tests/                # 小程序侧单元测试
+│   └── cloudfunctions/       # CloudBase 云函数
 ├── wechat-app-support/       # 联调数据和发布校验脚本
+│   ├── package.json
 │   ├── test-data/
 │   └── tests/
 ├── docs/                     # 正式产品、用户、发布和安全文档
-└── specs/                    # 历史规格资料入口由历史演进文档引用
+├── .codex/                   # AI 协作规则、记忆和任务流水
+│   ├── rules/
+│   ├── memory/
+│   └── tasks/
+└── AGENTS.md                 # AI 协作入口规则
 ```
 
 ## 正式文档
 
+- [AI 协作入口规则](AGENTS.md)
 - [产品说明](docs/product-overview.md)
 - [用户手册](docs/user-manual.md)
 - [发布、交接与内测完整步骤](docs/wechat-app/RELEASE_GUIDE.md)
@@ -56,6 +61,17 @@ ImprovTool/
 - [CloudBase 安全规则基线](docs/cloudbase-security-baseline.md)
 - [发布检查清单](docs/release-checklist.md)
 - [历史演进](docs/archive/history-evolution.md)
+
+## 协作记忆
+
+本项目使用 Git 可追踪的协作结构，帮助人和 AI 共享同一套项目规则：
+
+- `AGENTS.md`：AI 协作入口，规定先读上下文、执行边界和验证要求。
+- `.codex/rules/`：Codex 专用规则，包括通用协作、编码风格、文档同步和验证命令。
+- `.codex/memory/`：长期项目记忆、决策和经验，只记录未来仍有价值的信息。
+- `.codex/tasks/`：任务状态索引和一任务一文件的详情记录。
+
+`docs/` 仍是正式产品、用户、发布和安全文档根目录；`.codex/memory/` 和 `.codex/tasks/` 是协作辅助，不替代正式文档。
 
 ## 小程序开发
 
@@ -113,16 +129,16 @@ wx.cloud.callFunction({
 
 ## 校验
 
-在 `wechat-app/` 下执行：
+在 `wechat-app-support/` 下执行：
 
 ```bash
 npm run lint
-node --test tests/unit/*.js
+npm test
 npm run syntax-check
 ```
 
 发布契约检查：
 
 ```bash
-node wechat-app-support/tests/verify-release-contract.js
+node tests/verify-release-contract.js
 ```

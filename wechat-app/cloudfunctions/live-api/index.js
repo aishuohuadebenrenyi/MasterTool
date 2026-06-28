@@ -1,14 +1,117 @@
 const {
   ErrorCode,
+  cloud,
   db,
   fail,
-  generateMiniCode,
+  generateMiniCode: sharedGenerateMiniCode,
+  generateUrlLink: sharedGenerateUrlLink,
   getCurrentIdentity,
   ok,
   requiredText,
   route,
   withIdempotency
 } = require('./_shared')
+
+function normalizeMiniCodeBuffer(result) {
+  if (!result) return null
+  if (Buffer.isBuffer(result)) return result
+  if (Buffer.isBuffer(result.buffer)) return result.buffer
+  if (result.buffer && result.buffer.data) return Buffer.from(result.buffer.data)
+  return null
+}
+
+async function getTempFileURL(fileID) {
+  const tempResult = await cloud.getTempFileURL({
+    fileList: [fileID]
+  })
+  const file = tempResult.fileList && tempResult.fileList[0]
+  return file && file.tempFileURL ? file.tempFileURL : ''
+}
+
+async function fallbackGenerateMiniCode({ page, scene, envVersion = 'release', cloudPath }) {
+  if (!page || !scene || !cloudPath) {
+    throw new Error('generateMiniCode requires page, scene and cloudPath')
+  }
+  if (scene.length > 32) {
+    throw new Error(`wxacode scene is too long: ${scene.length}`)
+  }
+
+  const result = await cloud.openapi.wxacode.getUnlimited({
+    page,
+    scene,
+    env_version: envVersion,
+    check_path: true
+  })
+  const fileContent = normalizeMiniCodeBuffer(result)
+  if (!fileContent) {
+    throw new Error('wxacode.getUnlimited returned empty buffer')
+  }
+
+  const upload = await cloud.uploadFile({
+    cloudPath,
+    fileContent
+  })
+  const fileID = upload.fileID || ''
+  return {
+    fileID,
+    tempFileURL: fileID ? await getTempFileURL(fileID) : ''
+  }
+}
+
+const generateMiniCode = typeof sharedGenerateMiniCode === 'function'
+  ? sharedGenerateMiniCode
+  : fallbackGenerateMiniCode
+
+function resolveUrlLinkGenerator() {
+  const openapi = cloud.openapi || {}
+  if (openapi.urlLink && typeof openapi.urlLink.generate === 'function') {
+    return openapi.urlLink.generate.bind(openapi.urlLink)
+  }
+  if (openapi.urllink && typeof openapi.urllink.generate === 'function') {
+    return openapi.urllink.generate.bind(openapi.urllink)
+  }
+  return null
+}
+
+async function fallbackGenerateUrlLink({ path, query, envVersion = 'release' }) {
+  const generate = resolveUrlLinkGenerator()
+  if (!generate) {
+    throw new Error('urlLink.generate is not available')
+  }
+  const result = await generate({
+    path,
+    query,
+    env_version: envVersion,
+    is_expire: false
+  })
+  const urlLink = result && (result.url_link || result.urlLink || result.url)
+  if (!urlLink) {
+    throw new Error('urlLink.generate returned empty link')
+  }
+  return urlLink
+}
+
+const generateUrlLink = typeof sharedGenerateUrlLink === 'function'
+  ? sharedGenerateUrlLink
+  : fallbackGenerateUrlLink
+
+function settledValue(result, fallback) {
+  return result.status === 'fulfilled' ? result.value : fallback
+}
+
+function logEntryGenerationResult(label, results, context) {
+  const failures = results
+    .map((result, index) => ({ result, index }))
+    .filter((item) => item.result.status === 'rejected')
+  if (failures.length === 0) return
+  console.error(`${label} partial failure`, {
+    ...context,
+    failures: failures.map((item) => ({
+      index: item.index,
+      error: item.result.reason
+    }))
+  })
+}
 
 async function requireIdentity(requestId) {
   const identity = await getCurrentIdentity()
@@ -56,10 +159,26 @@ async function startSession(request) {
         if (latest.data.status !== 'confirmed') {
           return { errorCode: ErrorCode.CONFLICT, errorMessage: '请先确认方案再开课' }
         }
+        const runningSessions = await txSessions
+          .where({ ownerId, planId: planId.value, status: 'running' })
+          .limit(1)
+          .get()
+        if (runningSessions.data.length > 0) {
+          const runningSessionId = runningSessions.data[0]._id
+          if (latest.data.latestSessionId !== runningSessionId) {
+            await txPlans.doc(planId.value).update({
+              data: {
+                latestSessionId: runningSessionId,
+                updatedAt: now
+              }
+            })
+          }
+          return { sessionId: runningSessionId }
+        }
         if (latest.data.latestSessionId) {
           const latestSession = await txSessions.doc(latest.data.latestSessionId).get()
           if (latestSession.data && latestSession.data.ownerId === ownerId && latestSession.data.status === 'running') {
-            return { errorCode: ErrorCode.CONFLICT, errorMessage: '当前方案正在进行中' }
+            return { sessionId: latest.data.latestSessionId }
           }
         }
         const latestPlan = latest.data
@@ -557,6 +676,29 @@ function buildJoinCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
+function buildEntryKey() {
+  return Math.random().toString(36).slice(2, 10)
+}
+
+async function ensureInteractionEntryKey(interactionId, interaction) {
+  if (interaction.entryKey) return interaction.entryKey
+  const interactions = db.collection('interactions')
+  for (let index = 0; index < 5; index += 1) {
+    const entryKey = buildEntryKey()
+    const existed = await interactions.where({ entryKey }).limit(1).get()
+    if (existed.data.length === 0) {
+      await interactions.doc(interactionId).update({
+        data: {
+          entryKey,
+          updatedAt: Date.now()
+        }
+      })
+      return entryKey
+    }
+  }
+  throw new Error('failed to generate interaction entry key')
+}
+
 async function createInteraction(request) {
   const auth = await requireIdentity(request.requestId)
   if (auth.error) return auth.error
@@ -581,21 +723,45 @@ async function createInteraction(request) {
   }
 
   const now = Date.now()
-  const created = await db.collection('interactions').add({
-    data: {
-      ownerId,
-      sessionId: sessionId.value,
-      type,
-      title: title.value,
-      options,
-      status: 'open',
-      joinCode: buildJoinCode(),
-      createdAt: now,
-      updatedAt: now
+  const result = await withIdempotency(
+    request.requestId,
+    'live.createInteraction',
+    ownerId,
+    sessionId.value,
+    async () => {
+      const interactions = db.collection('interactions')
+      const existed = await interactions
+        .where({
+          ownerId,
+          sessionId: sessionId.value,
+          type,
+          title: title.value,
+          status: 'open'
+        })
+        .limit(1)
+        .get()
+      if (existed.data.length > 0) {
+        return { interactionId: existed.data[0]._id, duplicated: true }
+      }
+      const created = await interactions.add({
+        data: {
+          ownerId,
+          sessionId: sessionId.value,
+          type,
+          title: title.value,
+          options,
+          status: 'open',
+          entryKey: buildEntryKey(),
+          joinCode: buildJoinCode(),
+          createdAt: now,
+          updatedAt: now
+        }
+      })
+      return { interactionId: created._id }
     }
-  })
+  )
 
-  return ok({ interactionId: created._id }, request.requestId)
+  return ok(result, request.requestId)
 }
 
 async function listInteractions(request) {
@@ -696,25 +862,42 @@ async function getSessionEntryCode(request) {
     ? 'pages/participant/feedback/index'
     : 'pages/participant/checkin/index'
   const scene = sessionId.value
+  const query = `sessionId=${encodeURIComponent(sessionId.value)}`
 
-  try {
-    const code = await generateMiniCode({
+  const results = await Promise.allSettled([
+    generateMiniCode({
       page,
       scene,
       envVersion,
       cloudPath: `minicodes/${sessionId.value}/${entryType}-${envVersion}.png`
+    }),
+    generateUrlLink({
+      path: page,
+      query,
+      envVersion
     })
+  ])
+  const code = settledValue(results[0], {})
+  const urlLink = settledValue(results[1], '')
+  logEntryGenerationResult('getSessionEntryCode', results, {
+    entryType,
+    envVersion,
+    page,
+    scene,
+    sessionId: sessionId.value
+  })
 
-    return ok({
-      entryType,
-      path: `/${page}?sessionId=${sessionId.value}`,
-      scene,
-      ...code
-    }, request.requestId)
-  } catch (error) {
-    console.error('getSessionEntryCode failed', error)
-    return fail(ErrorCode.INTERNAL, '小程序码生成失败，请稍后重试', request.requestId)
+  if (!code.tempFileURL && !urlLink) {
+    return fail(ErrorCode.INTERNAL, '小程序入口生成失败，请稍后重试', request.requestId)
   }
+
+  return ok({
+    entryType,
+    path: `/${page}?${query}`,
+    scene,
+    urlLink,
+    ...code
+  }, request.requestId)
 }
 
 async function getInteractionEntryCode(request) {
@@ -732,27 +915,47 @@ async function getInteractionEntryCode(request) {
     return fail(ErrorCode.NOT_FOUND, '互动不存在', request.requestId)
   }
 
-  const scene = `iid=${encodeURIComponent(interactionId.value)}&code=${encodeURIComponent(interaction.data.joinCode)}`
+  const entryKey = await ensureInteractionEntryKey(interactionId.value, interaction.data)
+  const joinCode = interaction.data.joinCode
+  const scene = `k=${encodeURIComponent(entryKey)}&c=${encodeURIComponent(joinCode)}`
+  const query = `entryKey=${encodeURIComponent(entryKey)}&code=${encodeURIComponent(joinCode)}`
+  const page = 'pages/participant/interaction/index'
 
-  try {
-    const code = await generateMiniCode({
-      page: 'pages/participant/interaction/index',
+  const results = await Promise.allSettled([
+    generateMiniCode({
+      page,
       scene,
       envVersion,
       cloudPath: `minicodes/${interaction.data.sessionId}/interaction-${interactionId.value}-${envVersion}.png`
+    }),
+    generateUrlLink({
+      path: page,
+      query,
+      envVersion
     })
+  ])
+  const code = settledValue(results[0], {})
+  const urlLink = settledValue(results[1], '')
+  logEntryGenerationResult('getInteractionEntryCode', results, {
+    envVersion,
+    page,
+    scene,
+    interactionId: interactionId.value
+  })
 
-    return ok({
-      interactionId: interactionId.value,
-      joinCode: interaction.data.joinCode,
-      path: `/pages/participant/interaction/index?interactionId=${interactionId.value}&code=${interaction.data.joinCode}`,
-      scene,
-      ...code
-    }, request.requestId)
-  } catch (error) {
-    console.error('getInteractionEntryCode failed', error)
-    return fail(ErrorCode.INTERNAL, '互动小程序码生成失败，请稍后重试', request.requestId)
+  if (!code.tempFileURL && !urlLink) {
+    return fail(ErrorCode.INTERNAL, '互动入口生成失败，请稍后重试', request.requestId)
   }
+
+  return ok({
+    interactionId: interactionId.value,
+    entryKey,
+    joinCode,
+    path: `/${page}?${query}`,
+    scene,
+    urlLink,
+    ...code
+  }, request.requestId)
 }
 
 exports.main = async (event) => route(event, {

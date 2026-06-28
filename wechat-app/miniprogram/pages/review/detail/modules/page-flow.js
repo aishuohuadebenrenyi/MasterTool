@@ -7,6 +7,13 @@ function goBack(page) {
   goBackOrNavigate(`/pages/plan/activity-detail/index?sessionId=${page.data.sessionId}&entry=review`)
 }
 
+function buildReviewContent(answers) {
+  return Object.keys(answers)
+    .map((question) => `${question}\n${answers[question] || ''}`)
+    .join('\n\n')
+    .trim()
+}
+
 async function onLoad(page, query) {
   page.setData({ sessionId: query.sessionId || '' })
   page.applyFramework('ORID')
@@ -54,32 +61,39 @@ async function loadFeedbackSummary(page) {
 }
 
 async function completeReview(page) {
+  if (page.data.reviewSubmitting) return
   if (page.data.isReviewLocked) {
     showInfo('该场次已完成复盘')
     return
   }
   const answers = page.persistCurrentAnswer()
-  const content = Object.keys(answers)
-    .map((question) => `${question}\n${answers[question] || ''}`)
-    .join('\n\n')
-    .trim()
+  const content = buildReviewContent(answers)
   if (!content) {
     showInfo('请先填写复盘内容')
     return
   }
+  page.setData({ reviewSubmitting: true })
   const response = await callAction('review-api', 'saveReview', {
     sessionId: page.data.sessionId,
     content
   })
   if (response.code !== 0) {
+    page.setData({ reviewSubmitting: false })
     showInfo(response.message || '复盘保存失败')
     return
   }
+  await loadReviewDetail(page)
   showSuccess('复盘已完成')
-  goBack(page)
+  wx.switchTab({
+    url: '/pages/home/index/index',
+    fail: () => goBack(page)
+  })
 }
 
 module.exports = {
+  __testables: {
+    buildReviewContent
+  },
   completeReview,
   goBack,
   loadFeedbackSummary,

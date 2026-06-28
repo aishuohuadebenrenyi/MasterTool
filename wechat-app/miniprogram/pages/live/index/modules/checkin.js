@@ -59,13 +59,22 @@ async function manualCheckin(page) {
 }
 
 function copyCheckinEntry(page) {
+  if (!page.data.checkinEntryLink) {
+    showInfo('请先生成签到入口')
+    return
+  }
   wx.setClipboardData({
-    data: page.data.checkinPath,
-    success: () => showSuccess('签到入口已复制')
+    data: page.data.checkinEntryLink,
+    success: () => showSuccess('签到链接已复制')
   })
 }
 
 async function loadCheckinCode(page) {
+  if (page.data.checkinCodeLoading) return
+  if (!page.data.sessionId) {
+    showInfo('当前场次缺失，暂时无法生成签到码')
+    return
+  }
   page.setData({ checkinCodeLoading: true })
   const response = await callAction(
     'live-api',
@@ -84,9 +93,10 @@ async function loadCheckinCode(page) {
   }
   page.setData({
     checkinCodeUrl: response.data.tempFileURL || '',
-    checkinCodeFileId: response.data.fileID || ''
+    checkinCodeFileId: response.data.fileID || '',
+    checkinEntryLink: response.data.urlLink || ''
   })
-  showSuccess('签到小程序码已生成')
+  showSuccess(response.data.urlLink ? '签到入口已生成' : '签到小程序码已生成')
 }
 
 module.exports = {

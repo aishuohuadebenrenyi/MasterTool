@@ -4,7 +4,7 @@ const assert = require('node:assert/strict')
 const {
   __testables,
   savePlanAsPrivateTemplate
-} = require('../../miniprogram/pages/plan/modules/template-save')
+} = require('../../../wechat-app/miniprogram/pages/plan/modules/template-save')
 
 const { ensurePlanIdForTemplate } = __testables
 

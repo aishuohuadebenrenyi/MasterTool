@@ -59,3 +59,7 @@
   font-size: 22rpx;
   text-align: right;
 }
+
+.primary-btn.disabled {
+  opacity: 0.58;
+}

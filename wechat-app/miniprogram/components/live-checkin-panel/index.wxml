@@ -5,7 +5,7 @@
   path="{{checkinPath}}"
   empty-hint="生成正式签到小程序码，发给参与者扫码签到"
   secondary-text="{{checkinCodeLoading ? '生成中...' : (checkinCodeUrl ? '重新生成' : '生成小程序码')}}"
-  tertiary-text="复制入口"
+  tertiary-text="{{checkinEntryLink ? '复制链接' : ''}}"
   bindsecondarytap="handleLoadCode"
   bindtertiarytap="handleCopyEntry"
 />

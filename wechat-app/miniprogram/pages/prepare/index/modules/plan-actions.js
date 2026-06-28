@@ -30,14 +30,17 @@ function openReviewActivity(plan) {
   navigateTo(`/pages/plan/activity-detail/index?sessionId=${plan.reviewSessionId}`)
 }
 
-async function startTraining(plan) {
+async function startTraining(page, plan) {
   if (plan.status !== 'confirmed') {
     showInfo('请先确认方案，再开始培训', 2600)
     return
   }
+  if (page.data.startingPlanId) return
 
+  page.setData({ startingPlanId: plan._id })
   showInfo('正在创建培训场次...', 1200)
   const response = await callAction('live-api', 'startSession', { planId: plan._id })
+  page.setData({ startingPlanId: '' })
   if (response.code !== 0 || !response.data || !response.data.sessionId) {
     showInfo(response.message || '开课失败')
     return
@@ -80,7 +83,7 @@ function handlePlanAction(page, event) {
     return
   }
   if (plan.status === 'confirmed') {
-    startTraining(plan)
+    startTraining(page, plan)
     return
   }
   if (plan.canGoReview) {

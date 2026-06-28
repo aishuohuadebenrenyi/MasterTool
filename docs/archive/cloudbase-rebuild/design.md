@@ -49,12 +49,12 @@ ImprovTool/
 │   │   └── _shared/
 │   └── tests/
 │       └── unit/
-├── specs/
-│   └── cloudbase-rebuild/
 └── docs/
+    └── archive/
+        └── cloudbase-rebuild/
 ```
 
-当前 Python 后端已从生产目标中移除。旧 `archive/frontend-uniapp-x/` 只作为迁移期 UI 和交互参考，不属于新的生产运行路径。微信开发者工具只需要导入 `wechat-app/`，生产目标代码位于 `wechat-app/miniprogram/` 和 `wechat-app/cloudfunctions/`。
+当前 Python 后端已从生产目标中移除。旧跨端前端实现已从根目录移除，历史用途记录在 `docs/archive/legacy-implementation-inventory.md`。微信开发者工具只需要导入 `wechat-app/`，生产目标代码位于 `wechat-app/miniprogram/` 和 `wechat-app/cloudfunctions/`。
 
 ## 技术栈
 
@@ -434,7 +434,7 @@ interface OperationLog {
 
 迁移方式：
 
-1. 保留 `archive/frontend-uniapp-x/` 作为旧前端参考，旧 `backend/` 已移除。
+1. 旧跨端前端仅保留历史清单说明，旧 `backend/` 已移除。
 2. 新建 `wechat-app/miniprogram/`、`wechat-app/cloudfunctions/`。
 3. 优先迁移核心业务模型和主链路。
 4. 主链路可用后再删除或归档旧实现。

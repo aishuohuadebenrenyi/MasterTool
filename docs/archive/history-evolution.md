@@ -29,10 +29,11 @@
 
 - `docs/archive/cloudbase-deployment-migration-plan.md`
 - `docs/archive/legacy-mini-program-function-flow-audit.md`
+- `docs/archive/legacy-implementation-inventory.md`
 - `docs/beta-implementation-decisions.md`
-- `specs/cloudbase-rebuild/requirements.md`
-- `specs/cloudbase-rebuild/design.md`
-- `specs/cloudbase-rebuild/tasks.md`
+- `docs/archive/cloudbase-rebuild/requirements.md`
+- `docs/archive/cloudbase-rebuild/design.md`
+- `docs/archive/cloudbase-rebuild/tasks.md`
 
 这些文档包含早期评估、阶段性判断、任务拆分和过渡期实现决策。阅读时请以当前正式文档为准。
 
