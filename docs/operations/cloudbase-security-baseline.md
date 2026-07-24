@@ -1,6 +1,6 @@
 # CloudBase 安全规则基线
 
-适用范围：`wechat-app/` 小程序主链路。
+适用范围：`apps/wechat-cloudbase/` 小程序主链路。
 
 ## 目标
 
@@ -71,7 +71,15 @@
 - 正式环境不得导入联调样例数据
 - 正式环境不得保留 `REPLACE_WITH_USER_ID` 等占位内容
 
-## 5. 推荐检查项
+## 5. 公开仓库配置基线
+
+- `apps/wechat-cloudbase/project.config.json` 固定提交 `touristappid`，真实 AppID 仅在本地联调、预览和上传时填写。
+- `apps/wechat-cloudbase/miniprogram/config/env.js` 的公开版本保持 EnvID 为空，`backend/cloudbase/cloudbaserc.json` 只保留占位 EnvID。
+- `backend/cloudbase/seed/` 的可导入文件必须由包含 `REPLACE_WITH_USER_ID` 的脱敏主数据生成；本地替换后的文件不得提交。
+- AppSecret、SecretId、SecretKey、访问令牌、API Key、Apple 私钥和签名材料禁止进入 Git。
+- `project.private.config.json`、`.env*`、构建目录和 IDE 用户状态由 `.gitignore` 排除。
+
+## 6. 推荐检查项
 
 ### 提审前
 
@@ -86,7 +94,7 @@
 - 巡检是否存在异常高频签到或互动提交
 - 巡检 `operation_logs` 是否持续写入
 
-## 6. 最低落地要求
+## 7. 最低落地要求
 
 如果暂时无法完整沉淀为自动化规则文件，至少先确保以下配置在控制台手动落地：
 

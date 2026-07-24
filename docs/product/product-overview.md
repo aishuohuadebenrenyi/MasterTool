@@ -47,10 +47,10 @@ MasterTool 是面向培训师的微信小程序工具，用于把培训交付中
 
 ## 当前技术状态
 
-- 小程序工程位于 `wechat-app/`。
-- 小程序代码位于 `wechat-app/miniprogram/`。
-- 云函数位于 `wechat-app/cloudfunctions/`。
-- 联调数据和发布检查脚本位于 `wechat-app-support/`。
+- 小程序工程位于 `apps/wechat-cloudbase/`。
+- 小程序代码位于 `apps/wechat-cloudbase/miniprogram/`。
+- 云函数位于 `backend/cloudbase/functions/`。
+- 联调数据和发布检查脚本位于 `tooling/verification/`。
 - 正式发布前需要在本地配置真实小程序 AppID 和 CloudBase 环境 ID。
 
 ## 数据边界

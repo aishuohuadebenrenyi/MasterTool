@@ -8,13 +8,13 @@
 
 Use these destinations:
 
-- Product state: `docs/product-overview.md`
-- User operation: `docs/user-manual.md`
-- Release process: `docs/release-checklist.md` and `docs/wechat-app/RELEASE_GUIDE.md`
-- CloudBase launch: `docs/cloudbase-prod-launch-runbook.md`
-- Security baseline: `docs/cloudbase-security-baseline.md`
+- Product state: `docs/product/product-overview.md`
+- User operation: `docs/product/user-manual.md`
+- Release process: `docs/operations/release-checklist.md` and `docs/operations/wechat/RELEASE_GUIDE.md`
+- CloudBase launch: `docs/operations/cloudbase-prod-launch-runbook.md`
+- Security baseline: `docs/operations/cloudbase-security-baseline.md`
 - History: `docs/archive/history-evolution.md`
-- Version changes: `CHANGELOG.md`
+- Version changes: `docs/changelog.md`
 
 ## Update Memory When
 

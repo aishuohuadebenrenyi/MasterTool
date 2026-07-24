@@ -10,8 +10,8 @@
 
 ## Project Context
 
-- Current product line is the WeChat Mini Program under `wechat-app/`.
-- CloudBase Node.js cloud functions live under `wechat-app/cloudfunctions/`.
+- Runnable clients live under `apps/wechat-cloudbase/` and `apps/ios-personal/`.
+- Shared CloudBase Node.js functions live under `backend/cloudbase/functions/`.
 - Formal documentation lives under `docs/`.
 - Historical or deprecated architecture belongs under `docs/archive/`.
 - Local tool metadata such as `.trae/`, `.agents/`, `.claude/`, `.mcp-runtime/`, and most of `.codex/` is not product source.

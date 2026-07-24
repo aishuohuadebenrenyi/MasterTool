@@ -7,6 +7,7 @@
 每次任务开始前，按需读取：
 
 - `README.md`：当前产品、目录和校验入口。
+- `PROJECT_INDEX.md`：项目、后端、工具、文档和发布状态的权威索引。
 - `.codex/memory/project-context.md`：长期项目上下文、架构边界和常见坑位。
 - `.codex/rules/*.md`：协作、编码、文档同步和验证规则。
 - `.codex/tasks/`：当前任务状态和历史任务记录。
@@ -53,7 +54,7 @@
 按变更范围选择验证：
 
 - 文档和规则变更：至少运行 `git diff --check`。
-- 小程序代码变更：在 `wechat-app-support/` 运行 `npm run lint`、`npm test` 或 `npm run syntax-check`。
-- 发布前或跨模块变更：在 `wechat-app-support/` 运行 `npm run verify:all`，并视情况运行 `node tests/verify-release-contract.js`。
+- 小程序或共享后端代码变更：在 `tooling/verification/` 运行 `npm run lint`、`npm test` 或 `npm run syntax-check`。
+- 发布前或跨模块变更：在 `tooling/verification/` 运行 `npm run verify:all`，并视情况运行 `node tests/verify-release-contract.js`。
 
 验证无法执行时，在最终说明中明确原因和残余风险。

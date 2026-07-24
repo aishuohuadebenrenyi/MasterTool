@@ -1,11 +1,11 @@
 # CloudBase 正式上线操作手册
 
-适用项目：`wechat-app/` 微信原生小程序 + CloudBase 云函数架构。
+适用项目：`apps/wechat-cloudbase/` 微信原生小程序 + CloudBase 云函数架构。
 
 ## 1. 发布前提
 
 - 小程序主体已完成微信认证。
-- 小程序 `AppID` 与当前工程一致：见 `wechat-app/project.config.json`。
+- 小程序 `AppID` 与当前工程一致：见 `apps/wechat-cloudbase/project.config.json`。
 - CloudBase 已准备至少两个环境：`dev`、`prod`。
 - 审核资料已准备：版本说明、测试路径、测试账号、隐私政策、用户协议、客服电话或客服邮箱。
 
@@ -54,8 +54,8 @@
 
 当前工程环境解析入口：
 
-- `wechat-app/miniprogram/config/env.js`
-- `wechat-app/miniprogram/app.js`
+- `apps/wechat-cloudbase/miniprogram/config/env.js`
+- `apps/wechat-cloudbase/miniprogram/app.js`
 
 上线前请将 `develop` 的 `envId` 替换成真实开发环境，避免开发版误写正式数据。
 
@@ -94,7 +94,7 @@
 
 安全基线参考文档：
 
-- `docs/cloudbase-security-baseline.md`
+- `docs/operations/cloudbase-security-baseline.md`
 
 执行原则：
 
@@ -132,13 +132,13 @@
 导入目录：
 
 ```text
-wechat-app/
+apps/wechat-cloudbase/
 ```
 
 确认配置：
 
 - `miniprogramRoot = miniprogram/`
-- `cloudfunctionRoot = cloudfunctions/`
+- 小程序项目中不包含共享云函数目录
 
 ### 4.2 环境确认
 
@@ -148,21 +148,24 @@ wechat-app/
 - 开发版使用 `dev`
 - 体验版/正式版使用 `prod`
 
-### 4.3 云函数上传
+### 4.3 云函数部署
 
-依次上传并测试：
+共享函数源码位于 `backend/cloudbase/functions/`。部署前明确目标 EnvID，并通过 CloudBase MCP 或当前版本 CloudBase CLI 的帮助确认参数；不要依赖隐式选择的环境。
+
+依次部署并测试：
 
 - `trainer-api`
 - `live-api`
 - `participant-api`
 - `review-api`
+- `ios-api`
 
 ### 4.4 数据准备
 
 联调数据目录：
 
-- `wechat-app-support/test-data/importable-jsonl/direct-import/`
-- `wechat-app-support/test-data/importable-jsonl/need-user-id/`
+- `backend/cloudbase/seed/importable-jsonl/direct-import/`
+- `backend/cloudbase/seed/importable-jsonl/need-user-id/`
 
 导入前确认：
 
@@ -199,7 +202,7 @@ wechat-app/
 
 ### 6.1 提审前
 
-- 执行 `node wechat-app-support/tests/verify-wechat-app.js`
+- 执行 `node tooling/verification/tests/verify-wechat-app.js`
 - 使用体验版完成完整业务演练
 - 确认关于页可打开正式版隐私政策和服务条款
 - 确认弱网、云函数失败时页面有明确错误提示

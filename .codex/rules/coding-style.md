@@ -2,9 +2,9 @@
 
 ## Mini Program
 
-- Match the existing JavaScript, WXML, WXSS, and JSON style in `wechat-app/miniprogram/`.
+- Match the existing JavaScript, WXML, WXSS, and JSON style in `apps/wechat-cloudbase/miniprogram/`.
 - Keep page logic close to the page unless an existing shared utility already owns the behavior.
-- Use existing utilities under `wechat-app/miniprogram/utils/` before adding new helpers.
+- Use existing utilities under `apps/wechat-cloudbase/miniprogram/utils/` before adding new helpers.
 - Avoid speculative configurability or generic abstractions for one-off behavior.
 
 ## Cloud Functions
@@ -17,7 +17,7 @@
 ## Tests
 
 - Add or update focused tests when a bug fix or behavior change can be reproduced in unit tests.
-- Prefer existing `wechat-app-support/tests/unit/` patterns.
+- Prefer existing `tooling/verification/tests/unit/` patterns.
 - Do not rewrite broad test structure for a narrow change.
 
 ## Documentation

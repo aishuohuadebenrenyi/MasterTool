@@ -12,7 +12,7 @@ git diff --check
 
 ## Mini Program Code Changes
 
-Run from `wechat-app-support/`:
+Run from `tooling/verification/`:
 
 ```bash
 npm run lint
@@ -24,13 +24,13 @@ For a narrow change, use the relevant subset and explain why it is enough.
 
 ## Release Or Cross-Module Changes
 
-Run from `wechat-app-support/`:
+Run from `tooling/verification/`:
 
 ```bash
 npm run verify:all
 ```
 
-Run from `wechat-app-support/` when release contracts are affected:
+Run from `tooling/verification/` when release contracts are affected:
 
 ```bash
 node tests/verify-release-contract.js

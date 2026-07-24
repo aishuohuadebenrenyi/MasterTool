@@ -1,6 +1,6 @@
 # wechat-app 发布、交接与版本管理完整步骤
 
-本文档作为 `docs/wechat-app/` 下的主文档，面向当前真实运行与发布场景，适用于：
+本文档是微信小程序的主运行与发布文档，面向当前真实运行与发布场景，适用于：
 
 - 只有一个 CloudBase 环境
 - `1.0.0` 已正式上线，后续按补丁版、小版本和大版本管理
@@ -20,17 +20,17 @@
 
 ### 1.2 支持目录
 
-- `wechat-app-support/package.json`
+- `tooling/verification/package.json`
   - 本地校验、Lint、格式化、单测脚本入口。
-- `wechat-app-support/tests/unit/`
+- `tooling/verification/tests/unit/`
   - Node 单元测试目录。
-- `wechat-app-support/tests/verify-wechat-app.js`
+- `tooling/verification/tests/verify-wechat-app.js`
   - 小程序语法与发布契约检查入口。
-- `wechat-app-support/test-data/`
+- `backend/cloudbase/seed/`
   - 联调和手动导入数据。
-- `docs/wechat-app/RELEASE_GUIDE.md`
+- `docs/operations/wechat/RELEASE_GUIDE.md`
   - 当前主文档，覆盖发布、交接、内测与正式审核。
-- `docs/wechat-app/CLEANUP_REPORT.md`
+- `docs/archive/wechat-directory-cleanup-report.md`
   - 当前附录，记录目录边界与已删除内容。
 
 ### 1.3 前端目录
@@ -71,8 +71,8 @@
 
 ### 2.1 工程入口
 
-- 微信开发者工具导入目录：`wechat-app/`
-- 本地测试和发布校验目录：`wechat-app-support/`
+- 微信开发者工具导入目录：`apps/wechat-cloudbase/`
+- 本地测试和发布校验目录：`tooling/verification/`
 - 工程配置文件：`project.config.json`
 - 小程序代码目录：`miniprogram/`
 - 云函数目录：`cloudfunctions/`
@@ -172,8 +172,8 @@
 
 测试数据位置：
 
-- `wechat-app-support/test-data/importable-jsonl/direct-import/`
-- `wechat-app-support/test-data/importable-jsonl/need-user-id/`
+- `backend/cloudbase/seed/importable-jsonl/direct-import/`
+- `backend/cloudbase/seed/importable-jsonl/need-user-id/`
 
 规则：
 
@@ -190,14 +190,14 @@
 
 每次发布前必须同步确认：
 
-- `CHANGELOG.md` 已写入本次版本条目。
+- `docs/changelog.md` 已写入本次版本条目。
 - `miniprogram/config/version.js` 中的 `appVersion` 与微信开发者工具上传版本号一致。
 - Git tag 使用 `vX.Y.Z` 格式，例如 `v1.0.0`、`v1.0.1`。
 - 当前线上补丁版为 `1.0.1`；后续紧急修复进入 `1.0.2`。
 
 ## 5. 本地发布前检查
 
-在 `wechat-app-support/` 目录执行：
+在 `tooling/verification/` 目录执行：
 
 ```bash
 npm install
@@ -219,7 +219,7 @@ npm run verify:all
 在微信开发者工具中：
 
 1. 点击“导入项目”
-2. 目录选择 `wechat-app/`
+2. 目录选择 `apps/wechat-cloudbase/`
 3. 确认使用的 `AppID` 正确
 
 当前工程配置应为：
@@ -299,7 +299,7 @@ npm run verify:all
 建议填写：
 
 - 版本号：与 `miniprogram/config/version.js` 的 `appVersion` 一致
-- 备注：明确写清本次上传内容，并对应 `CHANGELOG.md`
+- 备注：明确写清本次上传内容，并对应 `docs/changelog.md`
 
 示例：
 
@@ -354,8 +354,8 @@ npm run verify:all
 
 当体验版验证稳定后，再做正式审核：
 
-1. 在 `wechat-app-support/` 再执行一次 `npm run verify:all`
-2. 确认 `CHANGELOG.md`、`appVersion`、微信上传版本号一致
+1. 在 `tooling/verification/` 再执行一次 `npm run verify:all`
+2. 确认 `docs/changelog.md`、`appVersion`、微信上传版本号一致
 3. 确认云函数为最新版本
 4. 确认数据库与规则无误
 5. 确认隐私政策、用户协议、客服信息完整
@@ -382,8 +382,8 @@ npm run verify:all
 
 按当前 `1.0.1` 已发布状态，后续补丁最适合的顺序是：
 
-1. 在 `wechat-app-support/` 执行 `npm run verify:all`
-2. 确认 `CHANGELOG.md` 已写入新补丁版本
+1. 在 `tooling/verification/` 执行 `npm run verify:all`
+2. 确认 `docs/changelog.md` 已写入新补丁版本
 3. 确认关于页显示新补丁版本
 4. 在微信开发者工具中重新编译
 5. 选择唯一 CloudBase 环境
@@ -397,11 +397,11 @@ npm run verify:all
 
 ## 14. 文档结构说明
 
-当前项目内与 `wechat-app` 相关的操作文档已集中到 `docs/wechat-app/`，并整理为“1 主文档 + 1 附录”：
+当前微信相关操作文档已整理为“1 主文档 + 1 历史附录”：
 
-- 主文档：`docs/wechat-app/RELEASE_GUIDE.md`
+- 主文档：`docs/operations/wechat/RELEASE_GUIDE.md`
   - 用于发布、交接、内测、正式审核。
-- 附录：`docs/wechat-app/CLEANUP_REPORT.md`
+- 历史附录：`docs/archive/wechat-directory-cleanup-report.md`
   - 用于记录目录边界、已删除内容和清理结论。
 
-后续如果目录结构长期稳定，可以继续保持这套 `docs/wechat-app/` 结构，不需要再放回代码目录。
+后续继续保持正式文档与客户端源码分离，不要把发布说明放回 `apps/wechat-cloudbase/`。

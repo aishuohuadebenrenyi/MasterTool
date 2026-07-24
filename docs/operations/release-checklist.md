@@ -6,7 +6,7 @@
 - 补丁版使用 `1.0.x`，仅修线上问题、稳定性、文案和小范围体验问题。
 - 小版本使用 `1.x.0`，用于向后兼容的新功能或明显体验增强。
 - 大版本使用 `2.0.0` 起，必须单独评估主流程、数据结构和用户操作变化。
-- `CHANGELOG.md` 已记录本次版本，补丁项放在 `Fixed` 下。
+- `docs/changelog.md` 已记录本次版本，补丁项放在 `Fixed` 下。
 - `miniprogram/config/version.js` 的 `appVersion`、关于页显示、微信开发者工具上传版本号保持一致。
 - 正式发布对应的 Git tag 使用 `vX.Y.Z` 格式；`1.0.0` 对应 `v1.0.0`，`1.0.1` 对应 `v1.0.1`。
 
@@ -15,9 +15,9 @@
 - 已在 CloudBase 创建集合：`users`、`trainer_profiles`、`templates`、`plans`、`activities`、`live_sessions`、`participants`、`feedback`、`reviews`、`session_notes`、`interactions`、`interaction_submissions`、`support_feedback`、`operation_logs`。
 - 仅需先创建空集合即可避免运行时报错：`users`、`trainer_profiles`、`reviews`、`session_notes`、`support_feedback`、`operation_logs`；这些集合不需要再导入空文件。
 - 建议导入样例业务数据以便联调：`templates`、`plans`、`activities`、`live_sessions`、`participants`、`feedback`、`interactions`、`interaction_submissions`。
-- 微信开发者工具可直接导入的拆分文件位于 `wechat-app-support/test-data/importable-jsonl/`，其中 `direct-import/` 可直接导入，`need-user-id/` 需先替换 `REPLACE_WITH_USER_ID`。
+- 微信开发者工具可直接导入的拆分文件位于 `backend/cloudbase/seed/importable-jsonl/`，其中 `direct-import/` 可直接导入，`need-user-id/` 需先替换 `REPLACE_WITH_USER_ID`。
 - 已为常用查询字段建立索引：`ownerId`、`status`、`updatedAt`、`startedAt`、`sessionId`、`openid`、`interactionId`。
-- 已按需导入 `wechat-app-support/test-data/cloudbase-seed.json` 或 `wechat-app-support/test-data/importable-jsonl/direct-import/*.json`、`wechat-app-support/test-data/importable-jsonl/need-user-id/*.json`；`templates` 中公共模板保留 `visibility = public`，私有模板与用户联调数据的 `ownerId` 已替换为当前测试用户 `_id`。
+- 已按需导入 `backend/cloudbase/seed/cloudbase-seed.json` 或 `backend/cloudbase/seed/importable-jsonl/direct-import/*.json`、`backend/cloudbase/seed/importable-jsonl/need-user-id/*.json`；`templates` 中公共模板保留 `visibility = public`，私有模板与用户联调数据的 `ownerId` 已替换为当前测试用户 `_id`。
 - 当前测试用户应在首次访问云函数后自动写入 `users`，不需要手动导入空数据。
 
 ## 权限策略
@@ -62,8 +62,8 @@
 
 ## 发布前验证
 
-- 运行 `npm run verify:all` 通过，工作目录为 `wechat-app-support/`。
-- 运行 `node tests/verify-wechat-app.js` 通过，工作目录为 `wechat-app-support/`。
+- 运行 `npm run verify:all` 通过，工作目录为 `tooling/verification/`。
+- 运行 `node tests/verify-wechat-app.js` 通过，工作目录为 `tooling/verification/`。
 - 使用微信开发者工具完成一次完整端到端演练。
 - 使用真机扫码完成参与者签到和反馈。
 - 使用真机验证 `wxacode.getUnlimited` 生成的小程序码能直接进入签到、反馈、互动页面。

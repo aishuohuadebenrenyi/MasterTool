@@ -4,7 +4,16 @@
 
 ## [Unreleased]
 
-- 当前暂无未发布变更。
+### Added
+
+- 新增可由 Xcode 直接打开的原生 iOS/iPadOS 培训师端，Debug 默认使用 Mock 数据。
+- 新增 `ios-api` HTTPS 网关、iOS 发布检查、App Store 草案材料和跨端文档。
+
+### Changed
+
+- 将可运行客户端统一整理到 `apps/`，共享 CloudBase 后端迁入 `backend/`，验证工具迁入 `tooling/`。
+- 将正式文档、原型索引、发布材料和历史资料分区，并建立根级 `PROJECT_INDEX.md`。
+- 公开微信工程改用 `touristappid`，CloudBase EnvID 和 seed 用户标识保持占位值。
 
 ## [1.0.1] - 已发布
 
@@ -18,7 +27,7 @@
 - 修复参与者扫码或点击入口后无法正确解析签到、反馈、互动参数的问题。
 - 修复复盘完成后状态未更新且未返回首页的问题。
 - 修复活动库详情编辑入口不可用，以及交付/复盘详情误显示编辑入口的问题。
-- 补充 `wechat-app-support/` 校验工程，统一小程序代码 lint、单测和发布契约校验入口。
+- 补充 `tooling/verification/` 校验工程，统一小程序代码 lint、单测和发布契约校验入口。
 
 ## [1.0.0] - 已发布
 
