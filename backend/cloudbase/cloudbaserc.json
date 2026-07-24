@@ -1,0 +1,36 @@
+{
+  "envId": "your-cloudbase-env-id",
+  "functionRoot": "functions",
+  "functions": [
+    {
+      "name": "trainer-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "installDependency": true
+    },
+    {
+      "name": "live-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "installDependency": true
+    },
+    {
+      "name": "participant-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "installDependency": true
+    },
+    {
+      "name": "review-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "installDependency": true
+    },
+    {
+      "name": "ios-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "installDependency": true
+    }
+  ]
+}

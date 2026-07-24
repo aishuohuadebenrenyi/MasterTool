@@ -1,2 +1,0 @@
-{"_id": "seed-interaction-vote", "ownerId": "d0222e176a1adee000145c04391b9ca9", "sessionId": "seed-session-ended", "type": "vote", "title": "今天最有收获的部分", "options": ["开场连接", "主题导入", "小组讨论"], "status": "closed", "joinCode": "SEED01", "createdAt": 1764500300000, "updatedAt": 1764500400000}
-{"_id": "seed-interaction-wordcloud", "ownerId": "d0222e176a1adee000145c04391b9ca9", "sessionId": "seed-session-ended", "type": "wordcloud", "title": "一个关键词总结今天", "options": [], "status": "closed", "joinCode": "SEED02", "createdAt": 1764500500000, "updatedAt": 1764500600000}

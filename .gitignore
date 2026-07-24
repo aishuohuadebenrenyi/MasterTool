@@ -47,6 +47,8 @@ frontend/project.private.config.json
 wechat-app/miniprogram/miniprogram_npm/
 wechat-app/project.private.config.json
 wechat-app/miniprogram/project.private.config.json
+apps/wechat-cloudbase/project.private.config.json
+apps/wechat-cloudbase/miniprogram/project.private.config.json
 wechat-app/miniprogram/.hbuilderx/
 wechat-app/node_modules/
 wechat-app-support/node_modules/
@@ -54,6 +56,25 @@ wechat-app/coverage/
 wechat-app/dist/
 wechat-app/cloudfunctions/**/node_modules/
 wechat-app/cloudfunctions/**/dist/
+backend/cloudbase/functions/**/node_modules/
+backend/cloudbase/functions/**/dist/
+tooling/verification/node_modules/
+backend/cloudbase/cloudbaserc.*.json
+
+# Swift and Xcode generated or user-specific state
+**/.build/
+**/.swiftpm/
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Local prototype source materials
+prototypes/source-materials/
+
+# Raw App Store screenshot evidence; only final JPG assets are versioned
+releases/ios-personal/draft/iPhone/*.png
+releases/ios-personal/draft/iPad/*.png
 
 # Local env files
 *.env

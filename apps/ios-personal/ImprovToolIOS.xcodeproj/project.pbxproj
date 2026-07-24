@@ -1,0 +1,81 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+		A00000000000000000000001 /* ImprovToolIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000011 /* ImprovToolIOSApp.swift */; };
+		A00000000000000000000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* RootView.swift */; };
+		A00000000000000000000003 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* DesignSystem.swift */; };
+		A00000000000000000000004 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000014 /* HomeView.swift */; };
+		A00000000000000000000005 /* PrepareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000015 /* PrepareView.swift */; };
+		A00000000000000000000006 /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000016 /* LiveView.swift */; };
+		A00000000000000000000007 /* MineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MineView.swift */; };
+		A00000000000000000000008 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* Domain.swift */; };
+		A00000000000000000000009 /* MockTrainingRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* MockTrainingRepository.swift */; };
+		A0000000000000000000000A /* CloudBaseTrainingRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001A /* CloudBaseTrainingRepository.swift */; };
+		A0000000000000000000000B /* LivePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* LivePreferences.swift */; };
+		A0000000000000000000000C /* bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* bell.wav */; };
+		A0000000000000000000000D /* cheer.wav in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* cheer.wav */; };
+		A0000000000000000000000E /* clap.wav in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* clap.wav */; };
+		A0000000000000000000000F /* theme.wav in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* theme.wav */; };
+		B00000000000000000000002 /* Authentication.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* Authentication.swift */; };
+		B00000000000000000000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000006 /* Assets.xcassets */; };
+		B00000000000000000000005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000007 /* PrivacyInfo.xcprivacy */; };
+		C00000000000000000000001 /* ImprovToolIOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* ImprovToolIOSUITests.swift */; };
+
+		A00000000000000000000011 /* ImprovToolIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovToolIOSApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000012 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A00000000000000000000013 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A00000000000000000000014 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A00000000000000000000015 /* PrepareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareView.swift; sourceTree = "<group>"; };
+		A00000000000000000000016 /* LiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveView.swift; sourceTree = "<group>"; };
+		A00000000000000000000017 /* MineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MineView.swift; sourceTree = "<group>"; };
+		A00000000000000000000018 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		A00000000000000000000019 /* MockTrainingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTrainingRepository.swift; sourceTree = "<group>"; };
+		A0000000000000000000001A /* CloudBaseTrainingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudBaseTrainingRepository.swift; sourceTree = "<group>"; };
+		A0000000000000000000001B /* ImprovToolIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = ImprovToolIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0000000000000000000001C /* LivePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LivePreferences.swift; sourceTree = "<group>"; };
+		A0000000000000000000001D /* bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bell.wav; sourceTree = "<group>"; };
+		A0000000000000000000001E /* cheer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cheer.wav; sourceTree = "<group>"; };
+		A0000000000000000000001F /* clap.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = clap.wav; sourceTree = "<group>"; };
+		B00000000000000000000001 /* theme.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = theme.wav; sourceTree = "<group>"; };
+		B00000000000000000000003 /* Authentication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Authentication.swift; sourceTree = "<group>"; };
+		B00000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B00000000000000000000007 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C00000000000000000000002 /* ImprovToolIOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovToolIOSUITests.swift; sourceTree = "<group>"; };
+		C00000000000000000000003 /* ImprovToolIOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ImprovToolIOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		A00000000000000000000020 = {isa = PBXGroup; children = (A00000000000000000000021 /* ImprovToolIOS */, C00000000000000000000004 /* ImprovToolIOSUITests */, A00000000000000000000022 /* Products */); sourceTree = "<group>"; };
+		A00000000000000000000021 /* ImprovToolIOS */ = {isa = PBXGroup; children = (A00000000000000000000023 /* App */, A00000000000000000000024 /* Features */, A00000000000000000000025 /* DesignSystem */, A00000000000000000000026 /* Core */, A00000000000000000000027 /* Resources */, B00000000000000000000006 /* Assets.xcassets */, B00000000000000000000007 /* PrivacyInfo.xcprivacy */); path = ImprovToolIOS; sourceTree = "<group>"; };
+		A00000000000000000000022 /* Products */ = {isa = PBXGroup; children = (A0000000000000000000001B /* ImprovToolIOS.app */, C00000000000000000000003 /* ImprovToolIOSUITests.xctest */); name = Products; sourceTree = "<group>"; };
+		A00000000000000000000023 /* App */ = {isa = PBXGroup; children = (A00000000000000000000011, A00000000000000000000012); path = App; sourceTree = "<group>"; };
+		A00000000000000000000024 /* Features */ = {isa = PBXGroup; children = (A00000000000000000000014, A00000000000000000000015, A00000000000000000000016, A00000000000000000000017); path = Features; sourceTree = "<group>"; };
+		A00000000000000000000025 /* DesignSystem */ = {isa = PBXGroup; children = (A00000000000000000000013); path = DesignSystem; sourceTree = "<group>"; };
+		A00000000000000000000026 /* Core */ = {isa = PBXGroup; children = (A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001C, B00000000000000000000003); name = Core; path = ../Sources/ImprovToolCore; sourceTree = "<group>"; };
+		A00000000000000000000027 /* Resources */ = {isa = PBXGroup; children = (A0000000000000000000001D, A0000000000000000000001E, A0000000000000000000001F, B00000000000000000000001); path = Resources; sourceTree = "<group>"; };
+		C00000000000000000000004 /* ImprovToolIOSUITests */ = {isa = PBXGroup; children = (C00000000000000000000002 /* ImprovToolIOSUITests.swift */); path = ImprovToolIOSUITests; sourceTree = "<group>"; };
+
+		A00000000000000000000030 /* Project object */ = {isa = PBXProject; attributes = { LastUpgradeCheck = 2600; TargetAttributes = { A00000000000000000000031 = { CreatedOnToolsVersion = 26.0; }; C00000000000000000000005 = { CreatedOnToolsVersion = 26.0; TestTargetID = A00000000000000000000031; }; }; }; buildConfigurationList = A00000000000000000000034; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; mainGroup = A00000000000000000000020; productRefGroup = A00000000000000000000022; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000031, C00000000000000000000005); };
+		A00000000000000000000031 /* ImprovToolIOS */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000035; buildPhases = (A00000000000000000000032, A00000000000000000000033, A00000000000000000000040); buildRules = (); dependencies = (); name = ImprovToolIOS; productName = ImprovToolIOS; productReference = A0000000000000000000001B; productType = "com.apple.product-type.application"; };
+		C00000000000000000000005 /* ImprovToolIOSUITests */ = {isa = PBXNativeTarget; buildConfigurationList = C00000000000000000000011; buildPhases = (C00000000000000000000006, C00000000000000000000007); buildRules = (); dependencies = (C00000000000000000000010); name = ImprovToolIOSUITests; productName = ImprovToolIOSUITests; productReference = C00000000000000000000003; productType = "com.apple.product-type.bundle.ui-testing"; };
+		A00000000000000000000032 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, B00000000000000000000002); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000033 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000040 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, A0000000000000000000000F, B00000000000000000000004, B00000000000000000000005); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000006 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C00000000000000000000001 /* ImprovToolIOSUITests.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000007 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000009 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = A00000000000000000000030 /* Project object */; proxyType = 1; remoteGlobalIDString = A00000000000000000000031; remoteInfo = ImprovToolIOS; };
+		C00000000000000000000010 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A00000000000000000000031 /* ImprovToolIOS */; targetProxy = C00000000000000000000009 /* PBXContainerItemProxy */; };
+		A00000000000000000000034 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000036, A00000000000000000000037); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A00000000000000000000035 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000038, A00000000000000000000039); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A00000000000000000000036 = {isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; }; name = Debug; };
+		A00000000000000000000037 = {isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; }; name = Release; };
+		A00000000000000000000038 = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; IMPROV_IOS_API_ENDPOINT = ""; INFOPLIST_FILE = ImprovToolIOS/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.mastertool.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		A00000000000000000000039 = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; IMPROV_IOS_API_ENDPOINT = ""; INFOPLIST_FILE = ImprovToolIOS/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.mastertool.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+		C00000000000000000000011 = {isa = XCConfigurationList; buildConfigurations = (C00000000000000000000012, C00000000000000000000013); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		C00000000000000000000012 = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.mastertool.ios.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = ImprovToolIOS; }; name = Debug; };
+		C00000000000000000000013 = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.mastertool.ios.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = ImprovToolIOS; }; name = Release; };
+	};
+	rootObject = A00000000000000000000030 /* Project object */;
+}

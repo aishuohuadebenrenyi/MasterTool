@@ -1,0 +1,30 @@
+name: iOS release checks
+
+on:
+  pull_request:
+    paths:
+      - "apps/ios-personal/**"
+      - "apps/wechat-cloudbase/**"
+      - "backend/cloudbase/**"
+      - "tooling/verification/**"
+      - ".github/workflows/ios-release-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tooling/verification/package-lock.json
+      - run: npm ci
+        working-directory: tooling/verification
+      - run: npm run verify:all
+        working-directory: tooling/verification
+      - run: swift test
+        working-directory: apps/ios-personal
+      - run: xcodebuild -project ImprovToolIOS.xcodeproj -scheme ImprovToolIOS -configuration Release -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+        working-directory: apps/ios-personal

@@ -1,0 +1,19 @@
+{
+  "name": "improvtool-verification",
+  "private": true,
+  "scripts": {
+    "lint": "cd ../.. && tooling/verification/node_modules/.bin/eslint --config tooling/verification/eslint.config.js \"apps/wechat-cloudbase/miniprogram/**/*.js\" \"backend/cloudbase/functions/**/*.js\"",
+    "format": "cd ../.. && tooling/verification/node_modules/.bin/prettier --write \"apps/wechat-cloudbase/miniprogram/**/*.{js,json,wxml,wxss}\" \"backend/cloudbase/functions/**/*.js\"",
+    "format:check": "cd ../.. && tooling/verification/node_modules/.bin/prettier --check \"apps/wechat-cloudbase/miniprogram/**/*.{js,json,wxml,wxss}\" \"backend/cloudbase/functions/**/*.js\"",
+    "test": "npm run test:unit",
+    "test:unit": "node --test tests/unit/*.js",
+    "syntax-check": "node tests/verify-wechat-app.js",
+    "verify": "npm run lint && npm run syntax-check",
+    "verify:all": "npm run lint && npm test && npm run syntax-check"
+  },
+  "devDependencies": {
+    "eslint": "^9.28.0",
+    "globals": "^15.15.0",
+    "prettier": "^3.5.3"
+  }
+}
